@@ -2,19 +2,21 @@
   "name": "arweave-ts-block-validator",
   "version": "1.0.0",
   "description": "an arweave block validator, nothing more",
-  "main": "index.ts",
+  "main": "dist/index.js",
   "scripts": {
-    "test": "ts-mocha test/**/*.ts"
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "author": "Ros McMahon <rosmcmahon@gmail.com>",
   "license": "GPL-3.0",
   "devDependencies": {
-    "@types/chai": "^4.2.12",
-    "@types/mocha": "^8.0.2",
-    "chai": "^4.2.0",
-    "mocha": "^8.1.1",
+    "@types/jest": "^26.0.10",
+    "@types/node": "^14.0.27",
+    "axios": "^0.19.2",
+    "jest": "^26.4.0",
     "prettier": "^2.0.5",
-    "ts-mocha": "^7.0.0",
+    "ts-jest": "^26.2.0",
     "ts-node": "^8.10.2",
     "typescript": "^3.9.7"
   },
