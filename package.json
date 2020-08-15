@@ -1,0 +1,24 @@
+{
+  "name": "arweave-ts-block-validator",
+  "version": "1.0.0",
+  "description": "an arweave block validator, nothing more",
+  "main": "index.ts",
+  "scripts": {
+    "test": "ts-mocha test/**/*.ts"
+  },
+  "author": "Ros McMahon <rosmcmahon@gmail.com>",
+  "license": "GPL-3.0",
+  "devDependencies": {
+    "@types/chai": "^4.2.12",
+    "@types/mocha": "^8.0.2",
+    "chai": "^4.2.0",
+    "mocha": "^8.1.1",
+    "prettier": "^2.0.5",
+    "ts-mocha": "^7.0.0",
+    "ts-node": "^8.10.2",
+    "typescript": "^3.9.7"
+  },
+  "dependencies": {
+    "arweave": "^1.9.1"
+  }
+}
