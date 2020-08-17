@@ -1,4 +1,4 @@
-export * from './Block'
+export * from './BlockDTO'
 export * from './Poa'
 export * from './ReturnCode'
 export * from './Tx'

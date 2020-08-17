@@ -1,8 +1,7 @@
 import { DEFAULT_DIFF } from '../constants'
-import Poa from './Poa'
 
 /* Template for a Block "Data Transfer Object" for use in the http API */
-export class Block {
+export class BlockDTO {
 	nonce: string = '' //= <<>> // The nonce used to satisfy the PoW problem when mined.
 	previous_block: string ='' // = <<>> // indep_hash of the previous block in the weave.
 	timestamp: number = Math.round((new Date()).getTime() / 1000) // = os:system_time(seconds) // POSIX time of block discovery.
@@ -17,7 +16,7 @@ export class Block {
 	//// A list of all previous independent hashes. Not returned in the /block/[hash] API endpoint.
 	//// In the block shadows only the last ?STORE_BLOCKS_BEHIND_CURRENT hashes are included.
 	//// Reconstructed on the receiving side. Not stored in the block files.
-	hash_list?:string // = unset // "A list of hashes in the v1 format used for fork recovering through the fork 2.0 switch. 
+	hash_list?:string[] // = unset // "A list of hashes in the v1 format used for fork recovering through the fork 2.0 switch. 
 	//// Neither stored, gossiped, nor returned in the API, only used for constructing the hash list for a block shadow."
 	//// Alt: "gossiped blocks have a hash_list field, with 50 hashes of the previous blocks, from recent to oldest - the node 
 	//// uses it to decide if it is the same fork or, if not, initiate a fork recovery process from the corresponding base hash (the intersection)	
@@ -41,6 +40,13 @@ export class Block {
 	//// required for recomputing the root hash after a single insert - 32 (key length) * 2 ^ 8.
 	//// A binary tree on the other hand requires periodic rebalancing otherwise the complexity
 	//// of operations may approach O(number of wallets).
-	poa: Poa //{} // #poa{} // The access proof used to generate this block.
+	poa: PoaDTO // The access proof used to generate this block.
 }
 
+interface PoaDTO {
+	// %// @doc A succinct proof of access to a recall byte found in a TX.
+		option:string //= "1" // The recall byte option (a sequence number) chosen.
+		tx_path:string // b64url encoded concatanation of hashes? // Path through the Merkle tree of TXs in the block.
+		data_path:string // b64url encoded concatanation of hashes? // Path through the Merkle tree of chunk IDs to the required chunk.
+		chunk:string // b64url encoded data // The required data chunk.
+}
