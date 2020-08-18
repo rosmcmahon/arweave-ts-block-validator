@@ -1,7 +1,8 @@
 import { BlockDTO, ReturnCode } from "./types"
 import axios from 'axios'
-import { validateBlockQuick, validateBlockJson } from "./BlockValidator"
+import { validateBlockQuick, validateBlockJson, validateBlockSlow } from "./BlockValidator"
 import { STORE_BLOCKS_AROUND_CURRENT } from './constants'
+import { Block } from "./Block"
 
 
 describe('BlockValidator', () => {
@@ -35,5 +36,13 @@ describe('BlockValidator', () => {
     expect(res).toEqual({code: 400, message: "Difficulty too low"})
 	})
 	
+	it('validateBlockSlow should return true when given valid blocks', async () => {
+		expect(2)
+		let block = await Block.getByHeight(506359)
+		let prevBlock = await Block.getByHeight(506358)
+		res = validateBlockSlow(block, prevBlock)
+		
+		expect(res).toEqual({code:200, message:"Block slow check OK"})
+	})
 
 })

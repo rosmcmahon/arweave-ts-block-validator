@@ -2,6 +2,7 @@ import { ReturnCode, BlockDTO } from  './types'
 import { STORE_BLOCKS_AROUND_CURRENT, FORK_HEIGHT_1_7, FORK_HEIGHT_1_8 } from './constants'
 import { Block } from './Block'
 import { BigNumber } from 'bignumber.js'
+import { generateKeyPair } from 'crypto'
 
 export const validateBlockJson = (blockJson: BlockDTO, height: number): ReturnCode => {
 	let block: Block
@@ -195,5 +196,115 @@ export const validateBlockSlow = (block: Block, prevBlock: Block): ReturnCode =>
 }
 
 const getIndepHash = (block: Block): Uint8Array => {
-	return new Uint8Array(0)
+	/*
+		indep_hash_post_fork_2_0(B) ->
+			BDS = ar_block:generate_block_data_segment(B),
+			indep_hash_post_fork_2_0(BDS, B#block.hash, B#block.nonce).
+
+		indep_hash_post_fork_2_0(BDS, Hash, Nonce) ->
+			ar_deep_hash:hash([BDS, Hash, Nonce]).
+	*/
+
+	let BDS: Uint8Array = generateBlockDataSegment(block)
+
+	return deepHash([BDS, block.hash, block.nonce])
+}
+
+const generateBlockDataSegment = (block: Block): Uint8Array => {
+	/*
+		%% @doc Generate a block data segment.
+		%% Block data segment is combined with a nonce to compute a PoW hash.
+		%% Also, it is combined with a nonce and the corresponding PoW hash
+		%% to produce the independent hash.
+		generate_block_data_segment(B) ->
+			generate_block_data_segment(
+				generate_block_data_segment_base(B),
+				B#block.hash_list_merkle,
+				#{
+					timestamp => B#block.timestamp,
+					last_retarget => B#block.last_retarget,
+					diff => B#block.diff,
+					cumulative_diff => B#block.cumulative_diff,
+					reward_pool => B#block.reward_pool,
+					wallet_list => B#block.wallet_list
+				}
+			).
+
+		generate_block_data_segment(BDSBase, BlockIndexMerkle, TimeDependentParams) ->
+			#{
+				timestamp := Timestamp,
+				last_retarget := LastRetarget,
+				diff := Diff,
+				cumulative_diff := CDiff,
+				reward_pool := RewardPool,
+				wallet_list := WalletListHash
+			} = TimeDependentParams,
+			ar_deep_hash:hash([
+				BDSBase,
+				integer_to_binary(Timestamp),
+				integer_to_binary(LastRetarget),
+				integer_to_binary(Diff),
+				integer_to_binary(CDiff),
+				integer_to_binary(RewardPool),
+				WalletListHash,
+				BlockIndexMerkle
+			]).
+	*/
+	let BDSBase: Uint8Array = generateBlockDataSegmentBase(block)
+
+	return deepHash([
+		BDSBase,
+		block.timestamp.toString(), 			// Number.toString() might need to check against Erlang's integer_to_binary for consistency
+		block.last_retarget.toString(),
+		block.diff.toString(),						// BigNumber.toString() as above
+		block.cumulative_diff.toString(),
+		block.reward_pool.toString(),
+		block.wallet_list,
+		block.hash_list_merkle,
+	])
+}
+
+const generateBlockDataSegmentBase = (block: Block): Uint8Array => {
+	/*
+		%% @doc Generate a hash, which is used to produce a block data segment
+		%% when combined with the time-dependent parameters, which frequently
+		%% change during mining - timestamp, last retarget timestamp, difficulty,
+		%% cumulative difficulty, miner's wallet, reward pool. Also excludes
+		%% the merkle root of the block index, which is hashed with the rest
+		%% as the last step, to allow verifiers to quickly validate PoW against
+		%% the current state.
+		generate_block_data_segment_base(B) ->
+			BDSBase = ar_deep_hash:hash([
+				integer_to_binary(B#block.height),
+				B#block.previous_block,
+				B#block.tx_root,
+				lists:map(fun ar_weave:tx_id/1, B#block.txs),
+				integer_to_binary(B#block.block_size),
+				integer_to_binary(B#block.weave_size),
+				case B#block.reward_addr of
+					unclaimed ->
+						<<"unclaimed">>;
+					_ ->
+						B#block.reward_addr
+				end,
+				ar_tx:tags_to_list(B#block.tags),
+				poa_to_list(B#block.poa)
+			]),
+			BDSBase.
+	*/
+	return deepHash([
+		block.height.toString(),
+		block.previous_block,
+		block.tx_root,
+		// need to look at this: is it storing txids ???
+		block.txs.map(txid => {
+			// ar_weave:tx_id/1 :-
+				// %% @doc Returns the transaction id
+				// tx_id(Id) when is_binary(Id) -> Id;
+				// tx_id(TX) -> TX#tx.id.
+			// wth is going on here?
+		})
+
+
+	])
 }
