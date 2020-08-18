@@ -1,4 +1,5 @@
 import { DEFAULT_DIFF } from '../constants'
+import { Tag } from './Tag'
 
 /* Template for a Block "Data Transfer Object" for use in the http API */
 export class BlockDTO {
@@ -22,7 +23,7 @@ export class BlockDTO {
 	//// uses it to decide if it is the same fork or, if not, initiate a fork recovery process from the corresponding base hash (the intersection)	
 	wallet_list:string // = unset
 	reward_addr:string // = unclaimed // Address to credit mining reward or the unclaimed atom.
-	tags:string[] = [] // Miner specified tags to store with the block.
+	tags:Tag[] = [] // Miner specified tags to store with the block.
 	reward_pool:number = 0 // Current pool of mining rewards.
 	weave_size:number = 0 // Current size of the weave in bytes (counts tx data fields).
 	block_size:number = 0 // The total size of transaction data inside this block.
@@ -43,10 +44,10 @@ export class BlockDTO {
 	poa: PoaDTO // The access proof used to generate this block.
 }
 
-interface PoaDTO {
+class PoaDTO {
 	// %// @doc A succinct proof of access to a recall byte found in a TX.
-		option:string //= "1" // The recall byte option (a sequence number) chosen.
-		tx_path:string // b64url encoded concatanation of hashes? // Path through the Merkle tree of TXs in the block.
-		data_path:string // b64url encoded concatanation of hashes? // Path through the Merkle tree of chunk IDs to the required chunk.
-		chunk:string // b64url encoded data // The required data chunk.
+	option: string //= "1" // The recall byte option (a sequence number) chosen.
+	tx_path: string // b64url encoded concatanation of hashes? // Path through the Merkle tree of TXs in the block.
+	data_path: string // b64url encoded concatanation of hashes? // Path through the Merkle tree of chunk IDs to the required chunk.
+	chunk: string // b64url encoded data // The required data chunk.
 }

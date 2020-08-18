@@ -12,7 +12,7 @@ describe('Block', ()=>{
 		badBlockJson = Object.assign({})
 		delete badBlockJson.diff
 		delete badBlockJson.height
-  })
+  }, 20000)
 
 	it('should return a valid Block', async ()=>{
 		let block: Block = new Block(blockJson)
@@ -35,7 +35,7 @@ describe('Block', ()=>{
 
 		expect(block.height).toEqual(506359)
 		expect(prevBlock.height).toEqual(506358)
-	})
+	}, 20000)
 
 
 })

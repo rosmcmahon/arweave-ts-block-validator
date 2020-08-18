@@ -1,8 +1,11 @@
-import { ReturnCode, BlockDTO } from  './types'
+import { ReturnCode, BlockDTO, Tag } from  './types'
 import { STORE_BLOCKS_AROUND_CURRENT, FORK_HEIGHT_1_7, FORK_HEIGHT_1_8 } from './constants'
 import { Block } from './Block'
 import { BigNumber } from 'bignumber.js'
-import { generateKeyPair } from 'crypto'
+import deepHash from './utils/deepHash'
+import Arweave from 'arweave'
+
+
 
 export const validateBlockJson = (blockJson: BlockDTO, height: number): ReturnCode => {
 	let block: Block
@@ -68,27 +71,27 @@ export const validateBlockQuick = (block: Block, currentHeight: number):ReturnCo
 	return {code:200,message:"Block quick check OK"}
 }
 
-/*
--ifdef(DEBUG).
-min_difficulty(_Height) ->
-	1.
--else.
-min_difficulty(Height) ->
-	Diff = case Height >= ar_fork:height_1_7() of
-		true ->
-			min_randomx_difficulty();
-		false ->
-			min_sha384_difficulty()
-	end,
-	case Height >= ar_fork:height_1_8() of
-		true ->
-			ar_retarget:switch_to_linear_diff(Diff);
-		false ->
-			Diff
-	end.
--endif.
-*/
 const minDiff = (height: number): BigNumber => {
+	/*
+	-ifdef(DEBUG).
+	min_difficulty(_Height) ->
+		1.
+	-else.
+	min_difficulty(Height) ->
+		Diff = case Height >= ar_fork:height_1_7() of
+			true ->
+				min_randomx_difficulty();
+			false ->
+				min_sha384_difficulty()
+		end,
+		case Height >= ar_fork:height_1_8() of
+			true ->
+				ar_retarget:switch_to_linear_diff(Diff);
+			false ->
+				Diff
+		end.
+	-endif.
+	*/
 	if(process.env.NODE_ENV !== "production"){
 		return new BigNumber(1)
 	} else {
@@ -106,25 +109,26 @@ const minDiff = (height: number): BigNumber => {
 }
 
 /*
--ifdef(DEBUG).
-min_randomx_difficulty() -> 1.
--else.
-min_randomx_difficulty() -> min_sha384_difficulty() + ?RANDOMX_DIFF_ADJUSTMENT.
-min_sha384_difficulty() -> 31.
-randomx_genesis_difficulty() -> ?DEFAULT_DIFF.
--endif.
+	-ifdef(DEBUG).
+	min_randomx_difficulty() -> 1.
+	-else.
+	min_randomx_difficulty() -> min_sha384_difficulty() + ?RANDOMX_DIFF_ADJUSTMENT.
+	min_sha384_difficulty() -> 31.
+	randomx_genesis_difficulty() -> ?DEFAULT_DIFF.
+	-endif.
 */
 // The adjustment of difficutly going from SHA-384 to RandomX.
 const RANDOMX_DIFF_ADJUSTMENT = -14
 const MIN_SHA384_DIFFICULTY = 31
 const MIN_RANDOMX_DIFFICULTY = MIN_SHA384_DIFFICULTY + RANDOMX_DIFF_ADJUSTMENT
-/*
-%% @doc The number a hash must be greater than, to give the same odds of success
-%% as the old-style Diff (number of leading zeros in the bitstring).
-switch_to_linear_diff(Diff) ->
-	erlang:trunc(math:pow(2, 256)) - erlang:trunc(math:pow(2, 256 - Diff)).
-*/
+
 const switchToLinearDiff = (diff: BigNumber) => {
+	/*
+		%% @doc The number a hash must be greater than, to give the same odds of success
+		%% as the old-style Diff (number of leading zeros in the bitstring).
+		switch_to_linear_diff(Diff) ->
+			erlang:trunc(math:pow(2, 256)) - erlang:trunc(math:pow(2, 256 - Diff)).
+	*/
 	// return Math.trunc( Math.pow(2, 256) ) - Math.trunc( Math.pow(2, (256 - diff)) )
 	let a: BigNumber = (new BigNumber(2)).pow(256).integerValue(BigNumber.ROUND_DOWN)
 	let power: BigNumber = (new BigNumber(256)).minus(diff)
@@ -133,7 +137,7 @@ const switchToLinearDiff = (diff: BigNumber) => {
 	return  a.minus(b)
 }
 
-export const validateBlockSlow = (block: Block, prevBlock: Block): ReturnCode => {
+export const validateBlockSlow = async (block: Block, prevBlock: Block): Promise<ReturnCode> => {
 	/* 13 steps for slow validation (ref: validate in ar_node_utils.erl) */
 	
 	// validate_block:
@@ -167,7 +171,10 @@ export const validateBlockSlow = (block: Block, prevBlock: Block): ReturnCode =>
 
 	// independent_hash:
 	// if( ar_weave:indep_hash_post_fork_2_0(NewB) != NewB#block.indep_hash ) return false
-	if( ! Buffer.from(getIndepHash(block)).equals(block.indep_hash) ) return {code: 400, message: "Invalid independent hash"}
+	let indepHash = await getIndepHash(block)
+	if( ! Buffer.from(indepHash).equals(block.indep_hash) ){
+		return {code: 400, message: "Invalid independent hash"}
+	}
 
 	// wallet_list:
 	// get old block reward & height 
@@ -195,7 +202,7 @@ export const validateBlockSlow = (block: Block, prevBlock: Block): ReturnCode =>
 	return {code:200, message:"Block slow check OK"}
 }
 
-const getIndepHash = (block: Block): Uint8Array => {
+const getIndepHash = async (block: Block): Promise<Uint8Array> => {
 	/*
 		indep_hash_post_fork_2_0(B) ->
 			BDS = ar_block:generate_block_data_segment(B),
@@ -205,12 +212,16 @@ const getIndepHash = (block: Block): Uint8Array => {
 			ar_deep_hash:hash([BDS, Hash, Nonce]).
 	*/
 
-	let BDS: Uint8Array = generateBlockDataSegment(block)
+	let BDS: Uint8Array = await generateBlockDataSegment(block)
 
-	return deepHash([BDS, block.hash, block.nonce])
+	return await deepHash([
+		BDS, 
+		block.hash, 
+		block.nonce,
+	])
 }
 
-const generateBlockDataSegment = (block: Block): Uint8Array => {
+const generateBlockDataSegment = async (block: Block): Promise<Uint8Array> => {
 	/*
 		%% @doc Generate a block data segment.
 		%% Block data segment is combined with a nonce to compute a PoW hash.
@@ -250,21 +261,21 @@ const generateBlockDataSegment = (block: Block): Uint8Array => {
 				BlockIndexMerkle
 			]).
 	*/
-	let BDSBase: Uint8Array = generateBlockDataSegmentBase(block)
+	let BDSBase: Uint8Array = await generateBlockDataSegmentBase(block)
 
-	return deepHash([
+	return await deepHash([
 		BDSBase,
-		block.timestamp.toString(), 			// Number.toString() might need to check against Erlang's integer_to_binary for consistency
-		block.last_retarget.toString(),
-		block.diff.toString(),						// BigNumber.toString() as above
-		block.cumulative_diff.toString(),
-		block.reward_pool.toString(),
+		Arweave.utils.stringToBuffer(block.timestamp.toString()), 			// Number.toString() might need to check against Erlang's integer_to_binary for consistency
+		Arweave.utils.stringToBuffer(block.last_retarget.toString()),
+		Arweave.utils.stringToBuffer(block.diff.toString()),						// BigNumber.toString() as above
+		Arweave.utils.stringToBuffer(block.cumulative_diff.toString()),
+		Arweave.utils.stringToBuffer(block.reward_pool.toString()),
 		block.wallet_list,
 		block.hash_list_merkle,
 	])
 }
 
-const generateBlockDataSegmentBase = (block: Block): Uint8Array => {
+export const generateBlockDataSegmentBase = async (block: Block): Promise<Uint8Array> => {
 	/*
 		%% @doc Generate a hash, which is used to produce a block data segment
 		%% when combined with the time-dependent parameters, which frequently
@@ -291,20 +302,37 @@ const generateBlockDataSegmentBase = (block: Block): Uint8Array => {
 				poa_to_list(B#block.poa)
 			]),
 			BDSBase.
+
+		poa_to_list(POA) ->
+			[
+				integer_to_binary(POA#poa.option),
+				POA#poa.tx_path,
+				POA#poa.data_path,
+				POA#poa.chunk
+			].
 	*/
-	return deepHash([
-		block.height.toString(),
+
+	// if(block.txs.length > 0 && typeof block.txs[0] === "string" ){
+	// }
+
+	return await deepHash([
+		Arweave.utils.stringToBuffer(block.height.toString()),
 		block.previous_block,
 		block.tx_root,
-		// need to look at this: is it storing txids ???
-		block.txs.map(txid => {
-			// ar_weave:tx_id/1 :-
-				// %% @doc Returns the transaction id
-				// tx_id(Id) when is_binary(Id) -> Id;
-				// tx_id(TX) -> TX#tx.id.
-			// wth is going on here?
-		})
-
-
+		// We're just storing txids in Block.txs - erlang can store the actual tx records in shadowBlock sometimes, so erlang needs to translate to txids
+		block.txs.map(txid=>Arweave.utils.stringToBuffer(txid)),	
+		Arweave.utils.stringToBuffer(block.block_size.toString()),
+		Arweave.utils.stringToBuffer(block.weave_size.toString()),
+		Arweave.utils.stringToBuffer(block.reward_addr), 						// N.B. this should be set to "unclaimed" when we are mining
+		block.tags.map((tag: Tag) => [
+			Arweave.utils.stringToBuffer(tag.name), 									// Are these b64urls?
+			Arweave.utils.stringToBuffer(tag.value),
+		]),
+		[
+			Arweave.utils.stringToBuffer(block.poa.option.toString()),
+			block.poa.tx_path,
+			block.poa.data_path,
+			block.poa.chunk,
+		]
 	])
 }
