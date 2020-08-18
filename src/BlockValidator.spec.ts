@@ -1,6 +1,6 @@
 import { BlockDTO, ReturnCode } from "./types"
 import axios from 'axios'
-import { validateBlock, validateBlockJson } from "./BlockValidator"
+import { validateBlockQuick, validateBlockJson } from "./BlockValidator"
 import { STORE_BLOCKS_AROUND_CURRENT } from './constants'
 
 
@@ -16,7 +16,7 @@ describe('BlockValidator', () => {
   it('should return true for a valid block', async () => {
     expect(1)
     res = validateBlockJson(blockJson, blockJson.height-1 )
-    expect(res).toEqual({code: 200, message: "Block OK"})
+    expect(res).toEqual({code: 200, message: "Block quick check OK"})
   })
 
   it('should return false for an out of range height', async () => {

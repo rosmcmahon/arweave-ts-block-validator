@@ -27,4 +27,15 @@ describe('Block', ()=>{
 		
 	// 	expect(block).not.toBeInstanceOf(Block)
 	// })
+
+	it('should retrieve blocks by height, hash', async () => {
+		expect(2)
+		let block = await Block.getByHeight(506359)
+		let prevBlock = await Block.getByHash(block.previous_block)
+
+		expect(block.height).toEqual(506359)
+		expect(prevBlock.height).toEqual(506358)
+	})
+
+
 })

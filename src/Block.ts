@@ -2,6 +2,7 @@ import { Poa } from './types/Poa'
 import { BlockDTO } from "./types/BlockDTO"
 import { BigNumber } from 'bignumber.js'
 import Arweave from 'arweave'
+import Axios from 'axios'
 
 /* Actual binary data for a Block. Usually translated from a Block JSON Data Transfer Object */
 export class Block {
@@ -54,7 +55,26 @@ export class Block {
 			data_path: Arweave.utils.b64UrlToBuffer(dto.poa.data_path),
 			chunk: Arweave.utils.b64UrlToBuffer(dto.poa.chunk)
 		}	
+		if(dto.hash_list){ 
+			this.hash_list = dto.hash_list.map(b64url=>Arweave.utils.b64UrlToBuffer(b64url)) 
+		}
 	}
+
+	static async getByHeight(height: number): Promise<Block> {
+		let blockJson = (await Axios.get('https://arweave.net/block/height/'+height)).data
+		return new Block(blockJson)
+	}
+	static async getByHash(hash: Uint8Array): Promise<Block> {
+		let b64url = Arweave.utils.bufferTob64Url(hash)
+		let blockJson = (await Axios.get('https://arweave.net/block/hash/'+b64url)).data
+		return new Block(blockJson)
+	}
+	static async getCurrent(): Promise<Block> {
+		let blockJson = (await Axios.get('https://arweave.net/block/current')).data
+		return new Block(blockJson)
+	}
+	
+
 }
 
 // export const blockDtoToBlock = (dto: BlockDTO): Block => {
