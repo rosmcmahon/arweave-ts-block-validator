@@ -3,6 +3,7 @@ import { STORE_BLOCKS_AROUND_CURRENT } from './constants'
 import axios from 'axios'
 import { validateBlockQuick, validateBlockJson, validateBlockSlow, generateBlockDataSegmentBase } from "./BlockValidator"
 import { Block } from "./Block"
+import Arweave from "arweave"
 
 
 describe('BlockValidator', () => {
@@ -11,7 +12,7 @@ describe('BlockValidator', () => {
   let res: ReturnCode
 
   beforeEach(async () => {
-    blockJson = (await axios.get('https://arweave.net/block/height/506359')).data
+    blockJson = (await axios.get('https://arweave.net/block/height/509850')).data
 		// blockJson = (await axios.get('https://arweave.net/block/current')).data
 		block = new Block(blockJson)
   })
@@ -21,7 +22,7 @@ describe('BlockValidator', () => {
 		res = validateBlockJson(blockJson, blockJson.height-1 )
 		
     expect(res).toEqual({code: 200, message: "Block quick check OK"})
-  })
+  }, 20000)
 
   it('validateBlockQuick should return false for an out of range height', async () => {
     let ahead = validateBlockJson( blockJson, blockJson.height-(STORE_BLOCKS_AROUND_CURRENT+10) )
@@ -42,8 +43,13 @@ describe('BlockValidator', () => {
 	it('generateBlockDataSegmentBase reurns a BSDBase hash', async () => {
 		expect(1)
 		let hash = await generateBlockDataSegmentBase(block)
-		expect(hash).toEqual("check test output")
-	})
+		// console.log('hash', hash)
+		let data = Arweave.utils.bufferTob64Url(hash)
+		// console.log('data', data)
+		// console.log('Buffer',Buffer.from(hash))
+		expect(data).toEqual("dOljnXSULT9pTX4wiagcUOqrZZjBWLwKBR3Aoe3-HhNAW_CiKHNsrvqwL14x6BMm") 
+		//BDSBase for /height/509850 hash/si5OoWK-OcYt3LOEDCP2V4SWuj5X5n1LdoTh09-DtOppz_VkE72Cb0DCvygYMbW5
+	}, 20000)
 
 	// it('validateBlockSlow should return true when given valid blocks', async () => {
 	// 	expect(2)

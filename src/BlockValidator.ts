@@ -28,7 +28,7 @@ export const validateBlockQuick = (block: Block, currentHeight: number):ReturnCo
 
 	/*** This is the most important part (???) ***/
 	// 2. check_difficulty( BShadow#block.diff < ar_mine:min_difficulty(BShadow#block.height) )
-	if( block.diff.isLessThan(minDiff(block.height)) ) return {code: 400, message: "Difficulty too low"}
+	if( blockDiffIsLessThanMinDiff(block.diff, block.height) ) return {code: 400, message: "Difficulty too low"}
 
 	// 3. PoW (relies on BDS "block_data_segment")
 	// check_pow(
@@ -71,7 +71,7 @@ export const validateBlockQuick = (block: Block, currentHeight: number):ReturnCo
 	return {code:200,message:"Block quick check OK"}
 }
 
-const minDiff = (height: number): BigNumber => {
+const blockDiffIsLessThanMinDiff = (blockDiffString: string, height: number): Boolean => {
 	/*
 	-ifdef(DEBUG).
 	min_difficulty(_Height) ->
@@ -92,20 +92,22 @@ const minDiff = (height: number): BigNumber => {
 		end.
 	-endif.
 	*/
-	if(process.env.NODE_ENV !== "production"){
-		return new BigNumber(1)
-	} else {
-		let diff: BigNumber
-		if(height >= FORK_HEIGHT_1_7){
-			diff = new BigNumber(MIN_RANDOMX_DIFFICULTY)
-		}else{
-			diff = new BigNumber(MIN_SHA384_DIFFICULTY)
-		}
-		if(height >= FORK_HEIGHT_1_8){
-			diff = switchToLinearDiff(diff)
-		}
-		return diff
+	let blockDiff = new BigNumber(blockDiffString)
+	let minDiff: BigNumber
+	// if(process.env.NODE_ENV !== "production"){
+	// 	minDiff = new BigNumber(1)
+	// 	return blockDiff.isLessThan(minDiff)
+	// }else{
+	if(height >= FORK_HEIGHT_1_7){
+		minDiff = new BigNumber(MIN_RANDOMX_DIFFICULTY)
+	}else{
+		minDiff = new BigNumber(MIN_SHA384_DIFFICULTY)
 	}
+	if(height >= FORK_HEIGHT_1_8){
+		minDiff = switchToLinearDiff(minDiff)
+	}
+	return blockDiff.isLessThan(minDiff)
+	// }
 }
 
 /*
@@ -114,8 +116,6 @@ const minDiff = (height: number): BigNumber => {
 	-else.
 	min_randomx_difficulty() -> min_sha384_difficulty() + ?RANDOMX_DIFF_ADJUSTMENT.
 	min_sha384_difficulty() -> 31.
-	randomx_genesis_difficulty() -> ?DEFAULT_DIFF.
-	-endif.
 */
 // The adjustment of difficutly going from SHA-384 to RandomX.
 const RANDOMX_DIFF_ADJUSTMENT = -14
@@ -134,6 +134,12 @@ const switchToLinearDiff = (diff: BigNumber) => {
 	let power: BigNumber = (new BigNumber(256)).minus(diff)
 	let b: BigNumber = (new BigNumber(2)).pow(power).integerValue(BigNumber.ROUND_DOWN)
 	
+	// console.log('a',a.toString())
+	// console.log('diff',diff.toString())
+	// console.log('power',power.toString())
+	// console.log('b',b.toString())
+	// console.log('a.minus(b)',a.minus(b).toString())
+
 	return  a.minus(b)
 }
 
@@ -319,11 +325,10 @@ export const generateBlockDataSegmentBase = async (block: Block): Promise<Uint8A
 		Arweave.utils.stringToBuffer(block.height.toString()),
 		block.previous_block,
 		block.tx_root,
-		// We're just storing txids in Block.txs - erlang can store the actual tx records in shadowBlock sometimes, so erlang needs to translate to txids
-		block.txs.map(txid=>Arweave.utils.stringToBuffer(txid)),	
+		block.txs.map(txid=>Arweave.utils.b64UrlToBuffer(txid)),	
 		Arweave.utils.stringToBuffer(block.block_size.toString()),
 		Arweave.utils.stringToBuffer(block.weave_size.toString()),
-		Arweave.utils.stringToBuffer(block.reward_addr), 						// N.B. this should be set to "unclaimed" when we are mining
+		Arweave.utils.b64UrlToBuffer(block.reward_addr), 						// N.B. this should be set to "unclaimed" when we are mining
 		block.tags.map((tag: Tag) => [
 			Arweave.utils.stringToBuffer(tag.name), 									// Are these b64urls?
 			Arweave.utils.stringToBuffer(tag.value),

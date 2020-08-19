@@ -18,7 +18,6 @@ describe('Block', ()=>{
 		let block: Block = new Block(blockJson)
 		expect(block).toBeDefined()
 		expect(block).toBeInstanceOf(Block)
-		expect(block.diff).toBeInstanceOf(BigNumber)
 	})
 	// it('should not return a valid Block without a valid BlockDTO', async ()=>{
 	// 	let block: any 
