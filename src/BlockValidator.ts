@@ -227,7 +227,7 @@ const getIndepHash = async (block: Block): Promise<Uint8Array> => {
 	])
 }
 
-const generateBlockDataSegment = async (block: Block): Promise<Uint8Array> => {
+export const generateBlockDataSegment = async (block: Block): Promise<Uint8Array> => {
 	/*
 		%% @doc Generate a block data segment.
 		%% Block data segment is combined with a nonce to compute a PoW hash.
@@ -271,9 +271,9 @@ const generateBlockDataSegment = async (block: Block): Promise<Uint8Array> => {
 
 	return await deepHash([
 		BDSBase,
-		Arweave.utils.stringToBuffer(block.timestamp.toString()), 			// Number.toString() might need to check against Erlang's integer_to_binary for consistency
+		Arweave.utils.stringToBuffer(block.timestamp.toString()),
 		Arweave.utils.stringToBuffer(block.last_retarget.toString()),
-		Arweave.utils.stringToBuffer(block.diff.toString()),						// BigNumber.toString() as above
+		Arweave.utils.stringToBuffer(block.diff.toString()),
 		Arweave.utils.stringToBuffer(block.cumulative_diff.toString()),
 		Arweave.utils.stringToBuffer(block.reward_pool.toString()),
 		block.wallet_list,
@@ -317,9 +317,6 @@ export const generateBlockDataSegmentBase = async (block: Block): Promise<Uint8A
 				POA#poa.chunk
 			].
 	*/
-
-	// if(block.txs.length > 0 && typeof block.txs[0] === "string" ){
-	// }
 
 	return await deepHash([
 		Arweave.utils.stringToBuffer(block.height.toString()),

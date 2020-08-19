@@ -1,7 +1,13 @@
 import { BlockDTO, ReturnCode } from "./types"
 import { STORE_BLOCKS_AROUND_CURRENT } from './constants'
 import axios from 'axios'
-import { validateBlockQuick, validateBlockJson, validateBlockSlow, generateBlockDataSegmentBase } from "./BlockValidator"
+import { 
+	validateBlockJson, 
+	validateBlockQuick, 
+	validateBlockSlow, 
+	generateBlockDataSegmentBase,
+	generateBlockDataSegment,
+} from "./BlockValidator"
 import { Block } from "./Block"
 import Arweave from "arweave"
 
@@ -25,29 +31,36 @@ describe('BlockValidator', () => {
   }, 20000)
 
   it('validateBlockQuick should return false for an out of range height', async () => {
-    let ahead = validateBlockJson( blockJson, blockJson.height-(STORE_BLOCKS_AROUND_CURRENT+10) )
+    let ahead = validateBlockQuick( block, block.height - (STORE_BLOCKS_AROUND_CURRENT+10) )
 		expect(ahead).toEqual({code: 400, message: "Height is too far ahead"})
 		
-    let behind = validateBlockJson( blockJson, blockJson.height+(STORE_BLOCKS_AROUND_CURRENT+10) )
+    let behind = validateBlockQuick( block, block.height + (STORE_BLOCKS_AROUND_CURRENT+10) )
     expect(behind).toEqual({code: 400, message: "Height is too far behind"})
 	})
 	
 	it('validateBlockQuick should return false for difficulty too low', async () => {
 		expect(1)
-		let test = Object.assign({},blockJson)
+		let test = Object.assign({},block)
 		test.diff = "-100"                                                    //!! TODO: what are good/bad difficulties?
-    res = validateBlockJson(test, blockJson.height-1 )
+    res = validateBlockQuick(test, block.height-1 )
     expect(res).toEqual({code: 400, message: "Difficulty too low"})
 	})
 	
-	it('generateBlockDataSegmentBase reurns a BSDBase hash', async () => {
+	it('generateBlockDataSegmentBase returns a BSDBase hash', async () => {
 		expect(1)
 		let hash = await generateBlockDataSegmentBase(block)
-		// console.log('hash', hash)
 		let data = Arweave.utils.bufferTob64Url(hash)
-		// console.log('data', data)
-		// console.log('Buffer',Buffer.from(hash))
+		
 		expect(data).toEqual("dOljnXSULT9pTX4wiagcUOqrZZjBWLwKBR3Aoe3-HhNAW_CiKHNsrvqwL14x6BMm") 
+		//BDSBase for /height/509850 hash/si5OoWK-OcYt3LOEDCP2V4SWuj5X5n1LdoTh09-DtOppz_VkE72Cb0DCvygYMbW5
+	}, 20000)
+
+	it('generateBlockDataSegment returns a BSD hash', async () => {
+		expect(1)
+		let hash = await generateBlockDataSegment(block)
+		let data = Arweave.utils.bufferTob64Url(hash)
+
+		expect(data).toEqual("uLdZH6FVM-TI_KiA8oZCGbqXwknwyg69ur7KPrSMVPcBljPnIzeOhnPRPyOoifWV") 
 		//BDSBase for /height/509850 hash/si5OoWK-OcYt3LOEDCP2V4SWuj5X5n1LdoTh09-DtOppz_VkE72Cb0DCvygYMbW5
 	}, 20000)
 
