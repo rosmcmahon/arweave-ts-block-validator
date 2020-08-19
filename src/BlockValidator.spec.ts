@@ -7,6 +7,7 @@ import {
 	validateBlockSlow, 
 	generateBlockDataSegmentBase,
 	generateBlockDataSegment,
+	getIndepHash,
 } from "./BlockValidator"
 import { Block } from "./Block"
 import Arweave from "arweave"
@@ -46,7 +47,7 @@ describe('BlockValidator', () => {
     expect(res).toEqual({code: 400, message: "Difficulty too low"})
 	})
 	
-	it('generateBlockDataSegmentBase returns a BSDBase hash', async () => {
+	it('generateBlockDataSegmentBase returns a valid BSDBase hash', async () => {
 		expect(1)
 		let hash = await generateBlockDataSegmentBase(block)
 		let data = Arweave.utils.bufferTob64Url(hash)
@@ -55,13 +56,21 @@ describe('BlockValidator', () => {
 		//BDSBase for /height/509850 hash/si5OoWK-OcYt3LOEDCP2V4SWuj5X5n1LdoTh09-DtOppz_VkE72Cb0DCvygYMbW5
 	}, 20000)
 
-	it('generateBlockDataSegment returns a BSD hash', async () => {
+	it('generateBlockDataSegment returns a valid BSD hash', async () => {
 		expect(1)
 		let hash = await generateBlockDataSegment(block)
 		let data = Arweave.utils.bufferTob64Url(hash)
 
 		expect(data).toEqual("uLdZH6FVM-TI_KiA8oZCGbqXwknwyg69ur7KPrSMVPcBljPnIzeOhnPRPyOoifWV") 
 		//BDSBase for /height/509850 hash/si5OoWK-OcYt3LOEDCP2V4SWuj5X5n1LdoTh09-DtOppz_VkE72Cb0DCvygYMbW5
+	}, 20000)
+
+	it('getIndepHash returns a valid hash', async () => {
+		expect(1)
+		let hash = await getIndepHash(block)
+		let data = Arweave.utils.bufferTob64Url(hash)
+
+		expect(new Uint8Array(hash)).toEqual(block.indep_hash) 
 	}, 20000)
 
 	// it('validateBlockSlow should return true when given valid blocks', async () => {

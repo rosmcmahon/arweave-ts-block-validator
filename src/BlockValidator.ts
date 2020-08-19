@@ -208,7 +208,7 @@ export const validateBlockSlow = async (block: Block, prevBlock: Block): Promise
 	return {code:200, message:"Block slow check OK"}
 }
 
-const getIndepHash = async (block: Block): Promise<Uint8Array> => {
+export const getIndepHash = async (block: Block): Promise<Uint8Array> => {
 	/*
 		indep_hash_post_fork_2_0(B) ->
 			BDS = ar_block:generate_block_data_segment(B),
