@@ -1,5 +1,5 @@
 import { Poa, BlockDTO, Tag } from './types'
-import { BigNumber } from 'bignumber.js'
+import { HOST_SERVER } from './constants'
 import Arweave from 'arweave'
 import Axios from 'axios'
 
@@ -14,12 +14,12 @@ export class Block {
 	height:number // How many blocks have passed since the genesis block.
 	hash: Uint8Array // PoW hash of the block must satisfy the block's difficulty.
 	indep_hash: Uint8Array // = [] // The hash of the block including `hash` and `nonce` the block identifier.
-	txs: string[]  // A list of tx records in full blocks or a list of TX identifiers in block shadows.
+	txs: Uint8Array[]  // A list of tx records in full blocks or a list of TX identifiers in block shadows.
 	tx_root: Uint8Array // = <<>> // Merkle root of the tree of transactions' data roots.
 	tx_tree: Uint8Array[]  // Merkle tree of transactions' data roots. Not stored.
 	hash_list?: Uint8Array[] //  "A list of hashes used for fork recovery 
 	wallet_list: Uint8Array // = unset
-	reward_addr: string // Address to credit mining reward or the unclaimed atom.
+	reward_addr: Uint8Array // Address to credit mining reward or the unclaimed atom.
 	tags: Tag[]  // Miner specified tags to store with the block.
 	reward_pool: number  // Current pool of mining rewards.
 	weave_size: number  // Current size of the weave in bytes (counts tx data fields).
@@ -37,11 +37,11 @@ export class Block {
 		this.height = dto.height
 		this.hash = Arweave.utils.b64UrlToBuffer(dto.hash)
 		this.indep_hash = Arweave.utils.b64UrlToBuffer(dto.indep_hash)
-		this.txs = dto.txs
+		this.txs = dto.txs.map(txid=>Arweave.utils.b64UrlToBuffer(txid))
 		this.tx_root = Arweave.utils.b64UrlToBuffer(dto.tx_root)
 		this.tx_tree = [] // dto.tx_tree.map(b64urlTxHash=>Arweave.utils.b64UrlToBuffer(b64urlTxHash)) //!!! need to do this later!!,
 		this.wallet_list = Arweave.utils.b64UrlToBuffer(dto.wallet_list)
-		this.reward_addr = dto.reward_addr
+		this.reward_addr = Arweave.utils.b64UrlToBuffer(dto.reward_addr) // N.B. should be set to `new Uint8Array("unclaimed")` when mining
 		this.tags = dto.tags.map((tag:Tag) => {
 			return { 
 				name: Arweave.utils.b64UrlToString(tag.name), 
@@ -65,16 +65,16 @@ export class Block {
 	}
 
 	static async getByHeight(height: number): Promise<Block> {
-		let blockJson = (await Axios.get('https://arweave.net/block/height/'+height)).data
+		let blockJson = (await Axios.get(HOST_SERVER+'/block/height/'+height)).data
 		return new Block(blockJson)
 	}
 	static async getByHash(hash: Uint8Array): Promise<Block> {
 		let b64url = Arweave.utils.bufferTob64Url(hash)
-		let blockJson = (await Axios.get('https://arweave.net/block/hash/'+b64url)).data
+		let blockJson = (await Axios.get(HOST_SERVER+'/block/hash/'+b64url)).data
 		return new Block(blockJson)
 	}
 	static async getCurrent(): Promise<Block> {
-		let blockJson = (await Axios.get('https://arweave.net/block/current')).data
+		let blockJson = (await Axios.get(HOST_SERVER+'/block/current')).data
 		return new Block(blockJson)
 	}
 	

@@ -2,13 +2,14 @@ import { Block } from './Block'
 import { BlockDTO } from './types'
 import Axios from 'axios'
 import BigNumber from 'bignumber.js'
+import { HOST_SERVER } from './constants'
 
 describe('Block', ()=>{
 	let blockJson: BlockDTO
 	let badBlockJson: any
 
 	beforeEach(async () => {
-		blockJson = (await Axios.get('https://arweave.net/block/current')).data
+		blockJson = (await Axios.get(HOST_SERVER+'/block/current')).data
 		badBlockJson = Object.assign({})
 		delete badBlockJson.diff
 		delete badBlockJson.height
@@ -27,7 +28,7 @@ describe('Block', ()=>{
 	// 	expect(block).not.toBeInstanceOf(Block)
 	// })
 
-	it('should retrieve blocks by height, hash', async () => {
+	it('should retrieve blocks by height and hash', async () => {
 		expect(2)
 		let block = await Block.getByHeight(506359)
 		let prevBlock = await Block.getByHash(block.previous_block)
