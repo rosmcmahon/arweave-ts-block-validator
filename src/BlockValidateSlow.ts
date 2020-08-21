@@ -1,9 +1,10 @@
 import { ReturnCode, Tag, BlockIndexTuple, Poa } from  './types'
-import {  } from './constants'
+import { bufferToBigInt, bigIntToBuffer256, arrayCompare } from './utils/buffer-utilities'
+import { POA_MIN_MAX_OPTION_DEPTH } from './constants'
 import { Block } from './Block'
-import { BigNumber } from 'bignumber.js'
 import deepHash from './utils/deepHash'
 import Arweave from 'arweave'
+import * as Merkle from './utils/merkle'
 
 export const validateBlockSlow = async (block: Block, prevBlock: Block, blockIndex: BlockIndexTuple[]): Promise<ReturnCode> => {
 	/* 13 steps for slow validation (ref: validate in ar_node_utils.erl) */
@@ -20,7 +21,7 @@ export const validateBlockSlow = async (block: Block, prevBlock: Block, blockInd
 
 	// 3. poa:
 	// if(! ar_poa:validate(OldB#block.indep_hash, OldB#block.weave_size, BI, POA) ) return false
-	if( ! validatePoa(prevBlock.indep_hash, prevBlock.weave_size, blockIndex, block.poa) ){
+	if( ! await validatePoa(prevBlock.indep_hash, prevBlock.weave_size, blockIndex, block.poa) ){
 		return {code: 400, message: "Invalid PoA"}
 	}
 
@@ -65,14 +66,149 @@ export const validateBlockSlow = async (block: Block, prevBlock: Block, blockInd
 	return {code:200, message:"Block slow check OK"}
 }
 
-export const validatePoa = async (
-	prevIndepHash: Uint8Array, 
-	prevWeaveSize: number, 
-	blockIndex: BlockIndexTuple[], 
-	poa: Poa
-): Promise<Boolean> => {
-	return true
+/* Validate a complete proof of access object */
+export const validatePoa = async (prevIndepHash: Uint8Array, prevWeaveSize: number, blockIndex: BlockIndexTuple[], poa: Poa): Promise<Boolean> => {
+	
+	/* some quick returns */
+	
+	// The weave does not have data yet.
+	if(prevWeaveSize===0) return true
+
+	// validate(_H, _WS, BI, #poa{ option = Option })
+	// 		when Option > length(BI) andalso Option > ?MIN_MAX_OPTION_DEPTH ->
+	// 	false;
+	if( (poa.option > blockIndex.length) && (poa.option > POA_MIN_MAX_OPTION_DEPTH) ){
+		return false
+	}
+		
+	/* some utility functions not used elsewhere */
+
+	// multihash(X, Remaining) when Remaining =< 0 -> X;
+	// multihash(X, Remaining) ->
+	// 	multihash(crypto:hash(?HASH_ALG, X), Remaining - 1).
+	const multiHash = async (x: Uint8Array, remaining: number): Promise<Uint8Array> => {
+		if(remaining <= 0){
+			return x;
+		}
+		let hashX: Uint8Array = await Arweave.crypto.hash(  x , 'SHA-256');
+		return multiHash(hashX, remaining - 1 )
+	}
+
+	// The base of the block is the weave_size tag of the previous_block. 
+	// Traverse down the block index until the challenge block is inside the block's bounds.
+	// Where: blockIndex[0] is the latest block, and blockIndex[blockIndex.length-1] is the earliest block
+	// find_challenge_block(Byte, [{BH, BlockTop, TXRoot}, {_, BlockBase, _} | _])
+	// 	when (Byte >= BlockBase) andalso (Byte < BlockTop) -> {TXRoot, BlockBase, BlockTop, BH};
+	// find_challenge_block(Byte, [_ | BI]) ->
+	// 	find_challenge_block(Byte, BI).
+	const findChallengeBlock = (byte: bigint, blockIndex: BlockIndexTuple[]) => {
+		let index0 = 0;
+		let index1 = 1;
+		while (index1 !== blockIndex.length) { //we should never reach past the first block without finding the block
+			if( (byte >= BigInt(blockIndex[index1].weave_size)) && (byte < BigInt(blockIndex[index0].weave_size)) ){
+				return { 
+					txRoot: Arweave.utils.b64UrlToBuffer(blockIndex[index0].tx_root),
+					blockBase: BigInt(blockIndex[index1].weave_size),
+					blockTop: BigInt(blockIndex[index0].weave_size),
+					bh: Arweave.utils.b64UrlToBuffer(blockIndex[index0].hash),
+				}
+			}
+			++index0; ++index1
+		}
+		//we should never get here
+		throw new Error('recallByte out of bounds of weave')
+	}
+
+	/* Main validatePoa begins here */
+
+	// validate(LastIndepHash, WeaveSize, BI, POA) ->
+	// 	RecallByte = calculate_challenge_byte(LastIndepHash, WeaveSize, POA#poa.option),
+	// 	{TXRoot, BlockBase, BlockTop, _BH} = find_challenge_block(RecallByte, BI),
+	// 	validate_tx_path(RecallByte - BlockBase, TXRoot, BlockTop - BlockBase, POA).
+
+	// calculate_challenge_byte(_, 0, _) -> 0;
+	// calculate_challenge_byte(LastIndepHash, WeaveSize, Option) ->
+	// 	binary:decode_unsigned(multihash(LastIndepHash, Option)) rem WeaveSize.
+	let recallByte: bigint // 256-bit int from sha-256
+	if(prevWeaveSize===0){
+		recallByte = 0n
+	}else{
+		recallByte = bufferToBigInt(await multiHash(prevIndepHash, poa.option)) % BigInt(prevWeaveSize)
+	}
+
+	const {txRoot, blockBase, blockTop, bh} = findChallengeBlock(recallByte, blockIndex)
+	
+	return await validateTxPath( (recallByte - blockBase), txRoot, (blockTop - blockBase), poa )
 }
+
+const validateTxPath = async (blockOffset: bigint, txRoot: Uint8Array, blockEndOffset: bigint, poa: Poa): Promise<boolean> =>{
+		// validate_tx_path(BlockOffset, TXRoot, BlockEndOffset, POA) ->
+	// 	Validation =
+	// 		ar_merkle:validate_path(
+	// 			TXRoot,
+	// 			BlockOffset,
+	// 			BlockEndOffset,
+	// 			POA#poa.tx_path
+	// 		),
+	// 	case Validation of
+	// 		false -> false;
+	// 		{DataRoot, StartOffset, EndOffset} ->
+	// 			TXOffset = BlockOffset - StartOffset,
+	// 			validate_data_path(DataRoot, TXOffset, EndOffset - StartOffset, POA)
+	// 	end.
+
+	// merkleResult has a complicated type
+	let merkleTxPathResult: false | { 
+    offset: bigint;
+    leftBound: bigint;
+    rightBound: bigint;
+    chunkSize: bigint; //unused
+	} 
+	
+	merkleTxPathResult = await Merkle.validatePath(txRoot, blockOffset, 0n, blockEndOffset, poa.tx_path ) 
+	if(merkleTxPathResult === false){
+		return false
+	}
+	const { offset: dataRoot, leftBound: startOffset, rightBound: endOffset} = merkleTxPathResult
+
+	// validate_data_path(DataRoot, TXOffset, EndOffset, POA) ->
+	// 	Validation =
+	// 		ar_merkle:validate_path(
+	// 			DataRoot,
+	// 			TXOffset,
+	// 			EndOffset,
+	// 			POA#poa.data_path
+	// 		),
+	// 	case Validation of
+	// 		false -> false;
+	// 		{ChunkID, _, _} ->
+	// 			validate_chunk(ChunkID, POA)
+	// 	end.
+	let txOffset = blockOffset - startOffset
+	let newEndOffset = endOffset - startOffset
+	let merkleDataPathResult = await Merkle.validatePath(bigIntToBuffer256(dataRoot), txOffset, 0n, newEndOffset, poa.data_path)
+
+	if(merkleDataPathResult === false){
+		return false
+	}
+	const { offset: chunkId } = merkleDataPathResult
+
+	let generatedChunkId = await Arweave.crypto.hash(poa.chunk)
+
+	return chunkId === bufferToBigInt(generatedChunkId)
+
+	// validate_chunk(ChunkID, POA) ->
+	// 	ChunkID == ar_tx:generate_chunk_id(POA#poa.chunk).
+	//
+	// 	%% @doc Generate a chunk ID according to the specification found in the TX record.
+	// generate_chunk_id(Chunk) ->
+	// 	crypto:hash(sha256, Chunk).
+}
+
+const txGenerateChunkId = (chunk: Uint8Array) => {
+
+}
+
 
 export const getIndepHash = async (block: Block): Promise<Uint8Array> => {
 	/*
@@ -83,7 +219,6 @@ export const getIndepHash = async (block: Block): Promise<Uint8Array> => {
 		indep_hash_post_fork_2_0(BDS, Hash, Nonce) ->
 			ar_deep_hash:hash([BDS, Hash, Nonce]).
 	*/
-
 	let BDS: Uint8Array = await generateBlockDataSegment(block)
 
 	return await deepHash([

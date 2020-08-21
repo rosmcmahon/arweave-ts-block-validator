@@ -6,10 +6,10 @@ import {
 	generateBlockDataSegmentBase,
 	generateBlockDataSegment,
 	getIndepHash,
+	validatePoa,
 } from "./BlockValidateSlow"
 import { Block } from "./Block"
 import Arweave from "arweave"
-import blockIndex from '../test/block-index'
 
 
 describe('BlockValidator', () => {
@@ -17,16 +17,17 @@ describe('BlockValidator', () => {
 	let blockJson: BlockDTO
 	let block: Block
 	let prevBlock: Block
-	// let blockIndex: BlockIndexTuple[] = []
+	let blockIndex: BlockIndexTuple[] = []
 
   beforeAll(async () => {
-		const [bj1, bj2] = await Promise.all([
-			// axios.get(HOST_SERVER+'/hash_list', { // any random node
-			// 	headers: { "X-Block-Format": "3" }  // need to set this header to get tuples
-			// }),
+		const [bi, bj1, bj2] = await Promise.all([
+			axios.get(HOST_SERVER+'/hash_list', { // any random node
+				headers: { "X-Block-Format": "3" }  // need to set this header to get tuples
+			}),
 			axios.get(HOST_SERVER+'/block/height/509850'),
 			axios.get(HOST_SERVER+'/block/height/509849'),
 		])
+		blockIndex = bi.data
 		blockJson = bj1.data
 		block = new Block(blockJson)
 		prevBlock = new Block(bj2.data)
@@ -57,11 +58,21 @@ describe('BlockValidator', () => {
 		expect(new Uint8Array(hash)).toEqual(block.indep_hash) 
 	}, 20000)
 
-	it('validateBlockSlow should return true when given valid blocks', async () => {
-		expect(1)
-		res = await validateBlockSlow(block, prevBlock, blockIndex)
+	it('validatePoa returns true/false for valid/invalid Poa', async () => {
+		expect(2)
+		let good = await validatePoa(prevBlock.indep_hash, prevBlock.weave_size, blockIndex, block.poa) 
+		let badPoa = prevBlock.poa
+		let bad = await validatePoa(prevBlock.indep_hash, prevBlock.weave_size, blockIndex, badPoa)
+
+		expect(good).toEqual(true) 
+		expect(bad).toEqual(false) 
+	}, 20000)
+
+	// it('validateBlockSlow should return true when given valid blocks', async () => {
+	// 	expect(1)
+	// 	res = await validateBlockSlow(block, prevBlock, blockIndex)
 			
-		expect(res).toEqual({code:200, message:"Block slow check OK"})
-	})
+	// 	expect(res).toEqual({code:200, message:"Block slow check OK"})
+	// }, 20000)
 
 })

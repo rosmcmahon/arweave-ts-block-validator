@@ -4,9 +4,10 @@
   "description": "an arweave block validator, nothing more",
   "main": "dist/index.js",
   "scripts": {
-    "test": "jest --verbose",
-    "test:watch": "jest --watch --verbose",
-    "test:e2e": "jest --config ./test/jest-e2e.json --verbose"
+    "test": "jest --logHeapUsage --verbose",
+    "test:watch": "jest --watch --logHeapUsage --verbose",
+    "test:e2e": "jest --config ./test/jest-e2e.json --verbose",
+    "start": "node --max_old_space_size=8192 -r ts-node/register ./src/placeholder-entry-point.ts"
   },
   "author": "Ros McMahon <rosmcmahon@gmail.com>",
   "license": "GPL-3.0",

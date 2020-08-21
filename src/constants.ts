@@ -1,5 +1,5 @@
 // This is the host used for retieving block data - need to keep changing this as we are getting rate limted
-export var HOST_SERVER = 'https://arweave.net'
+export const HOST_SERVER = 'http://eu-west-1.arweave.net:1984'
 
 // NB: Setting the default difficulty high will cause TNT to fail.
 export const DEFAULT_DIFF = 8
@@ -25,4 +25,5 @@ export const FORK_HEIGHT_1_9 = (process.env.NODE_ENV !== "production") ? 0 : 315
 export const FORK_HEIGHT_2_0 = (process.env.NODE_ENV !== "production") ? 0 : 422250
 export const FORK_HEIGHT_2_2 = (process.env.NODE_ENV !== "production") ? 0 : 500000
 
+export const  POA_MIN_MAX_OPTION_DEPTH = 100
 

@@ -8,7 +8,7 @@ describe('Block', ()=>{
 	let blockJson: BlockDTO
 	let badBlockJson: any
 
-	beforeEach(async () => {
+	beforeAll(async () => {
 		blockJson = (await Axios.get(HOST_SERVER+'/block/current')).data
 		badBlockJson = Object.assign({})
 		delete badBlockJson.diff

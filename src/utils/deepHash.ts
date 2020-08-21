@@ -1,3 +1,7 @@
+/**
+ * This file is taken directly from https://github.com/ArweaveTeam/arweave-js/blob/2826fc8236e8dd995bccbca1429abd16c7bbb1bb/src/common/lib/deepHash.ts#L8
+ */
+
 import Arweave from 'arweave'
 
 // In TypeScript 3.7, could be written as a single type:
