@@ -7,6 +7,7 @@ import {
 	generateBlockDataSegment,
 	getIndepHash,
 	validatePoa,
+	poaFindChallengeBlock,
 } from "./BlockValidateSlow"
 import { Block } from "./Block"
 import Arweave from "arweave"
@@ -58,6 +59,15 @@ describe('BlockValidator', () => {
 		expect(new Uint8Array(hash)).toEqual(block.indep_hash) 
 	}, 20000)
 
+	it('poaFindChallengeBlock returns a valid block depth', async () => {
+		let testByte =  500000n
+
+		const {txRoot, blockBase, blockTop, bh} = poaFindChallengeBlock(testByte, blockIndex)
+
+		expect(testByte).toBeGreaterThan(blockBase) 
+		expect(testByte).toBeLessThanOrEqual(blockTop) 
+	}, 20000)
+
 	it('validatePoa returns true/false for valid/invalid Poa', async () => {
 		expect(2)
 		let good = await validatePoa(prevBlock.indep_hash, prevBlock.weave_size, blockIndex, block.poa) 
@@ -68,11 +78,11 @@ describe('BlockValidator', () => {
 		expect(bad).toEqual(false) 
 	}, 20000)
 
-	// it('validateBlockSlow should return true when given valid blocks', async () => {
-	// 	expect(1)
-	// 	res = await validateBlockSlow(block, prevBlock, blockIndex)
+	it('validateBlockSlow should return true when given valid blocks', async () => {
+		expect(1)
+		res = await validateBlockSlow(block, prevBlock, blockIndex)
 			
-	// 	expect(res).toEqual({code:200, message:"Block slow check OK"})
-	// }, 20000)
+		expect(res).toEqual({code:200, message:"Block slow check OK"})
+	}, 20000)
 
 })

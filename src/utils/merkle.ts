@@ -2,20 +2,22 @@
  * @see {@link https://github.com/ArweaveTeam/arweave/blob/fbc381e0e36efffa45d13f2faa6199d3766edaa2/apps/arweave/src/ar_merkle.erl}
  */
 import Arweave from "arweave";
+// import { concatBuffers } from "./utils";
 import { inspect } from "util";
-import { bigIntToBuffer256, bufferToBigInt, arrayCompare } from './buffer-utilities'
 
-// export interface Chunk {
-//   dataHash: Uint8Array;
-//   minByteRange: bigint;
-//   maxByteRange: bigint;
-// }
+const concatBuffers = Arweave.utils.concatBuffers
+
+export interface Chunk {
+  dataHash: Uint8Array;
+  minByteRange: number;
+  maxByteRange: number;
+}
 
 interface BranchNode {
   readonly id: Uint8Array;
   readonly type: "branch";
-  readonly byteRange: bigint;
-  readonly maxByteRange: bigint;
+  readonly byteRange: number;
+  readonly maxByteRange: number;
   readonly leftChild?: MerkelNode;
   readonly rightChild?: MerkelNode;
 }
@@ -25,124 +27,124 @@ interface LeafNode {
   readonly dataHash: Uint8Array;
   readonly type: "leaf";
 
-  readonly minByteRange: bigint;
-  readonly maxByteRange: bigint;
+  readonly minByteRange: number;
+  readonly maxByteRange: number;
 }
 
 export type MerkelNode = BranchNode | LeafNode;
 
-// export const MAX_CHUNK_SIZE = 256 * 1024;
-// export const MIN_CHUNK_SIZE = 32 * 1024;
+export const MAX_CHUNK_SIZE = 256 * 1024;
+export const MIN_CHUNK_SIZE = 32 * 1024;
 const NOTE_SIZE = 32;
 const HASH_SIZE = 32;
 
-// /**
-//  * Takes the input data and chunks it into (mostly) equal sized chunks.
-//  * The last chunk will be a bit smaller as it contains the remainder
-//  * from the chunking process.
-//  */
-// export async function chunkData(data: Uint8Array): Promise<Chunk[]> {
-//   let chunks: Chunk[] = [];
+/**
+ * Takes the input data and chunks it into (mostly) equal sized chunks.
+ * The last chunk will be a bit smaller as it contains the remainder
+ * from the chunking process.
+ */
+export async function chunkData(data: Uint8Array): Promise<Chunk[]> {
+  let chunks: Chunk[] = [];
 
-//   let rest = data;
-//   let cursor = 0n;
+  let rest = data;
+  let cursor = 0;
 
-//   while (rest.byteLength >= MAX_CHUNK_SIZE) {
-//     let chunkSize = MAX_CHUNK_SIZE;
+  while (rest.byteLength >= MAX_CHUNK_SIZE) {
+    let chunkSize = MAX_CHUNK_SIZE;
 
-//     // If the total bytes left will produce a chunk < MIN_CHUNK_SIZE,
-//     // then adjust the amount we put in this 2nd last chunk.
+    // If the total bytes left will produce a chunk < MIN_CHUNK_SIZE,
+    // then adjust the amount we put in this 2nd last chunk.
 
-//     let nextChunkSize = rest.byteLength - MAX_CHUNK_SIZE;
-//     if (nextChunkSize > 0 && nextChunkSize < MIN_CHUNK_SIZE) {
-//       chunkSize = Math.ceil(rest.byteLength / 2);
-//       // console.log(`Last chunk will be: ${nextChunkSize} which is below ${MIN_CHUNK_SIZE}, adjusting current to ${chunkSize} with ${rest.byteLength} left.`)
-//     }
+    let nextChunkSize = rest.byteLength - MAX_CHUNK_SIZE;
+    if (nextChunkSize > 0 && nextChunkSize < MIN_CHUNK_SIZE) {
+      chunkSize = Math.ceil(rest.byteLength / 2);
+      // console.log(`Last chunk will be: ${nextChunkSize} which is below ${MIN_CHUNK_SIZE}, adjusting current to ${chunkSize} with ${rest.byteLength} left.`)
+    }
 
-//     const chunk = rest.slice(0, chunkSize);
-//     const dataHash = await Arweave.crypto.hash(chunk);
-//     cursor += BigInt(chunk.byteLength);
-//     chunks.push({
-//       dataHash,
-//       minByteRange: cursor - BigInt(chunk.byteLength),
-//       maxByteRange: cursor
-//     });
-//     rest = rest.slice(chunkSize);
-//   }
+    const chunk = rest.slice(0, chunkSize);
+    const dataHash = await Arweave.crypto.hash(chunk);
+    cursor += chunk.byteLength;
+    chunks.push({
+      dataHash,
+      minByteRange: cursor - chunk.byteLength,
+      maxByteRange: cursor
+    });
+    rest = rest.slice(chunkSize);
+  }
 
-//   chunks.push({
-//     dataHash: await Arweave.crypto.hash(rest),
-//     minByteRange: cursor,
-//     maxByteRange: cursor + BigInt(rest.byteLength)
-//   });
+  chunks.push({
+    dataHash: await Arweave.crypto.hash(rest),
+    minByteRange: cursor,
+    maxByteRange: cursor + rest.byteLength
+  });
 
-//   return chunks;
-// }
+  return chunks;
+}
 
-// export async function generateLeaves(chunks: Chunk[]): Promise<LeafNode[]> {
-//   return Promise.all(
-//     chunks.map(
-//       async ({ dataHash, minByteRange, maxByteRange }): Promise<LeafNode> => {
-//         return {
-//           type: "leaf",
-//           id: await hash(
-//             await Promise.all([hash(dataHash), hash(bigIntToBuffer256(BigInt(maxByteRange)))])
-//           ),
-//           dataHash: dataHash,
-//           minByteRange,
-//           maxByteRange
-//         };
-//       }
-//     )
-//   );
-// }
+export async function generateLeaves(chunks: Chunk[]): Promise<LeafNode[]> {
+  return Promise.all(
+    chunks.map(
+      async ({ dataHash, minByteRange, maxByteRange }): Promise<LeafNode> => {
+        return {
+          type: "leaf",
+          id: await hash(
+            await Promise.all([hash(dataHash), hash(intToBuffer(maxByteRange))])
+          ),
+          dataHash: dataHash,
+          minByteRange,
+          maxByteRange
+        };
+      }
+    )
+  );
+}
 
-// /**
-//  * Builds an arweave merkle tree and gets the root hash for the given input.
-//  */
-// export async function computeRootHash(data: Uint8Array): Promise<Uint8Array> {
-//   const rootNode = await generateTree(data);
+/**
+ * Builds an arweave merkle tree and gets the root hash for the given input.
+ */
+export async function computeRootHash(data: Uint8Array): Promise<Uint8Array> {
+  const rootNode = await generateTree(data);
 
-//   return rootNode.id;
-// }
+  return rootNode.id;
+}
 
-// export async function generateTree(data: Uint8Array): Promise<MerkelNode> {
-//   const rootNode = await buildLayers(
-//     await generateLeaves(await chunkData(data))
-//   );
+export async function generateTree(data: Uint8Array): Promise<MerkelNode> {
+  const rootNode = await buildLayers(
+    await generateLeaves(await chunkData(data))
+  );
 
-//   return rootNode;
-// }
+  return rootNode;
+}
 
-// /**
-//  * Generates the data_root, chunks & proofs
-//  * needed for a transaction.
-//  *
-//  * This also checks if the last chunk is a zero-length
-//  * chunk and discards that chunk and proof if so.
-//  * (we do not need to upload this zero length chunk)
-//  *
-//  * @param data
-//  */
-// export async function generateTransactionChunks(data: Uint8Array) {
-//   const chunks = await chunkData(data);
-//   const leaves = await generateLeaves(chunks);
-//   const root = await buildLayers(leaves);
-//   const proofs = await generateProofs(root);
+/**
+ * Generates the data_root, chunks & proofs
+ * needed for a transaction.
+ *
+ * This also checks if the last chunk is a zero-length
+ * chunk and discards that chunk and proof if so.
+ * (we do not need to upload this zero length chunk)
+ *
+ * @param data
+ */
+export async function generateTransactionChunks(data: Uint8Array) {
+  const chunks = await chunkData(data);
+  const leaves = await generateLeaves(chunks);
+  const root = await buildLayers(leaves);
+  const proofs = await generateProofs(root);
 
-//   // Discard the last chunk & proof if it's zero length.
-//   const lastChunk = chunks.slice(-1)[0];
-//   if (lastChunk.maxByteRange - lastChunk.minByteRange === 0n) {
-//     chunks.splice(chunks.length - 1, 1);
-//     proofs.splice(proofs.length - 1, 1);
-//   }
+  // Discard the last chunk & proof if it's zero length.
+  const lastChunk = chunks.slice(-1)[0];
+  if (lastChunk.maxByteRange - lastChunk.minByteRange === 0) {
+    chunks.splice(chunks.length - 1, 1);
+    proofs.splice(proofs.length - 1, 1);
+  }
 
-//   return {
-//     data_root: root.id,
-//     chunks,
-//     proofs
-//   };
-// }
+  return {
+    data_root: root.id,
+    chunks,
+    proofs
+  };
+}
 
 /**
  * Starting with the bottom layer of leaf nodes, hash every second pair
@@ -150,144 +152,164 @@ const HASH_SIZE = 32;
  * and then recurse, building up the tree to it's root, where the
  * layer only consists of two items.
  */
-// export async function buildLayers(
-//   nodes: MerkelNode[],
-//   level = 0
-// ): Promise<MerkelNode> {
-//   // If there are only 2 nodes left, this is going to be the root node
-//   if (nodes.length < 2) {
-//     const root = await hashBranch(nodes[0], nodes[1]);
+export async function buildLayers(
+  nodes: MerkelNode[],
+  level = 0
+): Promise<MerkelNode> {
+  // If there are only 2 nodes left, this is going to be the root node
+  if (nodes.length < 2) {
+    const root = await hashBranch(nodes[0], nodes[1]);
 
-//     // console.log("Root layer", root);
+    // console.log("Root layer", root);
 
-//     return root;
-//   }
+    return root;
+  }
 
-//   const nextLayer: MerkelNode[] = [];
+  const nextLayer: MerkelNode[] = [];
 
-//   for (let i = 0; i < nodes.length; i += 2) {
-//     nextLayer.push(await hashBranch(nodes[i], nodes[i + 1]));
-//   }
+  for (let i = 0; i < nodes.length; i += 2) {
+    nextLayer.push(await hashBranch(nodes[i], nodes[i + 1]));
+  }
 
-//   // console.log("Layer", nextLayer);
+  // console.log("Layer", nextLayer);
 
-//   return buildLayers(nextLayer, level + 1);
-// }
+  return buildLayers(nextLayer, level + 1);
+}
 
-// /**
-//  * Recursively search through all branches of the tree,
-//  * and generate a proof for each leaf node.
-//  */
-// export function generateProofs(root: MerkelNode) {
-//   const proofs = resolveBranchProofs(root);
-//   if (!Array.isArray(proofs)) {
-//     return [proofs];
-//   }
-//   return arrayFlatten<Proof>(proofs);
-// }
+/**
+ * Recursively search through all branches of the tree,
+ * and generate a proof for each leaf node.
+ */
+export function generateProofs(root: MerkelNode) {
+  const proofs = resolveBranchProofs(root);
+  if (!Array.isArray(proofs)) {
+    return [proofs];
+  }
+  return arrayFlatten<Proof>(proofs);
+}
 
-// export interface Proof {
-//   offset: bigint;
-//   proof: Uint8Array;
-// }
+export interface Proof {
+  offset: number;
+  proof: Uint8Array;
+}
 
-// function resolveBranchProofs(
-//   node: MerkelNode,
-//   proof: Uint8Array = new Uint8Array(),
-//   depth = 0
-// ): Proof | Proof[] {
-//   if (node.type == "leaf") {
-//     return {
-//       offset: node.maxByteRange - 1n,
-//       proof: Arweave.utils.concatBuffers([
-//         proof,
-//         node.dataHash,
-//         bigIntToBuffer256(node.maxByteRange)
-//       ])
-//     };
-//   }
+function resolveBranchProofs(
+  node: MerkelNode,
+  proof: Uint8Array = new Uint8Array(),
+  depth = 0
+): Proof | Proof[] {
+  if (node.type == "leaf") {
+    return {
+      offset: node.maxByteRange - 1,
+      proof: concatBuffers([
+        proof,
+        node.dataHash,
+        intToBuffer(node.maxByteRange)
+      ])
+    };
+  }
 
-//   if (node.type == "branch") {
-//     const partialProof = Arweave.utils.concatBuffers([
-//       proof,
-//       node.leftChild!.id!,
-//       node.rightChild!.id!,
-//       bigIntToBuffer256(node.byteRange)
-//     ]);
-//     return [
-//       resolveBranchProofs(node.leftChild!, partialProof, depth + 1),
-//       resolveBranchProofs(node.rightChild!, partialProof, depth + 1)
-//     ] as [Proof, Proof];
-//   }
+  if (node.type == "branch") {
+    const partialProof = concatBuffers([
+      proof,
+      node.leftChild!.id!,
+      node.rightChild!.id!,
+      intToBuffer(node.byteRange)
+    ]);
+    return [
+      resolveBranchProofs(node.leftChild!, partialProof, depth + 1),
+      resolveBranchProofs(node.rightChild!, partialProof, depth + 1)
+    ] as [Proof, Proof];
+  }
 
-//   throw new Error(`Unexpected node type`);
-// }
+  throw new Error(`Unexpected node type`);
+}
 
-// export function arrayFlatten<T = any>(input: T[]): T[] {
-//   const flat: any[] = [];
+export function arrayFlatten<T = any>(input: T[]): T[] {
+  const flat: any[] = [];
 
-//   input.forEach(item => {
-//     if (Array.isArray(item)) {
-//       flat.push(...arrayFlatten(item));
-//     } else {
-//       flat.push(item);
-//     }
-//   });
+  input.forEach(item => {
+    if (Array.isArray(item)) {
+      flat.push(...arrayFlatten(item));
+    } else {
+      flat.push(item);
+    }
+  });
 
-//   return flat;
-// }
+  return flat;
+}
 
-// async function hashBranch(
-//   left: MerkelNode,
-//   right: MerkelNode
-// ): Promise<MerkelNode> {
-//   if (!right) {
-//     return left as BranchNode;
-//   }
-//   let branch = {
-//     type: "branch",
-//     id: await hash([
-//       await hash(left.id),
-//       await hash(right.id),
-//       await hash(bigIntToBuffer256(left.maxByteRange))
-//     ]),
-//     byteRange: left.maxByteRange,
-//     maxByteRange: right.maxByteRange,
-//     leftChild: left,
-//     rightChild: right
-//   } as BranchNode;
+async function hashBranch(
+  left: MerkelNode,
+  right: MerkelNode
+): Promise<MerkelNode> {
+  if (!right) {
+    return left as BranchNode;
+  }
+  let branch = {
+    type: "branch",
+    id: await hash([
+      await hash(left.id),
+      await hash(right.id),
+      await hash(intToBuffer(left.maxByteRange))
+    ]),
+    byteRange: left.maxByteRange,
+    maxByteRange: right.maxByteRange,
+    leftChild: left,
+    rightChild: right
+  } as BranchNode;
 
-//   return branch;
-// }
+  return branch;
+}
 
 async function hash(data: Uint8Array | Uint8Array[]) {
   if (Array.isArray(data)) {
     data = Arweave.utils.concatBuffers(data);
   }
 
-  return new Uint8Array(await Arweave.crypto.hash(data)); //defaults to SHA-256
+  return new Uint8Array(await Arweave.crypto.hash(data));
 }
 
+export function intToBuffer(note: number): Uint8Array {
+  const buffer = new Uint8Array(NOTE_SIZE);
+
+  for (var i = buffer.length - 1; i >= 0; i--) {
+    var byte = note % 256;
+    buffer[i] = byte;
+    note = (note - byte) / 256;
+  }
+
+  return buffer;
+}
+
+export function bufferToInt(buffer: Uint8Array): number {
+  let value = 0;
+  for (var i = 0; i < buffer.length; i++) {
+    value *= 256;
+    value += buffer[i];
+  }
+  return value;
+}
+
+export const arrayCompare = (a: Uint8Array | any[], b: Uint8Array | any[]) =>
+  a.every((value: any, index: any) => b[index] === value);
+
 export async function validatePath(
-  id: Uint8Array,
-  dest: bigint,
-  leftBound: bigint,
-  rightBound: bigint,
-  path: Uint8Array
+  id: Uint8Array, dest: number, leftBound: number, rightBound: number, path: Uint8Array
 ): Promise<
   | false
-  | { offset: bigint; leftBound: bigint; rightBound: bigint; chunkSize: bigint }
+  | { data: Uint8Array; offset: number; leftBound: number; rightBound: number; chunkSize: number }
 > {
-  if (rightBound <= 0n) {
+  if (rightBound <= 0) {
     return false;
   }
 
   if (dest >= rightBound) {
-    return validatePath(id, 0n, rightBound - 1n, rightBound, path);
+    return validatePath(id, 0, rightBound - 1, rightBound, path);
   }
 
-  if (dest < 0n) {
-    return validatePath(id, 0n, 0n, rightBound, path);
+  if (dest < 0) {
+    return validatePath(id, 0, 0, rightBound, path);
   }
 
   if (path.length == HASH_SIZE + NOTE_SIZE) {
@@ -304,7 +326,8 @@ export async function validatePath(
     let result = arrayCompare(id, pathDataHash);
     if (result) {
       return {
-        offset: rightBound - 1n,
+        data: pathData,
+        offset: rightBound - 1,
         leftBound: leftBound,
         rightBound: rightBound,
         chunkSize: rightBound - leftBound
@@ -319,7 +342,7 @@ export async function validatePath(
     left.length + right.length,
     left.length + right.length + NOTE_SIZE
   );
-  const offset = bufferToBigInt(offsetBuffer);
+  const offset = bufferToInt(offsetBuffer);
 
   const remainder = path.slice(
     left.length + right.length + offsetBuffer.length
@@ -337,14 +360,14 @@ export async function validatePath(
         left,
         dest,
         leftBound,
-        /*Math.min*/(rightBound < offset) ? rightBound : offset,
+        Math.min(rightBound, offset),
         remainder
       );
     }
     return await validatePath(
       right,
       dest,
-      /*Math.max*/(leftBound < offset) ? offset : leftBound,
+      Math.max(leftBound, offset),
       rightBound,
       remainder
     );
@@ -370,7 +393,7 @@ export async function debug(proof: Uint8Array, output = ""): Promise<string> {
     left.length + right.length,
     left.length + right.length + NOTE_SIZE
   );
-  const offset = bufferToBigInt(offsetBuffer);
+  const offset = bufferToInt(offsetBuffer);
 
   const remainder = proof.slice(
     left.length + right.length + offsetBuffer.length

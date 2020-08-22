@@ -5,3 +5,4 @@ export interface Poa {
 	data_path: Uint8Array // b64url encoded concatanation of hashes? // Path through the Merkle tree of chunk IDs to the required chunk.
 	chunk: Uint8Array // b64url encoded data // The required data chunk.
 }
+

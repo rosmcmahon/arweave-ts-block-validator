@@ -64,19 +64,19 @@ export class Block {
 		}
 	}
 
-	static async getByHeight(height: number): Promise<Block> {
-		let blockJson = (await Axios.get(HOST_SERVER+'/block/height/'+height)).data
-		return new Block(blockJson)
-	}
-	static async getByHash(hash: Uint8Array): Promise<Block> {
-		let b64url = Arweave.utils.bufferTob64Url(hash)
-		let blockJson = (await Axios.get(HOST_SERVER+'/block/hash/'+b64url)).data
-		return new Block(blockJson)
-	}
-	static async getCurrent(): Promise<Block> {
-		let blockJson = (await Axios.get(HOST_SERVER+'/block/current')).data
-		return new Block(blockJson)
-	}
+	// static async getByHeight(height: number): Promise<Block> {
+	// 	let blockJson = (await Axios.get(HOST_SERVER+'/block/height/'+height)).data
+	// 	return new Block(blockJson)
+	// }
+	// static async getByHash(hash: Uint8Array): Promise<Block> {
+	// 	let b64url = Arweave.utils.bufferTob64Url(hash)
+	// 	let blockJson = (await Axios.get(HOST_SERVER+'/block/hash/'+b64url)).data
+	// 	return new Block(blockJson)
+	// }
+	// static async getCurrent(): Promise<Block> {
+	// 	let blockJson = (await Axios.get(HOST_SERVER+'/block/current')).data
+	// 	return new Block(blockJson)
+	// }
 	
 
 }
