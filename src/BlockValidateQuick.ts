@@ -1,9 +1,10 @@
-import { ReturnCode, BlockDTO, Tag, BlockIndexTuple, Poa } from  './types'
-import { STORE_BLOCKS_AROUND_CURRENT, FORK_HEIGHT_1_7, FORK_HEIGHT_1_8 } from './constants'
+import { ReturnCode, BlockDTO, Tag, BlockIndexTuple } from  './types'
+import { STORE_BLOCKS_AROUND_CURRENT, FORK_HEIGHT_1_7, FORK_HEIGHT_1_8, MINING_HASH_ALG } from './constants'
 import { Block } from './Block'
+import {  } from './Poa'
 import { BigNumber } from 'bignumber.js'
-import deepHash from './utils/deepHash'
 import Arweave from 'arweave'
+import { bufferToBigInt, bigIntToBuffer256 } from './utils/buffer-utilities'
 
 
 
@@ -37,7 +38,11 @@ export const validateBlockQuick = (block: Block, currentHeight: number):ReturnCo
 	// 	ban_peer(ip)
 	// 	return {400, "Invalid Block Proof of Work"}
 	// }
-	/////////// The PoW appears to be dependent on the BDS, which we do not have for this part of validation
+	// if( ! mineValidate(bds, block.nonce, block.diff, block.height) ){
+	// 	// WE SHOULD ADDING IP TO BANNED_PEERS HERE!!
+	// 	return {code: 400, message: "Invalid Block Proof of Work"}
+	// }
+	
 
 	// 4. check_timestamp:
 	// if( ar_block:verify_timestamp(BShadow) === false){
@@ -71,7 +76,84 @@ export const validateBlockQuick = (block: Block, currentHeight: number):ReturnCo
 	return {code:200,message:"Block quick check OK"}
 }
 
+// const mineValidate = (bds: Uint8Array, nonce: Uint8Array, diffString: string, height: number) => {
+// 	/*
+// 		%% @doc Validate that a given hash/nonce satisfy the difficulty requirement.
+// 		validate(BDS, Nonce, Diff, Height) ->
+// 			BDSHash = ar_weave:hash(BDS, Nonce, Height),
+// 			case validate(BDSHash, Diff, Height) of
+// 				true ->
+// 					{valid, BDSHash};
+// 				false ->
+// 					{invalid, BDSHash}
+// 			end.
+// 	*/
+// 	let bdsHash = weaveHash(bds, nonce, height)
+
+// }
+
+// const weaveHash = (bds: Uint8Array, nonce: Uint8Array, height: number) => {
+// 	/*
+// 		%% @doc Create the hash of the next block in the list, given a previous block,
+// 		%% and the TXs and the nonce.
+// 		hash(BDS, Nonce, Height) ->
+// 			HashData = << Nonce/binary, BDS/binary >>,
+// 			case Height >= ar_fork:height_1_7() of
+// 				true ->
+// 					ar_randomx_state:hash(Height, HashData);
+// 				false ->
+// 					crypto:hash(?MINING_HASH_ALG, HashData)
+// 			end.
+// 	*/
+// 	let hashData = Arweave.utils.concatBuffers([nonce, bds])
+// 	if(height >= FORK_HEIGHT_1_7){
+// 		return randomxStateHash(height, hashData)
+// 	}
+// 	return Arweave.crypto.hash(hashData, MINING_HASH_ALG)	
+// }
+
+// const randomxStateHash = () => {
+
+// }
+
+// const mineValidate = (bdsHash: Uint8Array, diffString: string, height: number) => {
+// 	/*
+// 		%% @doc Validate that a given block data segment hash satisfies the difficulty requirement.
+// 		validate(BDSHash, Diff, Height) ->
+// 			case ar_fork:height_1_8() of
+// 				H when Height >= H ->
+// 					binary:decode_unsigned(BDSHash, big) > Diff;
+// 				_ ->
+// 					case BDSHash of
+// 						<< 0:Diff, _/bitstring >> ->
+// 							true;
+// 						_ ->
+// 							false
+// 					end
+// 			end.
+// 	 */
+// 	if(height >= FORK_HEIGHT_1_8){
+// 		let diff: bigint = BigInt(diffString)
+// 		let bdsBigint: bigint = bufferToBigInt(bdsHash)
+// 		return bdsBigint > diff
+// 	}
+	
+// 	let comparator = bdsHash.slice(0, diff)
+
+// }
+
 const blockDiffIsLessThanMinDiff = (blockDiffString: string, height: number): Boolean => {
+	/*
+		-ifdef(DEBUG).
+		min_randomx_difficulty() -> 1.
+		-else.
+		min_randomx_difficulty() -> min_sha384_difficulty() + ?RANDOMX_DIFF_ADJUSTMENT.
+		min_sha384_difficulty() -> 31.
+	*/
+	// Some constants used below. The adjustment of difficutly going from SHA-384 to RandomX
+	const RANDOMX_DIFF_ADJUSTMENT = -14
+	const MIN_SHA384_DIFFICULTY = 31
+	const MIN_RANDOMX_DIFFICULTY = MIN_SHA384_DIFFICULTY + RANDOMX_DIFF_ADJUSTMENT
 	/*
 	-ifdef(DEBUG).
 	min_difficulty(_Height) ->
@@ -92,6 +174,7 @@ const blockDiffIsLessThanMinDiff = (blockDiffString: string, height: number): Bo
 		end.
 	-endif.
 	*/
+	
 	let blockDiff = new BigNumber(blockDiffString)
 	let minDiff: BigNumber
 	// if(process.env.NODE_ENV !== "production"){
@@ -109,18 +192,6 @@ const blockDiffIsLessThanMinDiff = (blockDiffString: string, height: number): Bo
 	return blockDiff.isLessThan(minDiff)
 	// }
 }
-
-/*
-	-ifdef(DEBUG).
-	min_randomx_difficulty() -> 1.
-	-else.
-	min_randomx_difficulty() -> min_sha384_difficulty() + ?RANDOMX_DIFF_ADJUSTMENT.
-	min_sha384_difficulty() -> 31.
-*/
-// The adjustment of difficutly going from SHA-384 to RandomX.
-const RANDOMX_DIFF_ADJUSTMENT = -14
-const MIN_SHA384_DIFFICULTY = 31
-const MIN_RANDOMX_DIFFICULTY = MIN_SHA384_DIFFICULTY + RANDOMX_DIFF_ADJUSTMENT
 
 const switchToLinearDiff = (diff: BigNumber) => {
 	/*

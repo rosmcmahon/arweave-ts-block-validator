@@ -1,7 +1,7 @@
 import { Poa, BlockDTO, Tag } from './types'
-import { HOST_SERVER } from './constants'
 import Arweave from 'arweave'
 import Axios from 'axios'
+import deepHash from './utils/deepHash'
 
 /* Actual binary data for a Block. Usually translated from a Block JSON Data Transfer Object */
 export class Block {
@@ -77,6 +77,135 @@ export class Block {
 	// 	let blockJson = (await Axios.get(HOST_SERVER+'/block/current')).data
 	// 	return new Block(blockJson)
 	// }
-	
+}
 
+
+export const getIndepHash = async (block: Block): Promise<Uint8Array> => {
+	/*
+		indep_hash_post_fork_2_0(B) ->
+			BDS = ar_block:generate_block_data_segment(B),
+			indep_hash_post_fork_2_0(BDS, B#block.hash, B#block.nonce).
+
+		indep_hash_post_fork_2_0(BDS, Hash, Nonce) ->
+			ar_deep_hash:hash([BDS, Hash, Nonce]).
+	*/
+	let BDS: Uint8Array = await generateBlockDataSegment(block)
+
+	return await deepHash([
+		BDS, 
+		block.hash, 
+		block.nonce,
+	])
+}
+
+export const generateBlockDataSegment = async (block: Block): Promise<Uint8Array> => {
+	/*
+		%% @doc Generate a block data segment.
+		%% Block data segment is combined with a nonce to compute a PoW hash.
+		%% Also, it is combined with a nonce and the corresponding PoW hash
+		%% to produce the independent hash.
+		generate_block_data_segment(B) ->
+			generate_block_data_segment(
+				generate_block_data_segment_base(B),
+				B#block.hash_list_merkle,
+				#{
+					timestamp => B#block.timestamp,
+					last_retarget => B#block.last_retarget,
+					diff => B#block.diff,
+					cumulative_diff => B#block.cumulative_diff,
+					reward_pool => B#block.reward_pool,
+					wallet_list => B#block.wallet_list
+				}
+			).
+
+		generate_block_data_segment(BDSBase, BlockIndexMerkle, TimeDependentParams) ->
+			#{
+				timestamp := Timestamp,
+				last_retarget := LastRetarget,
+				diff := Diff,
+				cumulative_diff := CDiff,
+				reward_pool := RewardPool,
+				wallet_list := WalletListHash
+			} = TimeDependentParams,
+			ar_deep_hash:hash([
+				BDSBase,
+				integer_to_binary(Timestamp),
+				integer_to_binary(LastRetarget),
+				integer_to_binary(Diff),
+				integer_to_binary(CDiff),
+				integer_to_binary(RewardPool),
+				WalletListHash,
+				BlockIndexMerkle
+			]).
+	*/
+	let BDSBase: Uint8Array = await generateBlockDataSegmentBase(block)
+
+	return await deepHash([
+		BDSBase,
+		Arweave.utils.stringToBuffer(block.timestamp.toString()),
+		Arweave.utils.stringToBuffer(block.last_retarget.toString()),
+		Arweave.utils.stringToBuffer(block.diff.toString()),
+		Arweave.utils.stringToBuffer(block.cumulative_diff.toString()),
+		Arweave.utils.stringToBuffer(block.reward_pool.toString()),
+		block.wallet_list,
+		block.hash_list_merkle,
+	])
+}
+
+export const generateBlockDataSegmentBase = async (block: Block): Promise<Uint8Array> => {
+	/*
+		%% @doc Generate a hash, which is used to produce a block data segment
+		%% when combined with the time-dependent parameters, which frequently
+		%% change during mining - timestamp, last retarget timestamp, difficulty,
+		%% cumulative difficulty, miner's wallet, reward pool. Also excludes
+		%% the merkle root of the block index, which is hashed with the rest
+		%% as the last step, to allow verifiers to quickly validate PoW against
+		%% the current state.
+		generate_block_data_segment_base(B) ->
+			BDSBase = ar_deep_hash:hash([
+				integer_to_binary(B#block.height),
+				B#block.previous_block,
+				B#block.tx_root,
+				lists:map(fun ar_weave:tx_id/1, B#block.txs),
+				integer_to_binary(B#block.block_size),
+				integer_to_binary(B#block.weave_size),
+				case B#block.reward_addr of
+					unclaimed ->
+						<<"unclaimed">>;
+					_ ->
+						B#block.reward_addr
+				end,
+				ar_tx:tags_to_list(B#block.tags),
+				poa_to_list(B#block.poa)
+			]),
+			BDSBase.
+
+		poa_to_list(POA) ->
+			[
+				integer_to_binary(POA#poa.option),
+				POA#poa.tx_path,
+				POA#poa.data_path,
+				POA#poa.chunk
+			].
+	*/
+
+	return await deepHash([
+		Arweave.utils.stringToBuffer(block.height.toString()),
+		block.previous_block,
+		block.tx_root,
+		block.txs,	
+		Arweave.utils.stringToBuffer(block.block_size.toString()),
+		Arweave.utils.stringToBuffer(block.weave_size.toString()),
+		block.reward_addr, 						// N.B. this should be set to ` new Uint8Array("unclaimed") ` when we are mining
+		block.tags.map((tag: Tag) => [
+			Arweave.utils.stringToBuffer(tag.name), 		
+			Arweave.utils.stringToBuffer(tag.value),
+		]),
+		[
+			Arweave.utils.stringToBuffer(block.poa.option.toString()),
+			block.poa.tx_path,
+			block.poa.data_path,
+			block.poa.chunk,
+		]
+	])
 }

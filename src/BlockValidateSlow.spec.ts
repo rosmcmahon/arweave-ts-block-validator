@@ -1,16 +1,20 @@
-import { BlockDTO, ReturnCode, BlockIndexTuple } from "./types"
-import { STORE_BLOCKS_AROUND_CURRENT, HOST_SERVER } from './constants'
 import axios from 'axios'
+import Arweave from "arweave"
+import { BlockDTO, ReturnCode, BlockIndexTuple } from './types'
+import { STORE_BLOCKS_AROUND_CURRENT, HOST_SERVER } from './constants'
 import { 
 	validateBlockSlow, 
+} from './BlockValidateSlow'
+import { 
+	Block,	
 	generateBlockDataSegmentBase,
 	generateBlockDataSegment,
-	getIndepHash,
+	getIndepHash, 
+} from './Block'
+import {	
 	validatePoa,
 	poaFindChallengeBlock,
-} from "./BlockValidateSlow"
-import { Block } from "./Block"
-import Arweave from "arweave"
+} from './Poa'
 
 
 describe('BlockValidator', () => {
@@ -34,7 +38,7 @@ describe('BlockValidator', () => {
 		prevBlock = new Block(bj2.data)
   }, 60000)
 	
-	it('generateBlockDataSegmentBase returns a valid BSDBase hash', async () => {
+	it('Block.generateBlockDataSegmentBase returns a valid BSDBase hash', async () => {
 		expect(1)
 		let hash = await generateBlockDataSegmentBase(block)
 		let data = Arweave.utils.bufferTob64Url(hash)
@@ -43,7 +47,7 @@ describe('BlockValidator', () => {
 		//BDSBase for /height/509850 hash/si5OoWK-OcYt3LOEDCP2V4SWuj5X5n1LdoTh09-DtOppz_VkE72Cb0DCvygYMbW5
 	}, 20000)
 
-	it('generateBlockDataSegment returns a valid BSD hash', async () => {
+	it('Block.generateBlockDataSegment returns a valid BSD hash', async () => {
 		expect(1)
 		let hash = await generateBlockDataSegment(block)
 		let data = Arweave.utils.bufferTob64Url(hash)
@@ -52,14 +56,14 @@ describe('BlockValidator', () => {
 		//BDSBase for /height/509850 hash/si5OoWK-OcYt3LOEDCP2V4SWuj5X5n1LdoTh09-DtOppz_VkE72Cb0DCvygYMbW5
 	}, 20000)
 
-	it('getIndepHash returns a valid hash', async () => {
+	it('Block.getIndepHash returns a valid hash', async () => {
 		expect(1)
 		let hash: any = await getIndepHash(block)
 		
 		expect(new Uint8Array(hash)).toEqual(block.indep_hash) 
 	}, 20000)
 
-	it('poaFindChallengeBlock returns a valid block depth', async () => {
+	it('Poa.poaFindChallengeBlock returns a valid block depth', async () => {
 		let testByte =  500000n
 
 		const {txRoot, blockBase, blockTop, bh} = poaFindChallengeBlock(testByte, blockIndex)
@@ -68,7 +72,7 @@ describe('BlockValidator', () => {
 		expect(testByte).toBeLessThanOrEqual(blockTop) 
 	}, 20000)
 
-	it('validatePoa returns true/false for valid/invalid Poa', async () => {
+	it('Poa.validatePoa returns true/false for valid/invalid Poa', async () => {
 		expect(2)
 		let good = await validatePoa(prevBlock.indep_hash, prevBlock.weave_size, blockIndex, block.poa) 
 		let badPoa = prevBlock.poa
