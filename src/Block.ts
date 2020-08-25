@@ -11,8 +11,8 @@ export class Block {
 	previous_block: Uint8Array // indep_hash of the previous block in the weave.
 	timestamp: number // POSIX time of block discovery.
 	last_retarget: number // POSIX time of the last difficulty retarget.
-	diff: number  // Mining difficulty. Inaccurate floats must be used to match erlang maths
-	diffString: string  // Strings ust be used to match hashing
+	diff: number  // Mining difficulty. Floats must be used to match erlang maths
+	diffString: string  // Original string must be used to match hashing
 	height:number // How many blocks have passed since the genesis block.
 	hash: Uint8Array // PoW hash of the block must satisfy the block's difficulty.
 	indep_hash: Uint8Array // = [] // The hash of the block including `hash` and `nonce` the block identifier.
@@ -66,22 +66,7 @@ export class Block {
 			this.hash_list = dto.hash_list.map(b64url=>Arweave.utils.b64UrlToBuffer(b64url)) 
 		}
 	}
-
-	// static async getByHeight(height: number): Promise<Block> {
-	// 	let blockJson = (await Axios.get(HOST_SERVER+'/block/height/'+height)).data
-	// 	return new Block(blockJson)
-	// }
-	// static async getByHash(hash: Uint8Array): Promise<Block> {
-	// 	let b64url = Arweave.utils.bufferTob64Url(hash)
-	// 	let blockJson = (await Axios.get(HOST_SERVER+'/block/hash/'+b64url)).data
-	// 	return new Block(blockJson)
-	// }
-	// static async getCurrent(): Promise<Block> {
-	// 	let blockJson = (await Axios.get(HOST_SERVER+'/block/current')).data
-	// 	return new Block(blockJson)
-	// }
 }
-
 
 export const getIndepHash = async (block: Block): Promise<Uint8Array> => {
 	/*

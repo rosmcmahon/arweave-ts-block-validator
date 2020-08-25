@@ -27,13 +27,13 @@ export const validateBlockSlow = async (block: Block, prevBlock: Block, blockInd
 		return {code: 400, message: "Invalid PoA"}
 	}
 
-	// 4. difficulty: (DEPENDS ON RANDOMX?)
+	// 4. difficulty: 
 	// if(! ar_retarget:validate_difficulty(NewB, OldB) ) return false
 	if( ! retargetValidateDiff(block, prevBlock) ){
 		return {code: 400, message: "Invalid difficulty"}
 	}
 	
-	// 5. pow:
+	// 5. pow: (depends on RandomX)
 	// POW = ar_weave:hash( ar_block:generate_block_data_segment(NewB), Nonce, Height );
 	// if(! ar_mine:validate(POW, ar_poa:modify_diff(Diff, POA#poa.option), Height) ) return false
 	// if(! ar_block:verify_dep_hash(NewB, POW) ) return false
@@ -45,18 +45,18 @@ export const validateBlockSlow = async (block: Block, prevBlock: Block, blockInd
 		return {code: 400, message: "Invalid independent hash"}
 	}
 
-	// 7. wallet_list:
+	// 7. wallet_list: (depends on PoW?)
 	// get old block reward & height 
 	// UpdatedWallets = update_wallets(NewB, Wallets, RewardPool, Height)
 	// if(any wallets are invalid) return false
 
-	// 8. block_field_sizes:
+	// 8. block_field_sizes: (block field size checks, no dependencies)
 	// if(! ar_block:block_field_size_limit(NewB) ) return false
 
-	// 9. txs:
+	// 9. txs: (mempool? weaveState?)
 	// if( ar_tx_replay_pool:verify_block_txs === invalid ) return false
 
-	// 10. tx_root:
+	// 10. tx_root: 
 	// ar_block:verify_tx_root(NewB) === false; return false
 
 	// 11. weave_size:
