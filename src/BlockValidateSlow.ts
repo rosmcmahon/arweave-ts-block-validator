@@ -1,11 +1,12 @@
 import { ReturnCode, Tag, BlockIndexTuple } from  './types'
 import { bufferToBigInt, bigIntToBuffer256, arrayCompare } from './utils/buffer-utilities'
-import { POA_MIN_MAX_OPTION_DEPTH } from './constants'
+import { POA_MIN_MAX_OPTION_DEPTH, RETARGET_BLOCKS } from './constants'
 import { Block, getIndepHash } from './Block'
 import { Poa, validatePoa } from './Poa'
 import deepHash from './utils/deepHash'
 import Arweave from 'arweave'
 import * as Merkle from './utils/merkle'
+import { retargetValidateDiff } from './Retarget'
 
 export const validateBlockSlow = async (block: Block, prevBlock: Block, blockIndex: BlockIndexTuple[]): Promise<ReturnCode> => {
 	/* 13 steps for slow validation (ref: validate in ar_node_utils.erl) */
@@ -26,8 +27,11 @@ export const validateBlockSlow = async (block: Block, prevBlock: Block, blockInd
 		return {code: 400, message: "Invalid PoA"}
 	}
 
-	// 4. difficulty:
+	// 4. difficulty: (DEPENDS ON RANDOMX?)
 	// if(! ar_retarget:validate_difficulty(NewB, OldB) ) return false
+	if( ! retargetValidateDiff(block, prevBlock) ){
+		return {code: 400, message: "Invalid difficulty"}
+	}
 	
 	// 5. pow:
 	// POW = ar_weave:hash( ar_block:generate_block_data_segment(NewB), Nonce, Height );
@@ -66,4 +70,5 @@ export const validateBlockSlow = async (block: Block, prevBlock: Block, blockInd
 
 	return {code:200, message:"Block slow check OK"}
 }
+
 

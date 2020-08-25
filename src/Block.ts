@@ -1,7 +1,8 @@
-import { Poa, BlockDTO, Tag } from './types'
+import { BlockDTO, Tag } from './types'
 import Arweave from 'arweave'
 import Axios from 'axios'
 import deepHash from './utils/deepHash'
+import { Poa } from './Poa'
 
 /* Actual binary data for a Block. Usually translated from a Block JSON Data Transfer Object */
 export class Block {
@@ -10,7 +11,8 @@ export class Block {
 	previous_block: Uint8Array // indep_hash of the previous block in the weave.
 	timestamp: number // POSIX time of block discovery.
 	last_retarget: number // POSIX time of the last difficulty retarget.
-	diff: string  // The PoW difficulty - the number a PoW hash must be greater than.
+	diff: number  // Mining difficulty. Inaccurate floats must be used to match erlang maths
+	diffString: string  // Strings ust be used to match hashing
 	height:number // How many blocks have passed since the genesis block.
 	hash: Uint8Array // PoW hash of the block must satisfy the block's difficulty.
 	indep_hash: Uint8Array // = [] // The hash of the block including `hash` and `nonce` the block identifier.
@@ -33,7 +35,8 @@ export class Block {
 		this.previous_block = Arweave.utils.b64UrlToBuffer(dto.previous_block)
 		this.timestamp = dto.timestamp
 		this.last_retarget = dto.last_retarget
-		this.diff = dto.diff
+		this.diff = Number(dto.diff)
+		this.diffString = dto.diff
 		this.height = dto.height
 		this.hash = Arweave.utils.b64UrlToBuffer(dto.hash)
 		this.indep_hash = Arweave.utils.b64UrlToBuffer(dto.indep_hash)
@@ -144,7 +147,7 @@ export const generateBlockDataSegment = async (block: Block): Promise<Uint8Array
 		BDSBase,
 		Arweave.utils.stringToBuffer(block.timestamp.toString()),
 		Arweave.utils.stringToBuffer(block.last_retarget.toString()),
-		Arweave.utils.stringToBuffer(block.diff.toString()),
+		Arweave.utils.stringToBuffer(block.diffString),
 		Arweave.utils.stringToBuffer(block.cumulative_diff.toString()),
 		Arweave.utils.stringToBuffer(block.reward_pool.toString()),
 		block.wallet_list,
@@ -196,7 +199,7 @@ export const generateBlockDataSegmentBase = async (block: Block): Promise<Uint8A
 		block.txs,	
 		Arweave.utils.stringToBuffer(block.block_size.toString()),
 		Arweave.utils.stringToBuffer(block.weave_size.toString()),
-		block.reward_addr, 						// N.B. this should be set to ` new Uint8Array("unclaimed") ` when we are mining
+		block.reward_addr, // N.B. this should be `new Uint8Array("unclaimed")` when mining
 		block.tags.map((tag: Tag) => [
 			Arweave.utils.stringToBuffer(tag.name), 		
 			Arweave.utils.stringToBuffer(tag.value),

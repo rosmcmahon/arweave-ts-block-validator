@@ -1,9 +1,6 @@
 // This is the host used for retieving test block data 
 export const HOST_SERVER = 'http://eu-west-1.arweave.net:1984'
 
-// NB: Setting the default difficulty high will cause TNT to fail.
-export const DEFAULT_DIFF = 8
-
 export const STORE_BLOCKS_AROUND_CURRENT = 50
 
 // The maximum size of a single POST body.
@@ -29,3 +26,14 @@ export const  POA_MIN_MAX_OPTION_DEPTH = 100
 
 // The hashing algorithm used to verify that the weave has not been tampered with.
 export const MINING_HASH_ALG = 'sha384'
+
+// Mining difficulty and retarget constants
+export const DEFAULT_DIFF = 8
+export const RETARGET_BLOCKS = 10
+export const TARGET_TIME = 120
+export const RETARGET_TOLERANCE_FLOAT = 0.1
+// Max allowed difficulty multiplication and division factors.
+// The adjustment is lower when the difficulty goes down than when
+// it goes up to prevent forks - stalls are preferred over forks.
+export const DIFF_ADJUSTMENT_DOWN_LIMIT = 2
+export const DIFF_ADJUSTMENT_UP_LIMIT = 4
