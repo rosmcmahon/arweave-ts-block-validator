@@ -1,6 +1,6 @@
 import axios from 'axios'
 import Arweave from "arweave"
-import { BlockDTO, ReturnCode, BlockIndexTuple } from './types'
+import { BlockDTO, ReturnCode, BlockIndexTuple, Wallet_List } from './types'
 import { STORE_BLOCKS_AROUND_CURRENT, HOST_SERVER } from './constants'
 import { validateBlockJson, validateBlockQuick } from "./BlockValidateQuick"
 import { validateBlockSlow } from './BlockValidateSlow'
@@ -15,21 +15,24 @@ let blockJson: BlockDTO
 let block: Block
 let prevBlock: Block
 let prevPrevBlock: Block
-let blockIndex: BlockIndexTuple[] = []
+let blockIndex: BlockIndexTuple[]
+let prevBlockWalletList: Wallet_List[]
 
 beforeAll(async () => {
-	const [bi, bj1, bj2, bj3] = await Promise.all([
+	const [bi, bj1, bj2, bj2WalletList, bj3] = await Promise.all([
 		axios.get(HOST_SERVER+'/hash_list', { // any random node
 			headers: { "X-Block-Format": "3" }  // need to set this header to get tuples
 		}),
 		axios.get(HOST_SERVER+'/block/height/509850'),
 		axios.get(HOST_SERVER+'/block/height/509849'),
+		axios.get(HOST_SERVER+'/block/height/509849/wallet_list'),
 		axios.get(HOST_SERVER+'/block/height/509848'),
 	])
 	blockIndex = bi.data
 	blockJson = bj1.data
 	block = new Block(blockJson)
 	prevBlock = new Block(bj2.data)
+	prevBlockWalletList = (bj2WalletList.data)
 	prevPrevBlock = new Block(bj3.data)
 }, 60000)
 
@@ -135,6 +138,7 @@ describe('BlockValidateSlow tests', () => {
 		expect(noRetarget).toEqual(true)
 
 	}, 20000)
+
 
 	it('validateBlockSlow should return true when given valid blocks', async () => {
 		expect(1)

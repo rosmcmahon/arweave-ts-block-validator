@@ -1,4 +1,4 @@
-// This is the host used for retieving test block data 
+// This is the host used for retieving block data 
 export const HOST_SERVER = 'http://eu-west-1.arweave.net:1984'
 
 export const STORE_BLOCKS_AROUND_CURRENT = 50
@@ -37,3 +37,5 @@ export const RETARGET_TOLERANCE_FLOAT = 0.1
 // it goes up to prevent forks - stalls are preferred over forks.
 export const DIFF_ADJUSTMENT_DOWN_LIMIT = 2
 export const DIFF_ADJUSTMENT_UP_LIMIT = 4
+
+export const RANDOMX_KEY_SWAP_FREQ = 2000

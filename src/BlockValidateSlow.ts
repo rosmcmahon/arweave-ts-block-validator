@@ -1,12 +1,8 @@
 import { ReturnCode, Tag, BlockIndexTuple } from  './types'
-import { bufferToBigInt, bigIntToBuffer256, arrayCompare } from './utils/buffer-utilities'
-import { POA_MIN_MAX_OPTION_DEPTH, RETARGET_BLOCKS } from './constants'
-import { Block, getIndepHash } from './Block'
+import { Block, getIndepHash, generateBlockDataSegment } from './Block'
 import { Poa, validatePoa } from './Poa'
-import deepHash from './utils/deepHash'
-import Arweave from 'arweave'
-import * as Merkle from './utils/merkle'
 import { retargetValidateDiff } from './Retarget'
+import { weaveHash } from './Weave'
 
 export const validateBlockSlow = async (block: Block, prevBlock: Block, blockIndex: BlockIndexTuple[]): Promise<ReturnCode> => {
 	/* 13 steps for slow validation (ref: validate in ar_node_utils.erl) */
@@ -37,6 +33,8 @@ export const validateBlockSlow = async (block: Block, prevBlock: Block, blockInd
 	// POW = ar_weave:hash( ar_block:generate_block_data_segment(NewB), Nonce, Height );
 	// if(! ar_mine:validate(POW, ar_poa:modify_diff(Diff, POA#poa.option), Height) ) return false
 	// if(! ar_block:verify_dep_hash(NewB, POW) ) return false
+	let pow = await weaveHash((await generateBlockDataSegment(block)), block.nonce, block.height)
+	console.log('PoW', pow)
 
 	// 6. independent_hash:
 	// if( ar_weave:indep_hash_post_fork_2_0(NewB) != NewB#block.indep_hash ) return false
