@@ -10,7 +10,7 @@ export const mineRandomxInitLight = async (key: Uint8Array) => {
 	let vm: Object
 	console.log("Starting RandomX virtual machine...");
 	try{
-		vm = await Randomx.RandomxVM("key", ["jit"/*, "largepages"*/]);
+		vm = await Randomx.RandomxVM(key.buffer, ["jit"/*, "largepages"*/]);
 	}
 	catch(e){
 		console.log(e);
@@ -21,5 +21,5 @@ export const mineRandomxInitLight = async (key: Uint8Array) => {
 
 export const mineRandomxHashLight = async (vm: Object, data: Uint8Array) => {
 	console.log("Start hashing...");
-	return await Randomx.hash(vm, "data");
+	return new Uint8Array( await Randomx.hash(vm, data.buffer) )
 }
