@@ -4,6 +4,8 @@ import Arweave from 'arweave'
 import Axios from 'axios'
 import deepHash from './utils/deepHash'
 import { Poa } from './Poa'
+import { arrayCompare } from './utils/buffer-utilities'
+
 
 /* Actual binary data for a Block. Usually translated from a Block JSON Data Transfer Object */
 export class Block {
@@ -212,4 +214,8 @@ export const generateBlockDataSegmentBase = async (block: Block): Promise<Uint8A
 			block.poa.chunk,
 		]
 	])
+}
+
+export const blockVerifyDepHash = (block: Block, pow: Uint8Array) => {
+	return arrayCompare(block.hash, pow)
 }

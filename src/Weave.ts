@@ -6,6 +6,6 @@ export const weaveHash = async (bds: Uint8Array, nonce: Uint8Array, height: numb
 	if(height < FORK_HEIGHT_1_7){
 		throw new Error("weaveHash below FORK_HEIGHT_1_7 not implemented")
 	}
-	const hashData = Arweave.utils.concatBuffers([nonce,bds])
+	const hashData = Arweave.utils.concatBuffers([nonce, bds])
 	return await randomxStateHash(height, hashData)
 }

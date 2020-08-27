@@ -2,7 +2,8 @@ import Arweave from "arweave"
 import { BlockIndexTuple } from "./types"
 import * as Merkle from './utils/merkle'
 import { bufferToBigInt } from './utils/buffer-utilities'
-import { POA_MIN_MAX_OPTION_DEPTH } from './constants'
+import { POA_MIN_MAX_OPTION_DEPTH, ALTERNATIVE_POA_DIFF_MULTIPLIER } from './constants'
+import { difficultyMultiplyDiff } from "./Difficulty"
 
 export interface Poa {
 	// A succinct proof of access to a recall byte found in a TX.
@@ -154,3 +155,12 @@ export const poaFindChallengeBlock = (byte: bigint, blockIndex: BlockIndexTuple[
 	throw new Error('recallByte out of bounds of weave')
 }
 
+export const poaModifyDiff = (diff: number, option: number) => {
+	if(option === 1){
+		return diff
+	}
+	return poaModifyDiff(
+		difficultyMultiplyDiff(diff, ALTERNATIVE_POA_DIFF_MULTIPLIER),
+		option - 1
+	)
+}

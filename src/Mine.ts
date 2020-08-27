@@ -1,6 +1,7 @@
 import { FORK_HEIGHT_1_7, FORK_HEIGHT_1_8 } from './constants'
 import { switchToLinearDiff } from './Retarget'
 import Arweave from 'arweave'
+import { bufferToInt } from './utils/buffer-utilities'
 
 /*
 	-ifdef(DEBUG).
@@ -52,74 +53,24 @@ export const mineMaxDiff = () => {
 }
 
 
-
-/**
- * Below depends on being supplied a BDS & the RandomX library.
- * Will follow this up this later
- */
-
-// const mineValidate = (bds: Uint8Array, nonce: Uint8Array, diffString: string, height: number) => {
-// 	/*
-// 		%% @doc Validate that a given hash/nonce satisfy the difficulty requirement.
-// 		validate(BDS, Nonce, Diff, Height) ->
-// 			BDSHash = ar_weave:hash(BDS, Nonce, Height),
-// 			case validate(BDSHash, Diff, Height) of
-// 				true ->
-// 					{valid, BDSHash};
-// 				false ->
-// 					{invalid, BDSHash}
-// 			end.
-// 	*/
-// 	let bdsHash = weaveHash(bds, nonce, height)
-
-// }
-
-// const weaveHash = (bds: Uint8Array, nonce: Uint8Array, height: number) => {
-// 	/*
-// 		%% @doc Create the hash of the next block in the list, given a previous block,
-// 		%% and the TXs and the nonce.
-// 		hash(BDS, Nonce, Height) ->
-// 			HashData = << Nonce/binary, BDS/binary >>,
-// 			case Height >= ar_fork:height_1_7() of
-// 				true ->
-// 					ar_randomx_state:hash(Height, HashData);
-// 				false ->
-// 					crypto:hash(?MINING_HASH_ALG, HashData)
-// 			end.
-// 	*/
-// 	let hashData = Arweave.utils.concatBuffers([nonce, bds])
-// 	if(height >= FORK_HEIGHT_1_7){
-// 		return randomxStateHash(height, hashData)
-// 	}
-// 	return Arweave.crypto.hash(hashData, MINING_HASH_ALG)	
-// }
-
-// const randomxStateHash = () => {
-
-// }
-
-// const mineValidate = (bdsHash: Uint8Array, diffString: string, height: number) => {
-// 	/*
-// 		%% @doc Validate that a given block data segment hash satisfies the difficulty requirement.
-// 		validate(BDSHash, Diff, Height) ->
-// 			case ar_fork:height_1_8() of
-// 				H when Height >= H ->
-// 					binary:decode_unsigned(BDSHash, big) > Diff;
-// 				_ ->
-// 					case BDSHash of
-// 						<< 0:Diff, _/bitstring >> ->
-// 							true;
-// 						_ ->
-// 							false
-// 					end
-// 			end.
-// 	 */
-// 	if(height >= FORK_HEIGHT_1_8){
-// 		let diff: bigint = BigInt(diffString)
-// 		let bdsBigint: bigint = bufferToBigInt(bdsHash)
-// 		return bdsBigint > diff
-// 	}
-	
-// 	let comparator = bdsHash.slice(0, diff)
-
-// }
+export const mineValidate = (bdsHash: Uint8Array, diff: number, height: number) => {
+	/*
+		%% @doc Validate that a given block data segment hash satisfies the difficulty requirement.
+		validate(BDSHash, Diff, Height) ->
+			case ar_fork:height_1_8() of
+				H when Height >= H ->
+					binary:decode_unsigned(BDSHash, big) > Diff;
+				_ ->
+					case BDSHash of
+						<< 0:Diff, _/bitstring >> ->
+							true;
+						_ ->
+							false
+					end
+			end.
+	 */
+	if(height < FORK_HEIGHT_1_8){
+		throw new Error("mineValidate not implemented for < FORK_HEIGHT_1_8")
+	}
+	return bufferToInt(bdsHash) > diff
+}

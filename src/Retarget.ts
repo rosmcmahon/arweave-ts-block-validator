@@ -37,6 +37,7 @@ export const retargetValidateDiff = (block: Block, prevBlock: Block) => {
 			)
 		).
 	*/
+	debugger;
 	if( (block.height % RETARGET_BLOCKS === 0) && (block.height !== 0) ){
 		let calculated = retargetCalculateDifficulty(
 			prevBlock.diff,
@@ -84,17 +85,10 @@ const retargetCalculateDifficulty = (oldDiff: number, ts: number, last: number, 
 			Diff.
 	*/
 	// should we care about FIXED_DIFF ?
-	if(height === FORK_HEIGHT_1_7){
-		throw new Error("switchToRandomxForkDiff not implemented for block.height===FORK_HEIGHT_1_7")
+	if(height <= FORK_HEIGHT_1_8){
+		throw new Error('retargetCalculateDifficulty for height <= FORK_HEIGHT_1_8 not implemented')
 	}
-	if(height === FORK_HEIGHT_1_8){
-		return switchToLinearDiff(oldDiff) // we shouldn't reach this code anyhow
-	}
-	if(height > FORK_HEIGHT_1_8){
-		return calculateDifficultyLinear(oldDiff, ts, last, height)
-	}
-	//calculate_difficulty1 height < FORK_HEIGHT_1_8
-	throw new Error('calculate_difficulty1 for height below FORK_HEIGHT_1_8 not implemented')
+	return calculateDifficultyLinear(oldDiff, ts, last, height)
 }
 
 

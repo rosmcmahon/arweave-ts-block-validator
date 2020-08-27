@@ -38,4 +38,8 @@ export const RETARGET_TOLERANCE_FLOAT = 0.1
 export const DIFF_ADJUSTMENT_DOWN_LIMIT = 2
 export const DIFF_ADJUSTMENT_UP_LIMIT = 4
 
+// The number of blocks that pass before RandomX key changes again
 export const RANDOMX_KEY_SWAP_FREQ = 2000
+
+// How much harder it should be to mine each subsequent alternative POA option.
+export const ALTERNATIVE_POA_DIFF_MULTIPLIER = 2

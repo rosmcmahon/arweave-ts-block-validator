@@ -5,8 +5,10 @@ import { STORE_BLOCKS_AROUND_CURRENT, HOST_SERVER } from './constants'
 import { validateBlockJson, validateBlockQuick } from "./BlockValidateQuick"
 import { validateBlockSlow } from './BlockValidateSlow'
 import { Block,	generateBlockDataSegmentBase, generateBlockDataSegment, getIndepHash } from './Block'
-import { validatePoa, poaFindChallengeBlock } from './Poa'
+import { validatePoa, poaFindChallengeBlock, poaModifyDiff } from './Poa'
 import { retargetValidateDiff } from './Retarget'
+import { weaveHash } from './Weave'
+import { mineValidate } from './Mine'
 
 /* *** Initialise all test data, and use in one big test file *** */
 
@@ -55,7 +57,6 @@ describe('BlockValidateQuick Tests', () => {
   }, 20000)
 
   it('validateBlockJson should return true for a valid block', async () => {
-    expect(1)
 		res = validateBlockJson(blockJson, blockJson.height-1 )
 		
     expect(res).toEqual({code: 200, message: "Block Json OK."})
@@ -70,7 +71,6 @@ describe('BlockValidateQuick Tests', () => {
 	})
 	
 	it('validateBlockQuick should return false for difficulty too low', async () => {
-		expect(1)
 		let test = Object.assign({},block)
 		test.diff = -100                                                    //!! TODO: what are good/bad difficulties?
     res = validateBlockQuick(test, block.height-1 )
@@ -81,7 +81,7 @@ describe('BlockValidateQuick Tests', () => {
 describe('Block tests', () => {
 
 	it('generateBlockDataSegmentBase returns a valid BSDBase hash', async () => {
-		expect(1)
+		expect.assertions(1)
 		let hash = await generateBlockDataSegmentBase(block)
 		let data = Arweave.utils.bufferTob64Url(hash)
 		
@@ -90,7 +90,7 @@ describe('Block tests', () => {
 	}, 20000)
 
 	it('generateBlockDataSegment returns a valid BSD hash', async () => {
-		expect(1)
+		expect.assertions(1)
 		let hash = await generateBlockDataSegment(block)
 		let data = Arweave.utils.bufferTob64Url(hash)
 
@@ -99,7 +99,7 @@ describe('Block tests', () => {
 	}, 20000)
 
 	it('getIndepHash returns a valid hash', async () => {
-		expect(1)
+		expect.assertions(1)
 		let hash: any = await getIndepHash(block)
 		
 		expect(new Uint8Array(hash)).toEqual(block.indep_hash) 
@@ -118,14 +118,14 @@ describe('PoA tests', () => {
 	}, 20000)
 	
 	it('Poa.validatePoa returns true/false for valid/invalid Poa', async () => {
-		expect(2)
+		expect.assertions(2)
 		let good = await validatePoa(prevBlock.indep_hash, prevBlock.weave_size, blockIndex, block.poa) 
 		let badPoa = prevBlock.poa
 		let bad = await validatePoa(prevBlock.indep_hash, prevBlock.weave_size, blockIndex, badPoa)
 	
 		expect(good).toEqual(true) 
 		expect(bad).toEqual(false) 
-	}, 20000)
+	})
 })
 
 describe('BlockValidateSlow tests', () => {
@@ -139,9 +139,23 @@ describe('BlockValidateSlow tests', () => {
 
 	}, 20000)
 
+	it('validate that pow satisfies mining difficulty and hash matches RandomX hash', async () =>{
+		expect.assertions(3)
+		let pow1 = await weaveHash((await generateBlockDataSegment(block)), block.nonce, block.height)
+		let test1 = mineValidate(pow1, poaModifyDiff(block.diff, block.poa.option), block.height)
+		expect(pow1).toEqual(block.hash)
+		expect(test1).toEqual(true)
+		
+		let pow2 = await weaveHash((await generateBlockDataSegment(prevBlock)), prevBlock.nonce, prevBlock.height)
+		expect(pow2).toEqual(prevBlock.hash)
+		//check different poa.option
+		let test2 = mineValidate(pow2, poaModifyDiff(prevBlock.diff, prevBlock.poa.option), prevBlock.height)
+		expect(test2).toEqual(true)
+	})
+
 
 	it('validateBlockSlow should return true when given valid blocks', async () => {
-		expect(1)
+		expect.assertions(1)
 		res = await validateBlockSlow(block, prevBlock, blockIndex)
 			
 		expect(res).toEqual({code:200, message:"Block slow check OK"})
