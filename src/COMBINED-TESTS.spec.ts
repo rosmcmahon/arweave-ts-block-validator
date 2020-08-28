@@ -132,13 +132,6 @@ describe('PoA tests', () => {
 
 describe('BlockValidateSlow tests', () => {
 
-	it('validateBlockSlow should return true when given valid blocks', async () => {
-		expect.assertions(1)
-		res = await validateBlockSlow(block, prevBlock, blockIndex)
-			
-		expect(res).toEqual({code:200, message:"Block slow check OK"})
-	}, 20000)
-
 	it('Retarget.retargetValidateDiff Validate that a new block has an appropriate difficulty.', async () =>{
 		let retarget = retargetValidateDiff(block, prevBlock)
 		let noRetarget = retargetValidateDiff(prevBlock, prevPrevBlock)
@@ -151,15 +144,23 @@ describe('BlockValidateSlow tests', () => {
 	it('validate that pow satisfies mining difficulty and hash matches RandomX hash', async () =>{
 		expect.assertions(4)
 		let pow1 = await weaveHash((await generateBlockDataSegment(block)), block.nonce, block.height)
+		//check poa.option = 1
 		let test1 = mineValidate(pow1, poaModifyDiff(block.diff, block.poa.option), block.height)
 		expect(pow1).toEqual(block.hash)
 		expect(test1).toEqual(true)
 		
 		let pow2 = await weaveHash((await generateBlockDataSegment(prevBlock)), prevBlock.nonce, prevBlock.height)
-		expect(pow2).toEqual(prevBlock.hash)
-		//check different poa.option
+		//check poa.option = 2
 		let test2 = mineValidate(pow2, poaModifyDiff(prevBlock.diff, prevBlock.poa.option), prevBlock.height)
+		expect(pow2).toEqual(prevBlock.hash)
 		expect(test2).toEqual(true)
 	})
+
+	it('validateBlockSlow should return true when given valid blocks', async () => {
+		expect.assertions(1)
+		res = await validateBlockSlow(block, prevBlock, blockIndex, prevBlockWalletList)
+			
+		expect(res).toEqual({code:200, message:"Block slow check OK"})
+	}, 20000)
 
 })

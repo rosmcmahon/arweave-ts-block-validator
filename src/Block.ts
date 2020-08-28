@@ -26,7 +26,7 @@ export class Block {
 	wallet_list: Uint8Array // = unset
 	reward_addr: Uint8Array // Address to credit mining reward or the unclaimed atom.
 	tags: Tag[]  // Miner specified tags to store with the block.
-	reward_pool: number  // Current pool of mining rewards.
+	reward_pool: bigint  // Current pool of mining rewards.
 	weave_size: number  // Current size of the weave in bytes (counts tx data fields).
 	block_size: number  // The total size of transaction data inside this block.
 	cumulative_diff: string  // The sum of average number of hashes tried to mine blocks over all previous blocks.
@@ -54,7 +54,7 @@ export class Block {
 				value: Arweave.utils.b64UrlToString(tag.value) 
 			}
 		})
-		this.reward_pool = dto.reward_pool
+		this.reward_pool = BigInt(dto.reward_pool)
 		this.weave_size = dto.weave_size
 		this.block_size = dto.block_size
 		this.cumulative_diff = dto.cumulative_diff

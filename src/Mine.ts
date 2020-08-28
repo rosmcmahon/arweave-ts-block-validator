@@ -36,11 +36,11 @@ export const mineMinDiff = (height: number) => {
 			end.
 		-endif.
 	*/
-	let minDiff: number
+	let minDiff: bigint
 	if(height >= FORK_HEIGHT_1_7){
-		minDiff = MIN_RANDOMX_DIFFICULTY
+		minDiff = BigInt(MIN_RANDOMX_DIFFICULTY)
 	}else{
-		minDiff = MIN_SHA384_DIFFICULTY
+		minDiff = BigInt(MIN_SHA384_DIFFICULTY)
 	}
 	if(height >= FORK_HEIGHT_1_8){
 		minDiff = switchToLinearDiff(minDiff)
@@ -49,7 +49,7 @@ export const mineMinDiff = (height: number) => {
 }
 
 export const mineMaxDiff = () => {
-	return 2 ** 256
+	return 2n ** 256n
 }
 
 
