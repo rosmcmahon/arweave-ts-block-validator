@@ -12,6 +12,8 @@ import { mineValidate } from './Mine'
 
 /* *** Initialise all test data, and use in one big test file *** */
 
+let theValue = 0.6391666666666667
+
 let res: ReturnCode
 let blockJson: BlockDTO
 let block: Block
@@ -130,6 +132,13 @@ describe('PoA tests', () => {
 
 describe('BlockValidateSlow tests', () => {
 
+	it('validateBlockSlow should return true when given valid blocks', async () => {
+		expect.assertions(1)
+		res = await validateBlockSlow(block, prevBlock, blockIndex)
+			
+		expect(res).toEqual({code:200, message:"Block slow check OK"})
+	}, 20000)
+
 	it('Retarget.retargetValidateDiff Validate that a new block has an appropriate difficulty.', async () =>{
 		let retarget = retargetValidateDiff(block, prevBlock)
 		let noRetarget = retargetValidateDiff(prevBlock, prevPrevBlock)
@@ -140,7 +149,7 @@ describe('BlockValidateSlow tests', () => {
 	}, 20000)
 
 	it('validate that pow satisfies mining difficulty and hash matches RandomX hash', async () =>{
-		expect.assertions(3)
+		expect.assertions(4)
 		let pow1 = await weaveHash((await generateBlockDataSegment(block)), block.nonce, block.height)
 		let test1 = mineValidate(pow1, poaModifyDiff(block.diff, block.poa.option), block.height)
 		expect(pow1).toEqual(block.hash)
@@ -152,13 +161,5 @@ describe('BlockValidateSlow tests', () => {
 		let test2 = mineValidate(pow2, poaModifyDiff(prevBlock.diff, prevBlock.poa.option), prevBlock.height)
 		expect(test2).toEqual(true)
 	})
-
-
-	it('validateBlockSlow should return true when given valid blocks', async () => {
-		expect.assertions(1)
-		res = await validateBlockSlow(block, prevBlock, blockIndex)
-			
-		expect(res).toEqual({code:200, message:"Block slow check OK"})
-	}, 20000)
 
 })

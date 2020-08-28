@@ -143,7 +143,7 @@ const calculateDifficultyLinear = (oldDiff: number, ts: number, last: number, he
 		DIFF_ADJUSTMENT_DOWN_LIMIT
 	)
 
-	let diffInverse = (maxDiff - oldDiff) * effectiveTimeDelta //big integer * small float. accuracy issue
+	let diffInverse = Math.floor((maxDiff - oldDiff) * effectiveTimeDelta) //big integer * small float. accuracy issue
 
 	return betweenNums(
 		maxDiff - diffInverse,

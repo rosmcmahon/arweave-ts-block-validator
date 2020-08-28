@@ -4,7 +4,7 @@
   "description": "an arweave block validator, nothing more",
   "main": "dist/index.js",
   "scripts": {
-    "test": "node --inspect-brk ./node_modules/jest/bin/jest.js --runInBand --logHeapUsage --verbose",
+    "test": "jest --logHeapUsage --verbose",
     "test:watch": "jest --watch --logHeapUsage --verbose",
     "test:clear": "jest --clearCache --verbose",
     "test:e2e": "jest --config ./test/jest-e2e.json --verbose",
