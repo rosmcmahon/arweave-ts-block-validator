@@ -28,15 +28,29 @@ export const  POA_MIN_MAX_OPTION_DEPTH = 100
 export const MINING_HASH_ALG = 'sha384'
 
 // Mining difficulty and retarget constants
-export const DEFAULT_DIFF = 8
-export const RETARGET_BLOCKS = 10
-export const TARGET_TIME = 120
-export const RETARGET_TOLERANCE_FLOAT = 0.1
+// The adjustment of difficutly going from SHA-384 to RandomX
+// export const RANDOMX_DIFF_ADJUSTMENT = -14n //removed
+// export const MIN_SHA384_DIFFICULTY = 31n //removed
+//export const MIN_RANDOMX_DIFFICULTY = 17n // MIN_SHA384_DIFFICULTY + RANDOMX_DIFF_ADJUSTMENT //removed
+export const DEFAULT_DIFF = 8n
+export const RETARGET_BLOCKS = 10n
+export const TARGET_TIME = 120n
+// export const RETARGET_TOLERANCE_FLOAT = 0.1 // removed
+// *New mining difficulty constants *
+export const RETARGET_BLOCK_TIME = 1200n // RETARGET_BLOCKS * TARGET_TIME
+export const NEW_RETARGET_TOLERANCE = 120n // RETARGET_TOLERANCE_FLOAT * RETARGET_BLOCKS_BY_TARGET_TIME
+// MAX_DIFF is 2^256
+export const MAX_DIFF = 115792089237316195423570985008687907853269984665640564039457584007913129639936n
+// MIN_DIFF_FORK_1_8 comes from erlang function ar_retarget:switch_to_linear_diff(MIN_RANDOMX_DIFFICULTY), which is a constant = ( (2n ** 256n) - (2n ** (256n - MIN_RANDOMX_DIFFICULTY)) ) 
+export const MIN_DIFF_FORK_1_8 = 115791205813783806231406193359937536394012070923692126229978523204812483330048n
+
 // Max allowed difficulty multiplication and division factors.
 // The adjustment is lower when the difficulty goes down than when
 // it goes up to prevent forks - stalls are preferred over forks.
-export const DIFF_ADJUSTMENT_DOWN_LIMIT = 2
-export const DIFF_ADJUSTMENT_UP_LIMIT = 4
+export const DIFF_ADJUSTMENT_DOWN_LIMIT = 2n
+export const DIFF_ADJUSTMENT_UP_LIMIT = 4n
+export const DIFF_ADJUSTMENT_UP_COMPARATOR = 300n // RETARGET_BLOCK_TIME/DIFF_ADJUSTMENT_UP_LIMIT
+export const DIFF_ADJUSTMENT_DOWN_COMPARATOR = 2400n // RETARGET_BLOCK_TIME * DIFF_ADJUSTMENT_DOWN_LIMIT
 
 // The number of blocks that pass before RandomX key changes again
 export const RANDOMX_KEY_SWAP_FREQ = 2000

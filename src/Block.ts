@@ -12,8 +12,8 @@ export class Block {
 	/* member variables, for more details see BlockJson.ts */
 	nonce: Uint8Array // The nonce used to satisfy the PoW problem when mined.
 	previous_block: Uint8Array // indep_hash of the previous block in the weave.
-	timestamp: number // POSIX time of block discovery.
-	last_retarget: number // POSIX time of the last difficulty retarget.
+	timestamp: bigint // POSIX time of block discovery.
+	last_retarget: bigint // POSIX time of the last difficulty retarget.
 	diff: bigint  // Mining difficulty. Floats must be used to match erlang maths
 	diffString: string  // Original string must be used to match hashing
 	height:number // How many blocks have passed since the genesis block.
@@ -36,8 +36,8 @@ export class Block {
 	constructor(dto: BlockDTO){
 		this.nonce = Arweave.utils.b64UrlToBuffer(dto.nonce)
 		this.previous_block = Arweave.utils.b64UrlToBuffer(dto.previous_block)
-		this.timestamp = dto.timestamp
-		this.last_retarget = dto.last_retarget
+		this.timestamp = BigInt(dto.timestamp)
+		this.last_retarget = BigInt(dto.last_retarget)
 		this.diff = BigInt(dto.diff)
 		this.diffString = dto.diff
 		this.height = dto.height

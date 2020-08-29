@@ -8,7 +8,7 @@ import { Block,	generateBlockDataSegmentBase, generateBlockDataSegment, getIndep
 import { validatePoa, poaFindChallengeBlock, poaModifyDiff } from './Poa'
 import { retargetValidateDiff } from './Retarget'
 import { weaveHash } from './Weave'
-import { mineValidate, mineMinDiff } from './Mine'
+import { mineValidate } from './Mine'
 
 /* *** Initialise all test data, and use in one big test file *** */
 

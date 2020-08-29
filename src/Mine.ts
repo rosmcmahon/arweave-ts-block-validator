@@ -1,20 +1,8 @@
-import { FORK_HEIGHT_1_7, FORK_HEIGHT_1_8 } from './constants'
-import { switchToLinearDiff } from './Retarget'
-import Arweave from 'arweave'
+import { FORK_HEIGHT_1_8, MIN_DIFF_FORK_1_8 } from './constants'
 import { bufferToInt } from './utils/buffer-utilities'
 
-/*
-	-ifdef(DEBUG).
-	min_randomx_difficulty() -> 1.
-	-else.
-	min_randomx_difficulty() -> min_sha384_difficulty() + ?RANDOMX_DIFF_ADJUSTMENT.
-	min_sha384_difficulty() -> 31.
-*/
-// The adjustment of difficutly going from SHA-384 to RandomX
-const RANDOMX_DIFF_ADJUSTMENT = -14
-const MIN_SHA384_DIFFICULTY = 31
-const MIN_RANDOMX_DIFFICULTY = MIN_SHA384_DIFFICULTY + RANDOMX_DIFF_ADJUSTMENT
 
+/* N.B. THIS FUNCTION HAS BEEN REPLACED BY CONSTANT MIN_DIFF_FORK_1_8 */
 export const mineMinDiff = (height: number) => {
 	/*
 		-ifdef(DEBUG).
@@ -36,21 +24,18 @@ export const mineMinDiff = (height: number) => {
 			end.
 		-endif.
 	*/
-	let minDiff: bigint
-	if(height >= FORK_HEIGHT_1_7){
-		minDiff = BigInt(MIN_RANDOMX_DIFFICULTY)
-	}else{
-		minDiff = BigInt(MIN_SHA384_DIFFICULTY)
+	if(height < FORK_HEIGHT_1_8){
+		throw new Error("mineMinDiff Block height unsupported")
 	}
-	if(height >= FORK_HEIGHT_1_8){
-		minDiff = switchToLinearDiff(minDiff)
-	}
-	return minDiff
+	// return switchToLinearDiff(MIN_RANDOMX_DIFFICULTY)
+	// return ( (2n ** 256n) - (2n ** (256n - MIN_RANDOMX_DIFFICULTY)) ) 
+	return MIN_DIFF_FORK_1_8 
 }
 
-export const mineMaxDiff = () => {
-	return 2n ** 256n
-}
+//// Replaced by constant MAX_DIFF
+// export const mineMaxDiff = () => {
+// 	return 2n ** 256n
+// }
 
 
 export const mineValidate = (bdsHash: Uint8Array, diff: number, height: number) => {
