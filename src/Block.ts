@@ -14,7 +14,7 @@ export class Block {
 	previous_block: Uint8Array // indep_hash of the previous block in the weave.
 	timestamp: number // POSIX time of block discovery.
 	last_retarget: number // POSIX time of the last difficulty retarget.
-	diff: number  // Mining difficulty. Floats must be used to match erlang maths
+	diff: bigint  // Mining difficulty. Floats must be used to match erlang maths
 	diffString: string  // Original string must be used to match hashing
 	height:number // How many blocks have passed since the genesis block.
 	hash: Uint8Array // PoW hash of the block must satisfy the block's difficulty.
@@ -27,9 +27,9 @@ export class Block {
 	reward_addr: Uint8Array // Address to credit mining reward or the unclaimed atom.
 	tags: Tag[]  // Miner specified tags to store with the block.
 	reward_pool: bigint  // Current pool of mining rewards.
-	weave_size: number  // Current size of the weave in bytes (counts tx data fields).
+	weave_size: bigint  // Current size of the weave in bytes (counts tx data fields).
 	block_size: number  // The total size of transaction data inside this block.
-	cumulative_diff: string  // The sum of average number of hashes tried to mine blocks over all previous blocks.
+	cumulative_diff: bigint  // The sum of average number of hashes tried to mine blocks over all previous blocks.
 	hash_list_merkle: Uint8Array //The merkle root of the block index.
 	poa: Poa // The access proof used to generate this block.
 
@@ -38,7 +38,7 @@ export class Block {
 		this.previous_block = Arweave.utils.b64UrlToBuffer(dto.previous_block)
 		this.timestamp = dto.timestamp
 		this.last_retarget = dto.last_retarget
-		this.diff = Number(dto.diff)
+		this.diff = BigInt(dto.diff)
 		this.diffString = dto.diff
 		this.height = dto.height
 		this.hash = Arweave.utils.b64UrlToBuffer(dto.hash)
@@ -55,9 +55,9 @@ export class Block {
 			}
 		})
 		this.reward_pool = BigInt(dto.reward_pool)
-		this.weave_size = dto.weave_size
+		this.weave_size = BigInt(dto.weave_size)
 		this.block_size = dto.block_size
-		this.cumulative_diff = dto.cumulative_diff
+		this.cumulative_diff = BigInt(dto.cumulative_diff)
 		this.hash_list_merkle = Arweave.utils.b64UrlToBuffer(dto.hash_list_merkle)
 		this.poa = {
 			option: parseInt(dto.poa.option),

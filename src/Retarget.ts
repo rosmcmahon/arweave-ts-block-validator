@@ -57,7 +57,7 @@ export const retargetValidateDiff = (block: Block, prevBlock: Block) => {
 	return (block.diff===prevBlock.diff) && (block.last_retarget===prevBlock.last_retarget)
 }
 
-const retargetCalculateDifficulty = (oldDiff: number, ts: number, last: number, height: number) => {
+const retargetCalculateDifficulty = (oldDiff: bigint, ts: number, last: number, height: number) => {
 	/*
 		%% @doc Calculate a new difficulty, given an old difficulty and the period
 		%% since the last retarget occcurred.
@@ -99,7 +99,7 @@ const retargetCalculateDifficulty = (oldDiff: number, ts: number, last: number, 
 }
 
 
-const calculateDifficultyLinear = (oldDiff: number, ts: number, last: number, height: number) => {
+const calculateDifficultyLinear = (oldDiff: bigint, ts: number, last: number, height: number): bigint => {
 	/*
 		calculate_difficulty_linear(OldDiff, TS, Last, Height) ->
 		case Height >= ar_fork:height_1_9() of
@@ -136,39 +136,44 @@ const calculateDifficultyLinear = (oldDiff: number, ts: number, last: number, he
 					)
 			end.
 	*/
-	BigNumber.config({ DECIMAL_PLACES: 30 }) // no point overdoing it, get rounded to Number in the end
+	BigNumber.config({ DECIMAL_PLACES: 50 }) // no point overdoing it, get rounded to Number in the end
 	let targetTime = new BigNumber(RETARGET_BLOCKS * TARGET_TIME) //1200n
 	let actualTime = new BigNumber(ts - last)
-	let timeDelta = actualTime.dividedBy(targetTime) // ~120
+	let timeDelta = actualTime.dividedBy(targetTime)
 	let oneMinusTimeDelta = new BigNumber(1).minus(timeDelta)
 	if( oneMinusTimeDelta.abs().isLessThan(RETARGET_TOLERANCE_FLOAT) ){
 		return oldDiff
 	}
-	let maxDiff: BigNumber = new BigNumber( mineMaxDiff().toString() ) //2^256
-	let minDiff: BigNumber = new BigNumber( mineMinDiff(height).toString() ) //similar size
+	let maxDiff: bigint = mineMaxDiff() //2^256
+	let minDiff: bigint = mineMinDiff(height) //similar size
 	let effectiveTimeDelta: BigNumber = betweenBigNums( // 0.25 <= effectiveTimeDelta <= 2
 		timeDelta,
-		new BigNumber(1).dividedBy(new BigNumber(DIFF_ADJUSTMENT_UP_LIMIT)),
+		new BigNumber(1).dividedBy(DIFF_ADJUSTMENT_UP_LIMIT),
 		new BigNumber(DIFF_ADJUSTMENT_DOWN_LIMIT)
 	)
 
 	// let diffInverse = Math.floor((maxDiff - oldDiff) * effectiveTimeDelta) //big integer * small float. accuracy issue
-	let diffInverse: BigNumber = (maxDiff.minus(oldDiff)).multipliedBy(effectiveTimeDelta)
-	diffInverse = diffInverse.dividedToIntegerBy(1) //Math.floor aka erlang.trunc
+	let diffInverse: BigNumber = new BigNumber((maxDiff - oldDiff).toString()).multipliedBy(effectiveTimeDelta)
+	//diffInverse = diffInverse.dividedToIntegerBy(1) //Math.floor aka erlang.trunc
+	let diffInverseInt = BigInt( diffInverse.toFixed(0) )
 
-	let returnValue = betweenBigNums(
-		maxDiff.minus(diffInverse),
+	let returnValue = betweenBigInts(
+		maxDiff - diffInverseInt,
 		minDiff,
 		maxDiff
 	)
-
-	console.debug('returnValue', returnValue.toFixed())
 		
-	return returnValue.toNumber()
+	return returnValue
 }
 
 const betweenBigNums = (num: BigNumber, min: BigNumber, max: BigNumber) =>{
 	if(num.isLessThan(min)) return min 
 	if(num.isGreaterThan(max)) return max
+	return num
+}
+
+const betweenBigInts = (num: bigint, min: bigint, max: bigint) =>{
+	if(num < min) return min 
+	if(num > max) return max
 	return num
 }

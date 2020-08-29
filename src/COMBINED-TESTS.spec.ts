@@ -8,7 +8,7 @@ import { Block,	generateBlockDataSegmentBase, generateBlockDataSegment, getIndep
 import { validatePoa, poaFindChallengeBlock, poaModifyDiff } from './Poa'
 import { retargetValidateDiff } from './Retarget'
 import { weaveHash } from './Weave'
-import { mineValidate } from './Mine'
+import { mineValidate, mineMinDiff } from './Mine'
 
 /* *** Initialise all test data, and use in one big test file *** */
 
@@ -74,7 +74,8 @@ describe('BlockValidateQuick Tests', () => {
 	
 	it('validateBlockQuick should return false for difficulty too low', async () => {
 		let test = Object.assign({},block)
-		test.diff = -100                                                    //!! TODO: what are good/bad difficulties?
+		test.diff = 1n		                                               //!! TODO: what are good/bad difficulties?
+
     res = validateBlockQuick(test, block.height-1 )
     expect(res).toEqual({code: 400, message: "Difficulty too low"})
 	})

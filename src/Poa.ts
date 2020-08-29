@@ -14,12 +14,12 @@ export interface Poa {
 }
 
 /* Validate a complete proof of access object */
-export const validatePoa = async (prevIndepHash: Uint8Array, prevWeaveSize: number, blockIndex: BlockIndexTuple[], poa: Poa): Promise<Boolean> => {
+export const validatePoa = async (prevIndepHash: Uint8Array, prevWeaveSize: bigint, blockIndex: BlockIndexTuple[], poa: Poa): Promise<Boolean> => {
 	
 	/* some quick returns */
 	
 	// The weave does not have data yet.
-	if(prevWeaveSize === 0) return true
+	if(prevWeaveSize === 0n) return true
 
 	// validate(_H, _WS, BI, #poa{ option = Option })
 	// 		when Option > length(BI) andalso Option > ?MIN_MAX_OPTION_DEPTH ->
@@ -40,7 +40,7 @@ export const validatePoa = async (prevIndepHash: Uint8Array, prevWeaveSize: numb
 	// if(prevWeaveSize===0){ // we have already returned true for this condition
 	// 	recallByte = 0n
 	// }else{
-	let recallByte: bigint = bufferToBigInt(await poaMultiHash(prevIndepHash, poa.option)) % BigInt(prevWeaveSize)
+	let recallByte: bigint = bufferToBigInt(await poaMultiHash(prevIndepHash, poa.option)) % prevWeaveSize
 
 	const {txRoot, blockBase, blockTop, bh} = poaFindChallengeBlock(recallByte, blockIndex)
 
@@ -155,7 +155,7 @@ export const poaFindChallengeBlock = (byte: bigint, blockIndex: BlockIndexTuple[
 	throw new Error('recallByte out of bounds of weave')
 }
 
-export const poaModifyDiff = (diff: number, option: number) => {
+export const poaModifyDiff = (diff: bigint, option: number) => {
 	if(option === 1){
 		return diff
 	}

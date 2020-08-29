@@ -29,7 +29,6 @@ export const validateBlockSlow = async (block: Block, prevBlock: Block, blockInd
 	if( ! retargetValidateDiff(block, prevBlock) ){
 		return {code: 400, message: "Invalid difficulty"}
 	}
-	console.debug('diffString',block.diffString)
 	
 	// 5. pow: (depends on RandomX)
 	// POW = ar_weave:hash( ar_block:generate_block_data_segment(NewB), Nonce, Height );
@@ -53,11 +52,8 @@ export const validateBlockSlow = async (block: Block, prevBlock: Block, blockInd
 	// 7. wallet_list: (depends on PoW?)
 	// UpdatedWallets = update_wallets(NewB, Wallets, RewardPool, Height)
 	// if(any wallets are invalid) return false
-	// let updatedWallets = nodeUtilsUpdateWallets(block, walletList, prevBlock.reward_pool, prevBlock.height)
+	let updatedWallets = nodeUtilsUpdateWallets(block, walletList, prevBlock.reward_pool, prevBlock.height)
 
-	// const nodeUtilsUpdateWallets = (block: Block, wallets: Wallet_List[], rewardPool: bigint, height: number) => {
-	
-	// }
 	
 	// 8. block_field_sizes: (block field size checks, no dependencies)
 	// if(! ar_block:block_field_size_limit(NewB) ) return false
@@ -80,3 +76,6 @@ export const validateBlockSlow = async (block: Block, prevBlock: Block, blockInd
 	return {code:200, message:"Block slow check OK"}
 }
 
+const nodeUtilsUpdateWallets = (block: Block, wallets: Wallet_List[], rewardPool: bigint, height: number) => {
+	
+}
