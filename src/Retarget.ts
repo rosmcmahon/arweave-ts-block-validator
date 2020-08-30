@@ -47,7 +47,13 @@ export const retargetValidateDiff = (block: Block, prevBlock: Block) => {
 			console.debug('block.diff', block.diff)
 			console.debug('calculated', calculated)
 		}
-		return block.diff === calculated
+		/**
+		 * There is still a rounding error in the incoming block.diff, so at worst (the limit
+		 * at Diff approaches MAX_DIFF) only first 53 significant bits are accurate in the 
+		 * block.diff. In order to account for this rounding error we round the block.diff and
+		 * calculated diff to JS Numbers. This will be fixed in a later fork.
+		 */
+		return Number(block.diff) === Number(calculated)
 	}
 	return (block.diff===prevBlock.diff) && (block.last_retarget===prevBlock.last_retarget)
 }
