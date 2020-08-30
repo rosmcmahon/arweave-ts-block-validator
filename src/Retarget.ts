@@ -36,7 +36,7 @@ export const retargetValidateDiff = (block: Block, prevBlock: Block) => {
 			)
 		).
 	*/
-	if( ((BigInt(block.height) % RETARGET_BLOCKS) === 0n) && (block.height !== 0) ){
+	if( (block.height % Number(RETARGET_BLOCKS) === 0) && (block.height !== 0) ){
 		let calculated = retargetCalculateDifficulty(
 			prevBlock.diff,
 			block.timestamp,
@@ -140,23 +140,27 @@ const calculateDifficultyLinear = (oldDiff: bigint, ts: bigint, last: bigint, he
 	 * abs(1 - TimeDelta) < ?RETARGET_TOLERANCE
 	 * , where TimeDelta = ActualTime/(RETARGET_BLOCKS * TARGET_TIME),
 	 * RETARGET_TOLERANCE = 0.1,
-	 * and RETARGET_BLOCK_TIME = 120 * 10 = 1200.
+	 * and RETARGET_BLOCK_TIME = RETARGET_BLOCKS * TARGET_TIME = 120 * 10 = 1200
 	 * substituting:
 	 * TimeDelta becomes = ActualTime / RETARGET_BLOCKS * TARGET_TIME = actualTime / RETARGET_BLOCK_TIME
 	 * ar_mine:max_difficulty becomes a bigint const 2^256 = MAX_DIFF (see constants.ts for all new constants)
 	 * MIN_DIFF_FORK_1_8 is a constant above FORK_HEIGHT_1_8 = MIN_DIFF_FORK_1_8
+	 * erlang:trunc is done automatically when we are using bigints as integer division is performed
 	 * 
-	 * We will also inline the first "between(num, min, max)" clamp function to avoid culmulative calculations 
-	 * and rounding errors associated
+	 * We will also inline the "between(num, min, max)" clamp functions to give a tree of 
+	 * "between" clamp functions which avoids culmulative calculations and rounding errors associated
 	 * 
 	 * (Level 1 etd) (Level 2 diffInverse)
-	 *                       
-	 *              / between2
-	 *             /        
-	 * between ------ between2 
-	 *             \        
-	 *              \ between2 
-	 *                      
+	 *                       / return
+	 *             / between - return
+	 *            /          \ return
+	 *          /        / return
+	 * between - beween - return
+	 *          \        \ return
+	 *           \          / return
+	 *            \ between - return
+	 *                      \ return
+	 * 
 	 * Further algebra will be explained in the comments below
 	 */
 
@@ -182,49 +186,57 @@ const calculateDifficultyLinear = (oldDiff: bigint, ts: bigint, last: bigint, he
 	// ** N.B. renaming effectiveTimeDelta => etd **
 	// inlining betweenNums function, and substituting:
 	// etd = timeDelta = actualTime / RETARGET_BLOCK_TIME
-	let maxLessOldDiff = MAX_DIFF - oldDiff
 	let diffInverse: bigint
-	const between2 = (diff: bigint) => {
-		if(diff < MIN_DIFF_FORK_1_8){
+	const between2 = (maxLessDiffInverse: bigint) => {
+		if(maxLessDiffInverse < MIN_DIFF_FORK_1_8){
 			return MIN_DIFF_FORK_1_8
 		}
-		if(diff > MAX_DIFF){
+		if(maxLessDiffInverse > MAX_DIFF){
 			return MAX_DIFF
 		}
-		return diff
+		return maxLessDiffInverse
 	}
 	
 	//// between level 1, minimum branch:
 	// if( actualTime/RETARGET_BLOCK_TIME < (1/DIFF_ADJUSTMENT_UP_LIMIT) ) becomes
 	// if( actualTime < (RETARGET_BLOCK_TIME/DIFF_ADJUSTMENT_UP_LIMIT) ) precalculated becomes
 	if( actualTime < DIFF_ADJUSTMENT_UP_COMPARATOR){
-		// means etd = 1/DIFF_ADJUSTMENT_UP_LIMIT
-		// diffInverse = Math.floor((maxDiff - oldDiff) * etd)
+		// means etd = 1/DIFF_ADJUSTMENT_UP_LIMIT = 1 / 4
+		// in this particular case DIFF_ADJUSTMENT_UP_LIMIT = 4, we can avoid div operator by bitshifting
+		// diffInverse = (maxDiff - oldDiff) * etd)
 		// substituting:
-		// diffInverse = Math.floor( (maxLessOldDiff) * (1/DIFF_ADJUSTMENT_UP_LIMIT) ) becomes
-		// diffInverse = Math.floor( (maxLessOldDiff / DIFF_ADJUSTMENT_UP_LIMIT) )
-		// in this particular case DIFF_ADJUSTMENT_UP_LIMIT = 4, we can avoid / operator by bitshifting
+		// (MaxDiff - DiffInverse) = MAX_DIFF - ( (MAX_DIFF - oldDiff) * (1/4) ) becomes
+		// (MaxDiff - DiffInverse) = MAX_DIFF - ( (MAX_DIFF - oldDiff) / 4 ) becomes
+		// (MaxDiff - DiffInverse) = { (4 * MAX_DIFF) - (MAX_DIFF - oldDiff) } / 4  becomes
+		// (MaxDiff - DiffInverse) = { (3 * MAX_DIFF) + oldDiff) } / 4  
+		let maxLessDiffInverse = ( (3n * MAX_DIFF) + oldDiff ) >> 2n
 
-		diffInverse = (maxLessOldDiff >> 2n) //binary division by 4 as DIFF_ADJUSTMENT_UP_LIMIT = 4
-		return between2(diffInverse)
+		return between2(maxLessDiffInverse)
 	}
 	
 	//// between level 1, maximum branch:
 	// if ( (actualTime/RETARGET_BLOCK_TIME) < DIFF_ADJUSTMENT_DOWN_LIMIT ) becomes
 	// if ( actualTime < (RETARGET_BLOCK_TIME * DIFF_ADJUSTMENT_DOWN_LIMIT) ) becomes
 	if(actualTime > DIFF_ADJUSTMENT_DOWN_COMPARATOR){
-		// mean etd = 2 // DIFF_ADJUSTMENT_DOWN_LIMIT
-		// diffInverse = Math.floor((maxDiff - oldDiff) * etd)
-
-		diffInverse = (maxLessOldDiff * DIFF_ADJUSTMENT_DOWN_LIMIT)
-		return between2(diffInverse)
+		// mean etd = 2 // <- DIFF_ADJUSTMENT_DOWN_LIMIT
+		// diffInverse = Math.floor((maxDiff - oldDiff) * etd) 
+		// substituting:
+		// diffInverse = ((maxDiff - oldDiff) * 2) 
+		// MaxDiff - DiffInverse = MAX_DIFF - ((MAX_DIFF - oldDiff) * 2)
+		// MaxDiff - DiffInverse = MAX_DIFF - (2*MAX_DIFF) + (2*oldDiff) 
+		// MaxDiff - DiffInverse = (2*oldDiff) - MAX_DIFF
+		let maxLessDiffInverse = 2n * oldDiff - MAX_DIFF
+		return between2(maxLessDiffInverse)
 	}
 	// between level 1, etd is in-beween min/max
 	// means etd = actualTime / RETARGET_BLOCK_TIME
 	// diffInverse = Math.floor((maxDiff - oldDiff) * etd), substituting gives
 	// diffInverse = Math.floor((maxDiff - oldDiff) * actualTime / RETARGET_BLOCK_TIME), rearranging gives
-	// diffInverse = Math.floor( ((maxDiff - oldDiff)/RETARGET_BLOCK_TIME) * actualTime ) 
-	// this is better as bigint division better than introducing floats
-	diffInverse = (maxLessOldDiff/RETARGET_BLOCK_TIME) * actualTime
-	return between2(diffInverse)
+	// MaxDiff - DiffInverse = MAX_DIFF - ((maxDiff - oldDiff) * actualTime / RETARGET_BLOCK_TIME)
+	//  = { RETARGET_BLOCK_TIME*MAX_DIFF - (MAX_DIFF - oldDiff) * actualTime } / RETARGET_BLOCK_TIME
+	//  = { RETARGET_BLOCK_TIME*MAX_DIFF - (actualTime*MAX_DIFF + actualTime* oldDiff)  } / RETARGET_BLOCK_TIME
+	//  = { (RETARGET_BLOCK_TIME - actualTime)*MAX_DIFF + actualTime * oldDiff)  } / RETARGET_BLOCK_TIME
+	let maxLessDiffInverse = (  (RETARGET_BLOCK_TIME - actualTime)*MAX_DIFF + actualTime*oldDiff  ) / RETARGET_BLOCK_TIME
+	// where RETARGET_BLOCK_TIME and actualTime are small integers
+	return between2(maxLessDiffInverse)
 }
