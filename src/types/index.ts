@@ -1,6 +1,6 @@
 export * from './BlockDTO'
 export * from './ReturnCode'
-export * from './Tx'
+export * from './TxDTO'
 export * from './Tag'
 export * from './BlockIndexTuple'
 export * from './Wallet_List'

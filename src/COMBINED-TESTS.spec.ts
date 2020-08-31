@@ -9,6 +9,7 @@ import { validatePoa, poaFindChallengeBlock, poaModifyDiff } from './Poa'
 import { retargetValidateDiff } from './Retarget'
 import { weaveHash } from './Weave'
 import { mineValidate } from './Mine'
+import { Tx } from './Tx'
 
 /* *** Initialise all test data, and use in one big test file *** */
 
@@ -74,7 +75,7 @@ describe('BlockValidateQuick Tests', () => {
 	
 	it('validateBlockQuick should return false for difficulty too low', async () => {
 		let test = Object.assign({},block)
-		test.diff = 1n		                                               //!! TODO: what are good/bad difficulties?
+		test.diff = 1n		                                 //TODO: better good/bad difficulties
 
     res = validateBlockQuick(test, block.height-1 )
     expect(res).toEqual({code: 400, message: "Difficulty too low"})
@@ -107,6 +108,19 @@ describe('Block tests', () => {
 		
 		expect(new Uint8Array(hash)).toEqual(block.indep_hash) 
 	}, 20000)
+	
+	it('returns an array of the Block Tx objects', async () => {
+		expect.assertions(block.txids.length*2)
+
+		let txs = await block.getTxs()
+
+		for (let index = 0; index < block.txids.length; index++) {
+			expect(txs[index]).toBeInstanceOf(Tx)
+			let idString = Arweave.utils.bufferTob64Url( block.txids[index] )
+			expect(txs[index].idString).toEqual(idString)
+		}
+	}, 20000)
+
 })
 
 describe('PoA tests', () => {
@@ -156,6 +170,14 @@ describe('BlockValidateSlow tests', () => {
 		expect(pow2).toEqual(prevBlock.hash)
 		expect(test2).toEqual(true)
 	})
+
+	// it('fetches tx data and creates a new Tx object', async () => {
+	// 	expect.assertions(1)
+	// 	let tx = await Tx.getByIdString('9bQaZBfFdt8jKuBMvk8453sngKmLW0o82Ubr59NqCSM')
+	// 	let txid = Arweave.utils.b64UrlToBuffer('9bQaZBfFdt8jKuBMvk8453sngKmLW0o82Ubr59NqCSM')
+
+	// 	expect(tx.id).toEqual(txid)
+	// })
 
 	it('validateBlockSlow should return true when given valid blocks', async () => {
 		expect.assertions(1)

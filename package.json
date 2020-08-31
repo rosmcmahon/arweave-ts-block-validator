@@ -24,6 +24,6 @@
   },
   "dependencies": {
     "arweave": "^1.9.1",
-    "bignumber.js": "^9.0.0"
+    "decimal.js": "^10.2.0"
   }
 }

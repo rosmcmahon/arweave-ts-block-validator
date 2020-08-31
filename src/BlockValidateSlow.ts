@@ -1,9 +1,12 @@
+
 import { ReturnCode, BlockIndexTuple, Wallet_List } from  './types'
 import { Block, getIndepHash, generateBlockDataSegment, blockVerifyDepHash } from './Block'
 import { validatePoa, poaModifyDiff } from './Poa'
 import { retargetValidateDiff } from './Retarget'
 import { weaveHash } from './Weave'
 import { mineValidate } from './Mine'
+import {  } from './NodeUtils'
+
 
 export const validateBlockSlow = async (block: Block, prevBlock: Block, blockIndex: BlockIndexTuple[], walletList: Wallet_List[]): Promise<ReturnCode> => {
 	/* 13 steps for slow validation (ref: validate in ar_node_utils.erl) */
@@ -51,9 +54,9 @@ export const validateBlockSlow = async (block: Block, prevBlock: Block, blockInd
 
 	// 7. wallet_list: (depends on PoW?)
 	// UpdatedWallets = update_wallets(NewB, Wallets, RewardPool, Height)
-	// if(any wallets are invalid) return false
-	let updatedWallets = nodeUtilsUpdateWallets(block, walletList, prevBlock.reward_pool, prevBlock.height)
-
+	// if(any wallets are invalid <is_wallet_invalid> ) return "Invalid updated wallet list"
+	
+	// let updatedWallets = nodeUtilsUpdateWallets(block, walletList, prevBlock.reward_pool, prevBlock.height)
 	
 	// 8. block_field_sizes: (block field size checks, no dependencies)
 	// if(! ar_block:block_field_size_limit(NewB) ) return false
@@ -76,6 +79,3 @@ export const validateBlockSlow = async (block: Block, prevBlock: Block, blockInd
 	return {code:200, message:"Block slow check OK"}
 }
 
-const nodeUtilsUpdateWallets = (block: Block, wallets: Wallet_List[], rewardPool: bigint, height: number) => {
-	
-}

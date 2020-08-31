@@ -5,6 +5,7 @@ import Axios from 'axios'
 import deepHash from './utils/deepHash'
 import { Poa } from './Poa'
 import { arrayCompare } from './utils/buffer-utilities'
+import { Tx } from './Tx'
 
 
 /* Actual binary data for a Block. Usually translated from a Block JSON Data Transfer Object */
@@ -19,7 +20,8 @@ export class Block {
 	height:number // How many blocks have passed since the genesis block.
 	hash: Uint8Array // PoW hash of the block must satisfy the block's difficulty.
 	indep_hash: Uint8Array // = [] // The hash of the block including `hash` and `nonce` the block identifier.
-	txs: Uint8Array[]  // A list of tx records in full blocks or a list of TX identifiers in block shadows.
+	txids: Uint8Array[]  //  a list of TX identifiers 
+	// txs: Tx[]  // A list of Tx objects 
 	tx_root: Uint8Array // = <<>> // Merkle root of the tree of transactions' data roots.
 	tx_tree: Uint8Array[]  // Merkle tree of transactions' data roots. Not stored.
 	hash_list?: Uint8Array[] //  "A list of hashes used for fork recovery 
@@ -43,7 +45,7 @@ export class Block {
 		this.height = dto.height
 		this.hash = Arweave.utils.b64UrlToBuffer(dto.hash)
 		this.indep_hash = Arweave.utils.b64UrlToBuffer(dto.indep_hash)
-		this.txs = dto.txs.map(txid=>Arweave.utils.b64UrlToBuffer(txid))
+		this.txids = dto.txs.map(txid=>Arweave.utils.b64UrlToBuffer(txid))
 		this.tx_root = Arweave.utils.b64UrlToBuffer(dto.tx_root)
 		this.tx_tree = [] // dto.tx_tree.map(b64urlTxHash=>Arweave.utils.b64UrlToBuffer(b64urlTxHash)) //!!! need to do this later!!,
 		this.wallet_list = Arweave.utils.b64UrlToBuffer(dto.wallet_list)
@@ -83,6 +85,11 @@ export class Block {
 	static async getCurrent(): Promise<Block> {
 		let blockJson = (await Axios.get(HOST_SERVER+'/block/current')).data
 		return new Block(blockJson)
+	}
+
+	getTxs = async (): Promise<Tx[]> => {
+		let promises: Promise<Tx>[] = this.txids.map(  txid => Tx.getById(txid) )
+		return await Promise.all( promises )
 	}
 }
 
@@ -199,7 +206,7 @@ export const generateBlockDataSegmentBase = async (block: Block): Promise<Uint8A
 		Arweave.utils.stringToBuffer(block.height.toString()),
 		block.previous_block,
 		block.tx_root,
-		block.txs,	
+		block.txids,	
 		Arweave.utils.stringToBuffer(block.block_size.toString()),
 		Arweave.utils.stringToBuffer(block.weave_size.toString()),
 		block.reward_addr, // N.B. this should be `new Uint8Array("unclaimed")` when mining

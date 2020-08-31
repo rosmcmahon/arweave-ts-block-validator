@@ -1,9 +1,9 @@
 
 /**
  * A Transacion (Tx)
- * A transaction, as stored in a block.
+ * A transaction, as stored in a block DTO.
  */
-export class Tx {
+export class TxDTO {
 	format:number = 2				// 1 or 2.
 	id: string 							// txid
 	//// Either the ID of the previous transaction made from this wallet or
@@ -22,6 +22,6 @@ export class Tx {
 }
 
 interface Tag {
-	name:string
-	value:string
+	name:string //b64url
+	value:string //b64url
 }

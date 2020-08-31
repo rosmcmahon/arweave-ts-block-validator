@@ -1,9 +1,9 @@
-import { RETARGET_BLOCKS, FORK_HEIGHT_1_8, FORK_HEIGHT_1_9, DIFF_ADJUSTMENT_DOWN_LIMIT, DIFF_ADJUSTMENT_UP_COMPARATOR, DIFF_ADJUSTMENT_DOWN_COMPARATOR, RETARGET_BLOCK_TIME, NEW_RETARGET_TOLERANCE, MAX_DIFF, MIN_DIFF_FORK_1_8 } from './constants'
+import { RETARGET_BLOCKS, FORK_HEIGHT_1_8, FORK_HEIGHT_1_9, DIFF_ADJUSTMENT_DOWN_LIMIT, DIFF_ADJUSTMENT_UP_COMPARATOR, DIFF_ADJUSTMENT_DOWN_COMPARATOR, RETARGET_BLOCK_TIME, NEW_RETARGET_TOLERANCE, MAX_DIFF, MIN_DIFF_FORK_1_8, ADD_ERLANG_ROUNDING_ERROR } from './constants'
 import { Block } from './Block'
 
 
 
-export const switchToLinearDiff = (diff: bigint) => {
+export const retargetSwitchToLinearDiff = (diff: bigint) => {
 	/*
 		%% @doc The number a hash must be greater than, to give the same odds of success
 		%% as the old-style Diff (number of leading zeros in the bitstring).
@@ -53,7 +53,10 @@ export const retargetValidateDiff = (block: Block, prevBlock: Block) => {
 		 * block.diff. In order to account for this rounding error we round the block.diff and
 		 * calculated diff to JS Numbers. This will be fixed in a later fork.
 		 */
-		return Number(block.diff) === Number(calculated)
+		if(ADD_ERLANG_ROUNDING_ERROR){
+			return Number(block.diff) === Number(calculated)
+		}
+		return block.diff === calculated //retargetCalculateDifficulty may need to be adjusted depending on upcoming fork
 	}
 	return (block.diff===prevBlock.diff) && (block.last_retarget===prevBlock.last_retarget)
 }

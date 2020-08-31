@@ -1,8 +1,7 @@
-import { mineMaxDiff } from "./Mine"
+import { MAX_DIFF } from "./constants"
 
 export const difficultyMultiplyDiff = (diff: bigint, multiplier: number) => {
-	let maxDiff = mineMaxDiff()
 	let mult = BigInt(multiplier)
-	let modifier = ((1n / mult) * (maxDiff - diff))
-	return maxDiff - modifier
+	let modifier = ((1n / mult) * (MAX_DIFF - diff))
+	return MAX_DIFF - modifier
 }
