@@ -5,7 +5,7 @@ import { validatePoa, poaModifyDiff } from './Poa'
 import { retargetValidateDiff } from './Retarget'
 import { weaveHash } from './Weave'
 import { mineValidate } from './Mine'
-import { nodeUtilsUpdateWallets } from './NodeUtils'
+// import { nodeUtilsUpdateWallets } from './NodeUtils'
 
 
 export const validateBlockSlow = async (block: Block, prevBlock: Block, blockIndex: BlockIndexTuple[], walletList: Wallet_List[]): Promise<ReturnCode> => {
@@ -56,7 +56,7 @@ export const validateBlockSlow = async (block: Block, prevBlock: Block, blockInd
 	// UpdatedWallets = update_wallets(NewB, Wallets, RewardPool, Height)
 	// if(any wallets are invalid <is_wallet_invalid> ) return "Invalid updated wallet list"
 	
-	let updatedWallets = nodeUtilsUpdateWallets(block, walletList, prevBlock.reward_pool, prevBlock.height)
+	// let updatedWallets = nodeUtilsUpdateWallets(block, walletList, prevBlock.reward_pool, prevBlock.height)
 	
 	// 8. block_field_sizes: (block field size checks, no dependencies)
 	// if(! ar_block:block_field_size_limit(NewB) ) return false

@@ -1,5 +1,6 @@
-import { RETARGET_BLOCKS, FORK_HEIGHT_1_8, FORK_HEIGHT_1_9, DIFF_ADJUSTMENT_DOWN_LIMIT, DIFF_ADJUSTMENT_UP_COMPARATOR, DIFF_ADJUSTMENT_DOWN_COMPARATOR, RETARGET_BLOCK_TIME, NEW_RETARGET_TOLERANCE, MAX_DIFF, MIN_DIFF_FORK_1_8, ADD_ERLANG_ROUNDING_ERROR } from './constants'
+import { RETARGET_BLOCKS, FORK_HEIGHT_1_8, FORK_HEIGHT_1_9, DIFF_ADJUSTMENT_DOWN_LIMIT, DIFF_ADJUSTMENT_UP_LIMIT, DIFF_ADJUSTMENT_UP_COMPARATOR, DIFF_ADJUSTMENT_DOWN_COMPARATOR, RETARGET_BLOCK_TIME, TARGET_TIME, RETARGET_TOLERANCE_FLOAT, NEW_RETARGET_TOLERANCE, MAX_DIFF, MIN_DIFF_FORK_1_8, ADD_ERLANG_ROUNDING_ERROR } from './constants'
 import { Block } from './Block'
+import { Decimal } from 'decimal.js'
 
 
 
@@ -101,8 +102,7 @@ const retargetCalculateDifficulty = (oldDiff: bigint, ts: bigint, last: bigint, 
 	return calculateDifficultyLinear(oldDiff, ts, last, height)
 }
 
-
-const calculateDifficultyLinear = (oldDiff: bigint, ts: bigint, last: bigint, height: number): bigint => {
+const calculateDifficultyLinearALGEBRA = (oldDiff: bigint, ts: bigint, last: bigint, height: number): bigint => {
 	/*
 		calculate_difficulty_linear(OldDiff, TS, Last, Height) ->
 		case Height >= ar_fork:height_1_9() of
@@ -248,4 +248,88 @@ const calculateDifficultyLinear = (oldDiff: bigint, ts: bigint, last: bigint, he
 	let maxLessDiffInverse = (  (RETARGET_BLOCK_TIME - actualTime)*MAX_DIFF + actualTime*oldDiff  ) / RETARGET_BLOCK_TIME
 	// where RETARGET_BLOCK_TIME and actualTime are small integers
 	return between2(maxLessDiffInverse)
+}
+
+const calculateDifficultyLinear = (oldDiff: bigint, ts: bigint, last: bigint, height: number): bigint => {
+	/*
+		calculate_difficulty_linear(OldDiff, TS, Last, Height) ->
+		case Height >= ar_fork:height_1_9() of
+			false ->
+				calculate_difficulty_legacy(OldDiff, TS, Last, Height);
+			true ->
+				calculate_difficulty_linear2(OldDiff, TS, Last, Height)
+		end.
+	*/
+	if(height < FORK_HEIGHT_1_9){
+		throw new Error("ar_retarget:calculate_difficulty_legacy not implemented")
+	}
+	/*
+		calculate_difficulty_linear2(OldDiff, TS, Last, Height) ->
+			TargetTime = ?RETARGET_BLOCKS * ?TARGET_TIME,
+			ActualTime = TS - Last,
+			TimeDelta = ActualTime / TargetTime,
+			case abs(1 - TimeDelta) < ?RETARGET_TOLERANCE of
+				true ->
+					OldDiff;
+				false ->
+					MaxDiff = ar_mine:max_difficulty(),
+					MinDiff = ar_mine:min_difficulty(Height),
+					EffectiveTimeDelta = between(
+						ActualTime / TargetTime,
+						1 / ?DIFF_ADJUSTMENT_UP_LIMIT,
+						?DIFF_ADJUSTMENT_DOWN_LIMIT
+					),
+					DiffInverse = erlang:trunc((MaxDiff - OldDiff) * EffectiveTimeDelta),
+					between(
+						MaxDiff - DiffInverse,
+						MinDiff,
+						MaxDiff
+					)
+			end.
+	*/
+	Decimal.config({ precision: 50 }) // no point overdoing it, get rounded to Number in the end
+	let targetTime = new Decimal(RETARGET_BLOCKS * TARGET_TIME) //1200n
+	let actualTime = new Decimal( (ts - last).toString() )
+	let timeDelta = actualTime.dividedBy(targetTime)
+	let oneMinusTimeDelta = new Decimal(1).minus(timeDelta)
+
+	if(ADD_ERLANG_ROUNDING_ERROR && Number(oneMinusTimeDelta) < RETARGET_TOLERANCE_FLOAT ){
+		return oldDiff
+	} else if( oneMinusTimeDelta.abs().lessThan(RETARGET_TOLERANCE_FLOAT) ){
+		return oldDiff
+	}
+
+	let effectiveTimeDelta: Decimal = betweenDecimals( // 0.25 <= effectiveTimeDelta <= 2
+		timeDelta,
+		new Decimal(1).dividedBy(DIFF_ADJUSTMENT_UP_LIMIT),
+		new Decimal(DIFF_ADJUSTMENT_DOWN_LIMIT)
+	)
+
+	let diffInverse: Decimal = new Decimal((MAX_DIFF - oldDiff).toString()).mul(effectiveTimeDelta)
+
+	let diffInverseInt: bigint
+	if(ADD_ERLANG_ROUNDING_ERROR){
+		diffInverseInt = BigInt( Number(diffInverse) )
+	} else{
+		diffInverseInt = BigInt(diffInverse)
+	}
+
+	let returnValue = betweenBigInts(
+		MAX_DIFF - diffInverseInt,
+		MIN_DIFF_FORK_1_8,
+		MAX_DIFF
+	)
+		
+	return returnValue
+}
+
+const betweenBigInts = (num: bigint, min: bigint, max: bigint) =>{
+	if(num < min) return min 
+	if(num > max) return max
+	return num
+}
+const betweenDecimals = (num: Decimal, min: Decimal, max: Decimal) =>{
+	if(num.lessThan(min)) return min 
+	if(num.greaterThan(max)) return max
+	return num
 }

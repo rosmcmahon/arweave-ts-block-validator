@@ -13,8 +13,6 @@ import { Tx } from './Tx'
 
 /* *** Initialise all test data, and use in one big test file *** */
 
-let theValue = 0.6391666666666667
-
 let res: ReturnCode
 let blockJson: BlockDTO
 let block: Block

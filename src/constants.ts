@@ -35,9 +35,9 @@ export const MINING_HASH_ALG = 'sha384'
 // export const MIN_SHA384_DIFFICULTY = 31n //removed
 //export const MIN_RANDOMX_DIFFICULTY = 17n // MIN_SHA384_DIFFICULTY + RANDOMX_DIFF_ADJUSTMENT //removed
 export const DEFAULT_DIFF = 8n
-export const RETARGET_BLOCKS = 10n
-export const TARGET_TIME = 120n
-// export const RETARGET_TOLERANCE_FLOAT = 0.1 // removed
+export const RETARGET_BLOCKS = 10
+export const TARGET_TIME = 120
+export const RETARGET_TOLERANCE_FLOAT = 0.1 // remove?
 // *New mining difficulty constants *
 export const RETARGET_BLOCK_TIME = 1200n // RETARGET_BLOCKS * TARGET_TIME
 export const NEW_RETARGET_TOLERANCE = 120n // RETARGET_TOLERANCE_FLOAT * RETARGET_BLOCKS_BY_TARGET_TIME
@@ -49,8 +49,8 @@ export const MIN_DIFF_FORK_1_8 = 11579120581378380623140619335993753639401207092
 // Max allowed difficulty multiplication and division factors.
 // The adjustment is lower when the difficulty goes down than when
 // it goes up to prevent forks - stalls are preferred over forks.
-export const DIFF_ADJUSTMENT_DOWN_LIMIT = 2n
-export const DIFF_ADJUSTMENT_UP_LIMIT = 4n
+export const DIFF_ADJUSTMENT_DOWN_LIMIT = 2
+export const DIFF_ADJUSTMENT_UP_LIMIT = 4
 export const DIFF_ADJUSTMENT_UP_COMPARATOR = 300n // RETARGET_BLOCK_TIME/DIFF_ADJUSTMENT_UP_LIMIT
 export const DIFF_ADJUSTMENT_DOWN_COMPARATOR = 2400n // RETARGET_BLOCK_TIME * DIFF_ADJUSTMENT_DOWN_LIMIT
 
