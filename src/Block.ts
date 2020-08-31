@@ -21,7 +21,7 @@ export class Block {
 	hash: Uint8Array // PoW hash of the block must satisfy the block's difficulty.
 	indep_hash: Uint8Array // = [] // The hash of the block including `hash` and `nonce` the block identifier.
 	txids: Uint8Array[]  //  a list of TX identifiers 
-	// txs: Tx[]  // A list of Tx objects 
+	txs: Tx[]  // NOT DEFINED UNTIL this.getTxs() IS CALLED. A list of Tx objects 
 	tx_root: Uint8Array // = <<>> // Merkle root of the tree of transactions' data roots.
 	tx_tree: Uint8Array[]  // Merkle tree of transactions' data roots. Not stored.
 	hash_list?: Uint8Array[] //  "A list of hashes used for fork recovery 
@@ -88,8 +88,12 @@ export class Block {
 	}
 
 	getTxs = async (): Promise<Tx[]> => {
+		if(this.txs !== undefined){
+			return this.txs
+		}
 		let promises: Promise<Tx>[] = this.txids.map(  txid => Tx.getById(txid) )
-		return await Promise.all( promises )
+		this.txs = await Promise.all( promises )
+		return this.txs
 	}
 }
 

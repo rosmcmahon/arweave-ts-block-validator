@@ -1,6 +1,8 @@
 // This is the host used for retieving block data 
 export const HOST_SERVER = 'http://eu-west-1.arweave.net:1984'
 
+export const ADD_ERLANG_ROUNDING_ERROR = true // need to add rounding error to match erlang
+
 export const STORE_BLOCKS_AROUND_CURRENT = 50
 
 // The maximum size of a single POST body.
@@ -57,3 +59,31 @@ export const RANDOMX_KEY_SWAP_FREQ = 2000
 
 // How much harder it should be to mine each subsequent alternative POA option.
 export const ALTERNATIVE_POA_DIFF_MULTIPLIER = 2
+
+/* Inflation constants */
+// The total supply of tokens in the Genesis block,
+export const GENESIS_TOKENS = 55000000
+// Winstons per AR.
+export const WINSTON_PER_AR = 1000000000000
+export const BLOCKS_PER_YEAR = 262800 // 30 * 24 * 365
+// The base cost of a byte in AR
+export const BASE_BYTES_PER_AR = 10000000
+// Base wallet generation fee
+export const WALLET_GEN_FEE = 250000000000
+// @doc The minimum cost per byte for a single TX.
+export const COST_PER_BYTE = 100000 //(WINSTON_PER_AR div BASE_BYTES_PER_AR)
+
+/* Perpetual storage constants */
+// Mining reward as a proportion of tx cost.
+// export const MINING_REWARD_MULTIPLIER = 0.2
+export const MINING_REWARD_DIVIDER = 6n //ref: nodeUtilsCalculateRewardPoolPerpetual
+export const N_REPLICATIONS = 10 
+// Figures taken from the "date-GBh spreadsheet" see: perpetual_storage.hrl
+export const USD_PER_GBY_2018 = 0.001045
+export const USD_PER_GBY_2019 = 0.000925
+// Decay rate of the storage cost in GB/year.
+export const USD_PER_GBY_DECAY_ANNUAL = 0.995 // i.e. 0.5% annual decay rate
+
+// The network height at the time when 
+// the $/AR exchange rate was ?INITIAL_USD_PER_AR.
+export const INITIAL_USD_PER_AR_HEIGHT = FORK_HEIGHT_1_9
