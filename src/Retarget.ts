@@ -15,29 +15,8 @@ export const retargetSwitchToLinearDiff = (diff: bigint) => {
 }
 
 export const retargetValidateDiff = (block: Block, prevBlock: Block) => {
-	/*
-		%% @doc Validate that a new block has an appropriate difficulty.
-		validate_difficulty(NewB, OldB) when ?IS_RETARGET_BLOCK(NewB) ->
-			(NewB#block.diff ==
-				calculate_difficulty(
-					OldB#block.diff,
-					NewB#block.timestamp,
-					OldB#block.last_retarget,
-					NewB#block.height)
-			);
-		validate_difficulty(NewB, OldB) ->
-			(NewB#block.diff == OldB#block.diff) and
-				(NewB#block.last_retarget == OldB#block.last_retarget).
-	*/
-	/*
-		-define(IS_RETARGET_BLOCK(X),
-			(
-				((X#block.height rem ?RETARGET_BLOCKS) == 0) and
-				(X#block.height =/= 0)
-			)
-		).
-	*/
-	if( (block.height % Number(RETARGET_BLOCKS) === 0) && (block.height !== 0) ){
+
+	if( (block.height % RETARGET_BLOCKS === 0) && (block.height !== 0) ){
 		let calculated = retargetCalculateDifficulty(
 			prevBlock.diff,
 			block.timestamp,
@@ -48,17 +27,9 @@ export const retargetValidateDiff = (block: Block, prevBlock: Block) => {
 			console.debug('block.diff', block.diff)
 			console.debug('calculated', calculated)
 		}
-		/**
-		 * There is still a rounding error in the incoming block.diff, so at worst (the limit
-		 * at Diff approaches MAX_DIFF) only first 53 significant bits are accurate in the 
-		 * block.diff. In order to account for this rounding error we round the block.diff and
-		 * calculated diff to JS Numbers. This will be fixed in a later fork.
-		 */
-		if(ADD_ERLANG_ROUNDING_ERROR){
-			return Number(block.diff) === Number(calculated)
-		}
-		return block.diff === calculated //retargetCalculateDifficulty may need to be adjusted depending on upcoming fork
+		return block.diff === calculated 
 	}
+
 	return (block.diff===prevBlock.diff) && (block.last_retarget===prevBlock.last_retarget)
 }
 
@@ -251,15 +222,7 @@ const calculateDifficultyLinearALGEBRA = (oldDiff: bigint, ts: bigint, last: big
 }
 
 const calculateDifficultyLinear = (oldDiff: bigint, ts: bigint, last: bigint, height: number): bigint => {
-	/*
-		calculate_difficulty_linear(OldDiff, TS, Last, Height) ->
-		case Height >= ar_fork:height_1_9() of
-			false ->
-				calculate_difficulty_legacy(OldDiff, TS, Last, Height);
-			true ->
-				calculate_difficulty_linear2(OldDiff, TS, Last, Height)
-		end.
-	*/
+
 	if(height < FORK_HEIGHT_1_9){
 		throw new Error("ar_retarget:calculate_difficulty_legacy not implemented")
 	}
@@ -287,7 +250,7 @@ const calculateDifficultyLinear = (oldDiff: bigint, ts: bigint, last: bigint, he
 					)
 			end.
 	*/
-	Decimal.config({ precision: 50 }) // no point overdoing it, get rounded to Number in the end
+	Decimal.config({ precision: 80 }) 
 	let targetTime = new Decimal(RETARGET_BLOCKS * TARGET_TIME) //1200n
 	let actualTime = new Decimal( (ts - last).toString() )
 	let timeDelta = actualTime.dividedBy(targetTime)
