@@ -1,14 +1,14 @@
 import { RANDOMX_KEY_SWAP_FREQ } from "./constants"
 import { Block } from "./Block"
 import Arweave from "arweave"
-import { mineRandomxInitLight, mineRandomxHashLight } from "./MineRandomx"
+import { mineRandomx_initLight, mineRandomx_hashLight } from "./MineRandomx"
 
 /**
  * Based on ar_randomx_state.erl in name only.
  * Since we are not mining we will be using RandomX hash_light and will not keep randomX state in memory.
  */
 
-export const randomxStateHash = async (height: number, data: Uint8Array) => {
+export const randomxState_hash = async (height: number, data: Uint8Array) => {
 	/*
 		hash(Height, Data) ->
 			case randomx_state_by_height(Height) of
@@ -22,8 +22,8 @@ export const randomxStateHash = async (height: number, data: Uint8Array) => {
 			end.
 	*/
 	let key = await randomxKeyByHeight(height)
-	let virtualMachine = await mineRandomxInitLight(key)
-	return mineRandomxHashLight(virtualMachine, data)
+	let virtualMachine = await mineRandomx_initLight(key)
+	return mineRandomx_hashLight(virtualMachine, data)
 }
 
 const randomxKeyByHeight = async (height: number) => {

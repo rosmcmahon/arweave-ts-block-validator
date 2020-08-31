@@ -1,10 +1,10 @@
 
 import { ReturnCode, BlockIndexTuple, Wallet_List } from  './types'
 import { Block, getIndepHash, generateBlockDataSegment, blockVerifyDepHash } from './Block'
-import { validatePoa, poaModifyDiff } from './Poa'
-import { retargetValidateDiff } from './Retarget'
-import { weaveHash } from './Weave'
-import { mineValidate } from './Mine'
+import { poa_validate, poa_modifyDiff } from './Poa'
+import { retarget_validateDiff } from './Retarget'
+import { weave_hash } from './Weave'
+import { mine_validate } from './Mine'
 import { nodeUtils_updateWallets, nodeUtils_IsWalletValid } from './NodeUtils'
 
 
@@ -23,13 +23,13 @@ export const validateBlockSlow = async (block: Block, prevBlock: Block, blockInd
 
 	// 3. poa:
 	// if(! ar_poa:validate(OldB#block.indep_hash, OldB#block.weave_size, BI, POA) ) return false
-	if( ! await validatePoa(prevBlock.indep_hash, prevBlock.weave_size, blockIndex, block.poa) ){
+	if( ! await poa_validate(prevBlock.indep_hash, prevBlock.weave_size, blockIndex, block.poa) ){
 		return {code: 400, message: "Invalid PoA"}
 	}
 
 	// 4. difficulty: 
 	// if(! ar_retarget:validate_difficulty(NewB, OldB) ) return false
-	if( ! retargetValidateDiff(block, prevBlock) ){
+	if( ! retarget_validateDiff(block, prevBlock) ){
 		return {code: 400, message: "Invalid difficulty"}
 	}
 	
@@ -37,11 +37,11 @@ export const validateBlockSlow = async (block: Block, prevBlock: Block, blockInd
 	// POW = ar_weave:hash( ar_block:generate_block_data_segment(NewB), Nonce, Height );
 	// if(! ar_mine:validate(POW, ar_poa:modify_diff(Diff, POA#poa.option), Height) ) return false
 	// if(! ar_block:verify_dep_hash(NewB, POW) ) return false
-	let pow = await weaveHash((await generateBlockDataSegment(block)), block.nonce, block.height)
+	let pow = await weave_hash((await generateBlockDataSegment(block)), block.nonce, block.height)
 	if( ! blockVerifyDepHash(block, pow) ){
 		return {code: 400, message: "Invalid PoW hash"}
 	}
-	if( ! mineValidate(pow, poaModifyDiff(block.diff, block.poa.option), block.height) ){
+	if( ! mine_validate(pow, poa_modifyDiff(block.diff, block.poa.option), block.height) ){
 		return {code: 400, message: "Invalid PoW"}
 	}
 

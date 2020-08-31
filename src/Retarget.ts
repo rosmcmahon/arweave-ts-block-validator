@@ -4,7 +4,7 @@ import { Decimal } from 'decimal.js'
 
 
 
-export const retargetSwitchToLinearDiff = (diff: bigint) => {
+export const retarget_switchToLinearDiff = (diff: bigint) => {
 	/*
 		%% @doc The number a hash must be greater than, to give the same odds of success
 		%% as the old-style Diff (number of leading zeros in the bitstring).
@@ -14,7 +14,7 @@ export const retargetSwitchToLinearDiff = (diff: bigint) => {
 	return ( (2n ** 256n) - (2n ** (256n - diff)) ) 
 }
 
-export const retargetValidateDiff = (block: Block, prevBlock: Block) => {
+export const retarget_validateDiff = (block: Block, prevBlock: Block) => {
 
 	if( (block.height % RETARGET_BLOCKS === 0) && (block.height !== 0) ){
 		let calculated = retargetCalculateDifficulty(

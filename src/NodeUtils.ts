@@ -2,10 +2,10 @@ import { FORK_HEIGHT_1_8, FORK_HEIGHT_2_0, MINING_REWARD_DIVIDER, ADD_ERLANG_ROU
 import { Block } from './Block'
 import { Tx } from './Tx'
 import { Wallet_List } from './types'
-import { inflationCalculate } from './Inflation'
+import { inflation_calculate } from './Inflation'
 import { txPerpetualStorage_usdToAr, txPerpetualStorage_getCostPerBlockAtTimestamp } from './TxPerpetualStorage'
 import Arweave from 'arweave'
-import { walletOwnerToAddressString } from './Wallet'
+import { wallet_ownerToAddressString } from './Wallet'
 import Decimal from 'decimal.js'
 
 
@@ -25,7 +25,7 @@ export const nodeUtils_IsWalletValid = async (tx: Tx, walletList: Wallet_List[])
 	// 		_ ->
 	// 			true
 	// 	end.
-	let address = await walletOwnerToAddressString(tx.owner)
+	let address = await wallet_ownerToAddressString(tx.owner)
 	walletList.forEach(entry => {
 		if(entry.address===address){
 			if( Number(entry.balance) === 0 ){
@@ -137,7 +137,7 @@ export const nodeUtils_calculateRewardPoolPerpetual = (
 					{BaseReward + Take, NewPool - Take}
 			end.
 	*/
-	let inflation = BigInt(inflationCalculate(height).toFixed(0))
+	let inflation = BigInt(inflation_calculate(height).toFixed(0))
 	let txsCost = 0n
 	let txsReward = 0n
 	txs.forEach(tx => {
@@ -245,7 +245,7 @@ export const nodeUtils_ApplyTx = async (walletList: Wallet_List[], tx: Tx, UNUSE
 	// 	TX
 	// ).
 
-	let address = await walletOwnerToAddressString(tx.owner)
+	let address = await wallet_ownerToAddressString(tx.owner)
 	walletList.forEach(async entry => {
 		if(entry.address === address){
 			walletList = await nodeUtils_updateRecipientBalance(await nodeUtils_UpdateSenderBalance(walletList, tx), tx)
@@ -296,7 +296,7 @@ const nodeUtils_UpdateSenderBalance = async (walletList: Wallet_List[], tx: Tx) 
 	// 	_ ->
 	// 		Wallets
 	// end.
-	let from = await walletOwnerToAddressString(tx.owner)
+	let from = await wallet_ownerToAddressString(tx.owner)
 	walletList.forEach(entry => {
 		if(entry.address === from){
 			entry.balance = (BigInt(entry.balance) - (tx.quantity + tx.reward)).toString()

@@ -5,10 +5,10 @@ import { STORE_BLOCKS_AROUND_CURRENT, HOST_SERVER } from './constants'
 import { validateBlockJson, validateBlockQuick } from "./BlockValidateQuick"
 import { validateBlockSlow } from './BlockValidateSlow'
 import { Block,	generateBlockDataSegmentBase, generateBlockDataSegment, getIndepHash } from './Block'
-import { validatePoa, poaFindChallengeBlock, poaModifyDiff } from './Poa'
-import { retargetValidateDiff } from './Retarget'
-import { weaveHash } from './Weave'
-import { mineValidate } from './Mine'
+import { poa_validate, poa_findChallengeBlock, poa_modifyDiff } from './Poa'
+import { retarget_validateDiff } from './Retarget'
+import { weave_hash } from './Weave'
+import { mine_validate } from './Mine'
 import { Tx } from './Tx'
 
 /* *** Initialise all test data, and use in one big test file *** */
@@ -129,7 +129,7 @@ describe('PoA tests', () => {
 	it('Poa.poaFindChallengeBlock returns a valid block depth', async () => {
 		let testByte =  500000n
 	
-		const {txRoot, blockBase, blockTop, bh} = poaFindChallengeBlock(testByte, blockIndex)
+		const {txRoot, blockBase, blockTop, bh} = poa_findChallengeBlock(testByte, blockIndex)
 	
 		expect(testByte).toBeGreaterThan(blockBase) 
 		expect(testByte).toBeLessThanOrEqual(blockTop) 
@@ -137,9 +137,9 @@ describe('PoA tests', () => {
 	
 	it('Poa.validatePoa returns true/false for valid/invalid Poa', async () => {
 		expect.assertions(2)
-		let good = await validatePoa(prevBlock.indep_hash, prevBlock.weave_size, blockIndex, block.poa) 
+		let good = await poa_validate(prevBlock.indep_hash, prevBlock.weave_size, blockIndex, block.poa) 
 		let badPoa = prevBlock.poa
-		let bad = await validatePoa(prevBlock.indep_hash, prevBlock.weave_size, blockIndex, badPoa)
+		let bad = await poa_validate(prevBlock.indep_hash, prevBlock.weave_size, blockIndex, badPoa)
 	
 		expect(good).toEqual(true) 
 		expect(bad).toEqual(false) 
@@ -149,8 +149,8 @@ describe('PoA tests', () => {
 describe('BlockValidateSlow tests', () => {
 
 	it('Retarget.retargetValidateDiff Validate that a new block has an appropriate difficulty.', async () =>{
-		let retarget = retargetValidateDiff(block, prevBlock)
-		let noRetarget = retargetValidateDiff(prevBlock, prevPrevBlock)
+		let retarget = retarget_validateDiff(block, prevBlock)
+		let noRetarget = retarget_validateDiff(prevBlock, prevPrevBlock)
 
 		expect(retarget).toEqual(true)
 		expect(noRetarget).toEqual(true)
@@ -159,15 +159,15 @@ describe('BlockValidateSlow tests', () => {
 
 	it('PoW. Validate pow satisfies mining difficulty and hash matches RandomX hash', async () =>{
 		expect.assertions(4)
-		let pow1 = await weaveHash((await generateBlockDataSegment(block)), block.nonce, block.height)
+		let pow1 = await weave_hash((await generateBlockDataSegment(block)), block.nonce, block.height)
 		//check poa.option = 1
-		let test1 = mineValidate(pow1, poaModifyDiff(block.diff, block.poa.option), block.height)
+		let test1 = mine_validate(pow1, poa_modifyDiff(block.diff, block.poa.option), block.height)
 		expect(pow1).toEqual(block.hash)
 		expect(test1).toEqual(true)
 		
-		let pow2 = await weaveHash((await generateBlockDataSegment(prevBlock)), prevBlock.nonce, prevBlock.height)
+		let pow2 = await weave_hash((await generateBlockDataSegment(prevBlock)), prevBlock.nonce, prevBlock.height)
 		//check poa.option = 2
-		let test2 = mineValidate(pow2, poaModifyDiff(prevBlock.diff, prevBlock.poa.option), prevBlock.height)
+		let test2 = mine_validate(pow2, poa_modifyDiff(prevBlock.diff, prevBlock.poa.option), prevBlock.height)
 		expect(pow2).toEqual(prevBlock.hash)
 		expect(test2).toEqual(true)
 	})

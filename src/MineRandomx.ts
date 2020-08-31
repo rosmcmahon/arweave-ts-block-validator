@@ -1,6 +1,6 @@
 let Randomx = require('../node-randomx/build/Release/addon')
 
-export const mineRandomxInitLight = async (key: Uint8Array) => {
+export const mineRandomx_initLight = async (key: Uint8Array) => {
 	/*
 		init_light(Key) ->
 			{ok, LightState} = init_light_nif(Key, jit(), large_pages()),
@@ -18,7 +18,7 @@ export const mineRandomxInitLight = async (key: Uint8Array) => {
 	return vm
 }
 
-export const mineRandomxHashLight = async (vm: Object, data: Uint8Array) => {
+export const mineRandomx_hashLight = async (vm: Object, data: Uint8Array) => {
 	let hash: ArrayBuffer
 	try {
 		hash = await Randomx.hash(vm, data.buffer)

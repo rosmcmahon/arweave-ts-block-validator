@@ -13,11 +13,11 @@ import { JWKInterface } from 'arweave/node/lib/wallet'
 
 // -define(HASH_SZ, 256).
 
-export const walletOwnerToAddressString = async (pubkey: Uint8Array) => {
+export const wallet_ownerToAddressString = async (pubkey: Uint8Array) => {
 	return Arweave.utils.bufferTob64Url( await Arweave.crypto.hash(pubkey) )
 }
 
-export const walletJwkToAddressString = async (jwk: JWKInterface) => {
+export const wallet_jwkToAddressString = async (jwk: JWKInterface) => {
 	return Arweave.utils.bufferTob64Url( 
 		await Arweave.crypto.hash( 
 			Arweave.utils.stringToBuffer(jwk.n) 

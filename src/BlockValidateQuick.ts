@@ -1,8 +1,7 @@
 import { ReturnCode, BlockDTO, Tag, BlockIndexTuple } from  './types'
-import { STORE_BLOCKS_AROUND_CURRENT, FORK_HEIGHT_1_7, FORK_HEIGHT_1_8, MINING_HASH_ALG } from './constants'
+import { STORE_BLOCKS_AROUND_CURRENT, FORK_HEIGHT_1_7, FORK_HEIGHT_1_8, MINING_HASH_ALG, MIN_DIFF_FORK_1_8 } from './constants'
 import { Block } from './Block'
 import {  } from './Poa'
-import { mineMinDiff } from './Mine'
 
 import Arweave from 'arweave'
 import { bufferToBigInt, bigIntToBuffer256 } from './utils/buffer-utilities'
@@ -32,9 +31,8 @@ export const validateBlockQuick = (block: Block, currentHeight: number):ReturnCo
 		return {code: 400, message: "Height is too far ahead"}
 	}
 
-	/*** This is the most important part of quick validation ***/
 	// 2. check_difficulty( BShadow#block.diff < ar_mine:min_difficulty(BShadow#block.height) )
-	if( block.diff < mineMinDiff(block.height) ){
+	if( block.diff < MIN_DIFF_FORK_1_8 ){
 		return {code: 400, message: "Difficulty too low"}
 	}
 

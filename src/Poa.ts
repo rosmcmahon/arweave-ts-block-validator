@@ -3,7 +3,7 @@ import { BlockIndexTuple } from "./types"
 import * as Merkle from './utils/merkle'
 import { bufferToBigInt } from './utils/buffer-utilities'
 import { POA_MIN_MAX_OPTION_DEPTH, ALTERNATIVE_POA_DIFF_MULTIPLIER } from './constants'
-import { difficultyMultiplyDiff } from "./Difficulty"
+import { difficulty_multiplyDiff } from "./Difficulty"
 
 export interface Poa {
 	// A succinct proof of access to a recall byte found in a TX.
@@ -14,7 +14,7 @@ export interface Poa {
 }
 
 /* Validate a complete proof of access object */
-export const validatePoa = async (prevIndepHash: Uint8Array, prevWeaveSize: bigint, blockIndex: BlockIndexTuple[], poa: Poa): Promise<Boolean> => {
+export const poa_validate = async (prevIndepHash: Uint8Array, prevWeaveSize: bigint, blockIndex: BlockIndexTuple[], poa: Poa): Promise<Boolean> => {
 	
 	/* some quick returns */
 	
@@ -42,7 +42,7 @@ export const validatePoa = async (prevIndepHash: Uint8Array, prevWeaveSize: bigi
 	// }else{
 	let recallByte: bigint = bufferToBigInt(await poaMultiHash(prevIndepHash, poa.option)) % prevWeaveSize
 
-	const {txRoot, blockBase, blockTop, bh} = poaFindChallengeBlock(recallByte, blockIndex)
+	const {txRoot, blockBase, blockTop, bh} = poa_findChallengeBlock(recallByte, blockIndex)
 
 
 	return await validateTxPath( Number(recallByte - blockBase), txRoot, Number(blockTop - blockBase), poa )
@@ -130,7 +130,7 @@ const poaMultiHash = async (data: Uint8Array, remaining: number): Promise<Uint8A
 	return poaMultiHash(hashX, remaining - 1 )
 }
 
-export const poaFindChallengeBlock = (byte: bigint, blockIndex: BlockIndexTuple[]) => {
+export const poa_findChallengeBlock = (byte: bigint, blockIndex: BlockIndexTuple[]) => {
 	// The base of the block is the weave_size tag of the previous_block. 
 	// Traverse down the block index until the challenge block is inside the block's bounds.
 	// Where: blockIndex[0] is the latest block, and blockIndex[blockIndex.length-1] is the earliest block
@@ -155,12 +155,12 @@ export const poaFindChallengeBlock = (byte: bigint, blockIndex: BlockIndexTuple[
 	throw new Error('recallByte out of bounds of weave')
 }
 
-export const poaModifyDiff = (diff: bigint, option: number) => {
+export const poa_modifyDiff = (diff: bigint, option: number) => {
 	if(option === 1){
 		return diff
 	}
-	return poaModifyDiff(
-		difficultyMultiplyDiff(diff, ALTERNATIVE_POA_DIFF_MULTIPLIER),
+	return poa_modifyDiff(
+		difficulty_multiplyDiff(diff, ALTERNATIVE_POA_DIFF_MULTIPLIER),
 		option - 1
 	)
 }
