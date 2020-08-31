@@ -87,6 +87,7 @@ export class Block {
 		return new Block(blockJson)
 	}
 
+	// this function should be updated for mining upgrade
 	getTxs = async (): Promise<Tx[]> => {
 		if(this.txs !== undefined){
 			return this.txs

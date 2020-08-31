@@ -108,7 +108,7 @@ describe('Block tests', () => {
 	}, 20000)
 	
 	it('returns an array of the Block Tx objects', async () => {
-		expect.assertions(block.txids.length*2)
+		expect.assertions(block.txids.length * 2 + 1)
 
 		let txs = await block.getTxs()
 
@@ -117,6 +117,9 @@ describe('Block tests', () => {
 			let idString = Arweave.utils.bufferTob64Url( block.txids[index] )
 			expect(txs[index].idString).toEqual(idString)
 		}
+
+		expect(prevBlock.txs).toBeUndefined()
+
 	}, 20000)
 
 })
@@ -154,7 +157,7 @@ describe('BlockValidateSlow tests', () => {
 
 	}, 20000)
 
-	it('validate that pow satisfies mining difficulty and hash matches RandomX hash', async () =>{
+	it('PoW. Validate pow satisfies mining difficulty and hash matches RandomX hash', async () =>{
 		expect.assertions(4)
 		let pow1 = await weaveHash((await generateBlockDataSegment(block)), block.nonce, block.height)
 		//check poa.option = 1
@@ -169,15 +172,8 @@ describe('BlockValidateSlow tests', () => {
 		expect(test2).toEqual(true)
 	})
 
-	// it('fetches tx data and creates a new Tx object', async () => {
-	// 	expect.assertions(1)
-	// 	let tx = await Tx.getByIdString('9bQaZBfFdt8jKuBMvk8453sngKmLW0o82Ubr59NqCSM')
-	// 	let txid = Arweave.utils.b64UrlToBuffer('9bQaZBfFdt8jKuBMvk8453sngKmLW0o82Ubr59NqCSM')
 
-	// 	expect(tx.id).toEqual(txid)
-	// })
-
-	it('validateBlockSlow should return true when given valid blocks', async () => {
+	it('validateBlockSlow should return true when given valid block data', async () => {
 		expect.assertions(1)
 		res = await validateBlockSlow(block, prevBlock, blockIndex, prevBlockWalletList)
 			

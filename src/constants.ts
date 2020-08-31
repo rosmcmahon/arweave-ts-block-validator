@@ -75,7 +75,7 @@ export const COST_PER_BYTE = 100000 //(WINSTON_PER_AR div BASE_BYTES_PER_AR)
 
 /* Perpetual storage constants */
 // Mining reward as a proportion of tx cost.
-// export const MINING_REWARD_MULTIPLIER = 0.2
+export const MINING_REWARD_MULTIPLIER = 0.2
 export const MINING_REWARD_DIVIDER = 6n //ref: nodeUtilsCalculateRewardPoolPerpetual
 export const N_REPLICATIONS = 10 
 // Figures taken from the "date-GBh spreadsheet" see: perpetual_storage.hrl
@@ -87,3 +87,4 @@ export const USD_PER_GBY_DECAY_ANNUAL = 0.995 // i.e. 0.5% annual decay rate
 // The network height at the time when 
 // the $/AR exchange rate was ?INITIAL_USD_PER_AR.
 export const INITIAL_USD_PER_AR_HEIGHT = FORK_HEIGHT_1_9
+export const INITIAL_USD_PER_AR_DIFF = 29n

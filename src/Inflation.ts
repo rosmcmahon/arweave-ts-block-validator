@@ -18,5 +18,5 @@ export const inflationCalculate = (height: number) => {
 	let powerExp = Decimal.pow(2,-(years)) //2^years_since_genesis
 	let bigFloat = Decimal.mul(0.2, GENESIS_TOKENS).mul(powerExp).mul(log2)
 	
-	return BigInt( bigFloat.mul(WINSTON_PER_AR).toFixed(0) ) 
+	return bigFloat.mul(WINSTON_PER_AR)
 }

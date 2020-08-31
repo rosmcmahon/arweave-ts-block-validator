@@ -1,10 +1,10 @@
-import { BLOCKS_PER_YEAR, N_REPLICATIONS, USD_PER_GBY_2019, USD_PER_GBY_2018, USD_PER_GBY_DECAY_ANNUAL, FORK_HEIGHT_1_9, MAX_DIFF, INITIAL_USD_PER_AR_HEIGHT, WINSTON_PER_AR, ADD_ERLANG_ROUNDING_ERROR } from "./constants"
+import { BLOCKS_PER_YEAR, N_REPLICATIONS, USD_PER_GBY_2019, USD_PER_GBY_2018, USD_PER_GBY_DECAY_ANNUAL, FORK_HEIGHT_1_9, MAX_DIFF, INITIAL_USD_PER_AR_HEIGHT, WINSTON_PER_AR, ADD_ERLANG_ROUNDING_ERROR, INITIAL_USD_PER_AR_DIFF } from "./constants"
 import { Decimal } from 'decimal.js'
 import { retargetSwitchToLinearDiff } from './Retarget'
 import { bufferToBigInt } from "./utils/buffer-utilities"
 import { inflationCalculate } from "./Inflation"
 
-export const txPerpetualStorageUsdToAr = (usd: Decimal, diff: bigint, height: number): bigint => {
+export const txPerpetualStorage_usdToAr = (usd: Decimal, diff: bigint, height: number): bigint => {
 	if(height < FORK_HEIGHT_1_9) throw new Error("txPerpetualStorageUsdToAr not impleneted for height < FORK_HEIGHT_1_9")
 // usd_to_ar_post_fork_1_9(USD, Diff, Height) ->
 // 	InitialDiff = ar_retarget:switch_to_linear_diff(?INITIAL_USD_PER_AR_DIFF(Height)()),
@@ -17,12 +17,12 @@ export const txPerpetualStorageUsdToAr = (usd: Decimal, diff: bigint, height: nu
 // 	).
 // -endif.
 	Decimal.config({precision: 50})
-	let initialDiff = retargetSwitchToLinearDiff( diff )
+	let initialDiff = retargetSwitchToLinearDiff( INITIAL_USD_PER_AR_DIFF )
 	let deltaP = (MAX_DIFF - initialDiff) / (MAX_DIFF - diff)
 	let initialInflation = inflationCalculate(INITIAL_USD_PER_AR_HEIGHT) //a constant
-	let deltaInflation = inflationCalculate(height) / initialInflation
+	let deltaInflation = inflationCalculate(height).dividedBy(initialInflation)
 
-	let retNumerator = usd.mul(WINSTON_PER_AR).mul(deltaInflation.toString())
+	let retNumerator = usd.mul(WINSTON_PER_AR).mul(deltaInflation)
 	let retDenominator = new Decimal( (BigInt(INITIAL_USD_PER_AR_HEIGHT) * deltaP).toString() )
 	let retValue = retNumerator.dividedBy(retDenominator).toFixed(0)
 
@@ -33,7 +33,7 @@ export const txPerpetualStorageUsdToAr = (usd: Decimal, diff: bigint, height: nu
 	return BigInt( retValue )  // may need to add rounding error above to match erlang 
 }
 
-export const txPerpetualStorageGetCostPerBlockAtTimestamp = (ts: bigint) => {
+export const txPerpetualStorage_getCostPerBlockAtTimestamp = (ts: bigint) => {
 	/*
 		%% @doc Cost to store 1GB per block at the given time.
 		get_cost_per_block_at_timestamp(Timestamp) ->

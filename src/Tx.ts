@@ -15,7 +15,7 @@ export class Tx {
 	last_tx: Uint8Array 
 	owner: Uint8Array 						// Public key of transaction owner in b64url 
 	tags: Tag[]					// Indexable TX category identifiers.
-	target:string 					// Address of the recipient, if any.
+	target: string 					// Address of the recipient, if any.
 	quantity: bigint		// Amount of Winston to send, if any.
 	data:string 						// May be empty. May be submitted in a transfer transaction.
 	data_size: bigint 	// Size (in bytes) of the transaction data.
