@@ -5,6 +5,8 @@
   "main": "dist/index.js",
   "scripts": {
     "test": "jest --logHeapUsage --verbose",
+    "test:win": "node --max-old-space-size=4096 ./node_modules/jest/bin/jest.js --logHeapUsage --verbose",
+    "test:mem": "node --max-old-space-size=4096 node_modules/.bin/jest --logHeapUsage --verbose",
     "test:watch": "jest --watch --logHeapUsage --verbose",
     "test:clear": "jest --clearCache --verbose",
     "test:e2e": "jest --config ./test/jest-e2e.json --verbose",

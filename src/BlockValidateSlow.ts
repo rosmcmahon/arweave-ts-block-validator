@@ -9,7 +9,7 @@ import { nodeUtils_updateWallets, nodeUtils_IsWalletValid } from './NodeUtils'
 
 
 export const validateBlockSlow = async (block: Block, prevBlock: Block, blockIndex: BlockIndexTuple[], walletList: Wallet_List[]): Promise<ReturnCode> => {
-	/* 13 steps for slow validation (ref: validate in ar_node_utils.erl) */
+	/* 12 steps for slow validation (ref: validate in ar_node_utils.erl) */
 
 	// 1. Verify the height of the new block is the one higher than the current height.
 	if(block.height !== prevBlock.height + 1){
@@ -59,7 +59,7 @@ export const validateBlockSlow = async (block: Block, prevBlock: Block, blockInd
 	let { updatedWallets } = await nodeUtils_updateWallets(block, walletList, prevBlock.reward_pool, prevBlock.height)
 	let txs = await block.getTxs()
 	txs.forEach(tx => {
-		if( ! nodeUtils_IsWalletValid(tx, updatedWallets) ){
+		if(  nodeUtils_IsWalletValid(tx, updatedWallets) ){
 			return {code: 400, message: "Invalid wallet list"}
 		}
 	})
@@ -78,9 +78,6 @@ export const validateBlockSlow = async (block: Block, prevBlock: Block, blockInd
 
 	// 12. block_index_root:
 	// ar_block:verify_block_hash_list_merkle(NewB, OldB, BI) === false; return false
-
-	// 13. last_retarget:
-	// ar_block:verify_last_retarget(NewB, OldB) === false; return false
 
 	return {code:200, message:"Block slow check OK"}
 }
