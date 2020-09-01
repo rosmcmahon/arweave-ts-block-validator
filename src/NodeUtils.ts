@@ -81,13 +81,13 @@ export const nodeUtils_updateWallets = async (block: Block, walletList: Wallet_L
 		block.diff,
 		block.timestamp,
 	)
-	// let updatedWallets = nodeUtilsApplyMiningReward(
-	// 	await nodeUtils_ApplyTxs(walletList, txs, height),
-	// 	block.reward_addr,
-	// 	finderReward,
-	// 	block.height
-	// )
-	return { newRewardPool, updatedWallets: [] }
+	let updatedWallets = await nodeUtils_applyMiningReward(
+		await nodeUtils_ApplyTxs(walletList, txs, height),
+		block.reward_addr,
+		finderReward,
+		block.height
+	)
+	return { newRewardPool, updatedWallets }
 }
 
 export const nodeUtils_calculateRewardPoolPerpetual = (
@@ -170,32 +170,36 @@ export const nodeUtils_calculateRewardPoolPerpetual = (
 	return { baseReward, newPool }
 }
 
-export const nodeUtils_applyMiningReward = (walletList: Wallet_List[], rewardAddr: string) => {
+export const nodeUtils_applyMiningReward = async (walletList: Wallet_List[], rewardAddr: Uint8Array, quantity: bigint, height: number) => {
+
+	if(height < FORK_HEIGHT_1_8){
+		throw new Error("nodeUtils_applyMiningReward unimplemented below FORK_HEIGHT_1_8")
+	}
 	// %% @doc Calculate and apply mining reward quantities to a wallet list.
 	// apply_mining_reward(WalletList, unclaimed, _Quantity, _Height) ->
 	// 	WalletList;
 	// apply_mining_reward(WalletList, RewardAddr, Quantity, Height) ->
-	// 	alter_wallet(WalletList, RewardAddr, calculate_reward(Height, Quantity)).
+	// 	alter_wallet(WalletList, RewardAddr, Quantity).
 	//
 
-
-// %% @doc Alter a wallet in a wallet list.
-// alter_wallet(Wallets, Target, Adjustment) ->
-// 	case maps:get(Target, Wallets, not_found) of
-// 		not_found ->
-// 			maps:put(Target, {Adjustment, <<>>}, Wallets);
-// 		{Balance, LastTX} ->
-// 			maps:put(Target, {Balance + Adjustment, LastTX}, Wallets)
-// 	end.
-
-// %% @doc Calculate the total mining reward for a block and its associated TXs.
-// calculate_reward(Height, Quantity) ->
-// 	case ar_fork:height_1_8() of
-// 		H when Height >= H ->
-// 			Quantity;
-// 		_ ->
-// 			erlang:trunc(ar_inflation:calculate(Height) + Quantity)
-// 	end.
+	// %% @doc Alter a wallet in a wallet list.
+	// alter_wallet(Wallets, Target, Adjustment) ->
+	// 	case maps:get(Target, Wallets, not_found) of
+	// 		not_found ->
+	// 			maps:put(Target, {Adjustment, <<>>}, Wallets);
+	// 		{Balance, LastTX} ->
+	// 			maps:put(Target, {Balance + Adjustment, LastTX}, Wallets)
+	// 	end.
+	let target = Arweave.utils.bufferTob64Url(rewardAddr)
+	walletList.forEach(entry => {
+		if(entry.address === target){
+			entry.balance = ( BigInt(entry.balance) + quantity ).toString()
+			return walletList
+		}
+	})
+	walletList.push({address: target, balance: quantity.toString(), last_tx: ''})
+	
+	return walletList
 }
 
 export const nodeUtils_ApplyTxs = async (walletList: Wallet_List[], txs: Tx[], height: number ) => {

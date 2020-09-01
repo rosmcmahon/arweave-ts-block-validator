@@ -52,11 +52,17 @@ export const validateBlockSlow = async (block: Block, prevBlock: Block, blockInd
 		return {code: 400, message: "Invalid independent hash"}
 	}
 
-	// 7. wallet_list: (depends on PoW?)
+	// 7. wallet_list: 
 	// UpdatedWallets = update_wallets(NewB, Wallets, RewardPool, Height)
 	// if(any wallets are invalid <is_wallet_invalid> ) return "Invalid updated wallet list"
 	
-	let updatedWallets = await nodeUtils_updateWallets(block, walletList, prevBlock.reward_pool, prevBlock.height)
+	let { updatedWallets } = await nodeUtils_updateWallets(block, walletList, prevBlock.reward_pool, prevBlock.height)
+	let txs = await block.getTxs()
+	txs.forEach(tx => {
+		if( ! nodeUtils_IsWalletValid(tx, updatedWallets) ){
+			return {code: 400, message: "Invalid wallet list"}
+		}
+	})
 	
 	// 8. block_field_sizes: (block field size checks, no dependencies)
 	// if(! ar_block:block_field_size_limit(NewB) ) return false

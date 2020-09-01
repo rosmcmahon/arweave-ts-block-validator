@@ -24,13 +24,13 @@ export const txPerpetualStorage_usdToAr = (usd: Decimal, diff: bigint, height: n
 
 	let retNumerator = usd.mul(WINSTON_PER_AR).mul(deltaInflation)
 	let retDenominator = new Decimal( (BigInt(INITIAL_USD_PER_AR_HEIGHT) * deltaP).toString() )
-	let retValue = retNumerator.dividedBy(retDenominator).toFixed(0)
+	let retValue = retNumerator.dividedBy(retDenominator)
 
-	// if(ADD_ERLANG_ROUNDING_ERROR){
-	// 	return BigInt( Number(retValue) )
-	// }
+	if(ADD_ERLANG_ROUNDING_ERROR){
+		return BigInt( Number(retValue).toFixed(0) ) //this should only affect extra large valued txs?
+	}
 
-	return BigInt( retValue )  // may need to add rounding error above to match erlang 
+	return BigInt( retValue.toFixed(0) )  
 }
 
 export const txPerpetualStorage_getCostPerBlockAtTimestamp = (ts: bigint) => {
