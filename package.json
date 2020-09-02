@@ -4,13 +4,15 @@
   "description": "an arweave block validator, nothing more",
   "main": "dist/index.js",
   "scripts": {
-    "test": "jest --logHeapUsage --verbose",
-    "test:win": "node --max-old-space-size=4096 ./node_modules/jest/bin/jest.js --logHeapUsage --verbose",
-    "test:mem": "node --max-old-space-size=4096 node_modules/.bin/jest --logHeapUsage --verbose",
-    "test:watch": "jest --watch --logHeapUsage --verbose",
+    "test": "jest --runInBand --no-cache --logHeapUsage --verbose",
+    "test:windows": "node --max-old-space-size=1024 ./node_modules/jest/bin/jest.js --runInBand --no-cache --logHeapUsage --verbose",
+    "test:mem": "node --max-old-space-size=1024 node_modules/.bin/jest --logHeapUsage --verbose",
+    "test:watch": "jest  --watch --logHeapUsage --verbose",
     "test:clear": "jest --clearCache --verbose",
+    "start:walletlist": "node --max-old-space-size=4096 -r ts-node/register ./test/walletList-tests.ts",
+    "start:pow": "node --max-old-space-size=4096 -r ts-node/register ./test/pow-tests.ts",
     "test:e2e": "jest --config ./test/jest-e2e.json --verbose",
-    "start": "node --max_old_space_size=8192 -r ts-node/register ./src/placeholder-entry-point.ts"
+    "start": "node --max-old-space-size=4096 -r ts-node/register ./src/placeholder-entry-point.ts"
   },
   "author": "Ros McMahon <rosmcmahon@gmail.com>",
   "license": "GPL-3.0",
@@ -19,6 +21,7 @@
     "@types/node": "^14.6.0",
     "axios": "^0.19.2",
     "jest": "^26.4.0",
+    "jest-circus": "^26.4.2",
     "prettier": "^2.0.5",
     "ts-jest": "^26.2.0",
     "ts-node": "^8.10.2",

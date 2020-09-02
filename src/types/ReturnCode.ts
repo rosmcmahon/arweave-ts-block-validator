@@ -1,4 +1,5 @@
 export interface ReturnCode {
-	code:number
+	code: number
+	height?: number
 	message: string
 }

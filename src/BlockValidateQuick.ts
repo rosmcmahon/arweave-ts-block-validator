@@ -8,10 +8,10 @@ import { bufferToBigInt, bigIntToBuffer256 } from './utils/buffer-utilities'
 
 
 
-export const validateBlockJson = (blockJson: BlockDTO, height: number): ReturnCode => {
+export const validateBlockJson = async (blockJson: BlockDTO, height: number): Promise<ReturnCode> => {
 	let block: Block
 	try {
-		block = new Block(blockJson)
+		block = await Block.createFromDTO(blockJson)
 	} catch (error) {
 		console.log('error',error)
 		return {code: 400, message: "Invalid blockJson."}

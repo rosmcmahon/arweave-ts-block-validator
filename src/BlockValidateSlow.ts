@@ -1,11 +1,11 @@
 
 import { ReturnCode, BlockIndexTuple, Wallet_List } from  './types'
-import { Block, getIndepHash, generateBlockDataSegment, blockVerifyDepHash } from './Block'
+import { Block, getIndepHash, generateBlockDataSegment, block_verifyDepHash } from './Block'
 import { poa_validate, poa_modifyDiff } from './Poa'
 import { retarget_validateDiff } from './Retarget'
 import { weave_hash } from './Weave'
 import { mine_validate } from './Mine'
-import { nodeUtils_updateWallets, nodeUtils_IsWalletValid } from './NodeUtils'
+import { nodeUtils_updateWallets, nodeUtils_IsWalletInvalid } from './NodeUtils'
 
 
 export const validateBlockSlow = async (block: Block, prevBlock: Block, blockIndex: BlockIndexTuple[], walletList: Wallet_List[]): Promise<ReturnCode> => {
@@ -24,25 +24,13 @@ export const validateBlockSlow = async (block: Block, prevBlock: Block, blockInd
 	// 3. poa:
 	// if(! ar_poa:validate(OldB#block.indep_hash, OldB#block.weave_size, BI, POA) ) return false
 	if( ! await poa_validate(prevBlock.indep_hash, prevBlock.weave_size, blockIndex, block.poa) ){
-		return {code: 400, message: "Invalid PoA"}
+		return {code: 400, message: "Invalid PoA", height: block.height}
 	}
 
 	// 4. difficulty: 
 	// if(! ar_retarget:validate_difficulty(NewB, OldB) ) return false
 	if( ! retarget_validateDiff(block, prevBlock) ){
-		return {code: 400, message: "Invalid difficulty"}
-	}
-	
-	// 5. pow: (depends on RandomX)
-	// POW = ar_weave:hash( ar_block:generate_block_data_segment(NewB), Nonce, Height );
-	// if(! ar_mine:validate(POW, ar_poa:modify_diff(Diff, POA#poa.option), Height) ) return false
-	// if(! ar_block:verify_dep_hash(NewB, POW) ) return false
-	let pow = await weave_hash((await generateBlockDataSegment(block)), block.nonce, block.height)
-	if( ! blockVerifyDepHash(block, pow) ){
-		return {code: 400, message: "Invalid PoW hash"}
-	}
-	if( ! mine_validate(pow, poa_modifyDiff(block.diff, block.poa.option), block.height) ){
-		return {code: 400, message: "Invalid PoW"}
+		return {code: 400, message: "Invalid difficulty", height: block.height}
 	}
 
 	// 6. independent_hash:
@@ -57,12 +45,14 @@ export const validateBlockSlow = async (block: Block, prevBlock: Block, blockInd
 	// if(any wallets are invalid <is_wallet_invalid> ) return "Invalid updated wallet list"
 	
 	let { updatedWallets } = await nodeUtils_updateWallets(block, walletList, prevBlock.reward_pool, prevBlock.height)
-	let txs = await block.getTxs()
-	txs.forEach(tx => {
-		if(  nodeUtils_IsWalletValid(tx, updatedWallets) ){
-			return {code: 400, message: "Invalid wallet list"}
-		}
-	})
+
+	// for (let index = 0; index < block.txs.length; index++) {
+	// 	const tx = block.txs[index];
+	// 	if( await nodeUtils_IsWalletInvalid(tx, updatedWallets) ){
+	// 		console.log("Invalid wallet list")
+	// 		return {code: 400, message: "Invalid wallet list. txid:"+tx.idString, height: block.height}
+	// 	}
+	// }
 	
 	// 8. block_field_sizes: (block field size checks, no dependencies)
 	// if(! ar_block:block_field_size_limit(NewB) ) return false
@@ -78,6 +68,18 @@ export const validateBlockSlow = async (block: Block, prevBlock: Block, blockInd
 
 	// 12. block_index_root:
 	// ar_block:verify_block_hash_list_merkle(NewB, OldB, BI) === false; return false
+
+	// 5. pow: (depends on RandomX)
+	// POW = ar_weave:hash( ar_block:generate_block_data_segment(NewB), Nonce, Height );
+	// if(! ar_mine:validate(POW, ar_poa:modify_diff(Diff, POA#poa.option), Height) ) return false
+	// if(! ar_block:verify_dep_hash(NewB, POW) ) return false
+	let pow = await weave_hash((await generateBlockDataSegment(block)), block.nonce, block.height)
+	if( ! block_verifyDepHash(block, pow) ){
+		return {code: 400, message: "Invalid PoW hash", height: block.height}
+	}
+	if( ! mine_validate(pow, poa_modifyDiff(block.diff, block.poa.option), block.height) ){
+		return {code: 400, message: "Invalid PoW", height: block.height}
+	}
 
 	return {code:200, message:"Block slow check OK"}
 }

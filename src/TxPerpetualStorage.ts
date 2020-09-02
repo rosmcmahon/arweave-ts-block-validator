@@ -29,7 +29,6 @@ export const txPerpetualStorage_usdToAr = (usd: Decimal, diff: bigint, height: n
 	if(ADD_ERLANG_ROUNDING_ERROR){
 		return BigInt( Number(retValue).toFixed(0) ) //this should only affect extra large valued txs?
 	}
-
 	return BigInt( retValue.toFixed(0) )  
 }
 
