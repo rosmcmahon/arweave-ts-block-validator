@@ -26,8 +26,6 @@ export const FORK_HEIGHT_2_2 = /*(process.env.NODE_ENV !== "production") ? 0 :*/
 
 export const  POA_MIN_MAX_OPTION_DEPTH = 100
 
-// The hashing algorithm used to verify that the weave has not been tampered with.
-export const MINING_HASH_ALG = 'sha384'
 
 // Mining difficulty and retarget constants
 // The adjustment of difficutly going from SHA-384 to RandomX

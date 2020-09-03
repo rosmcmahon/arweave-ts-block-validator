@@ -1,10 +1,6 @@
-import { ReturnCode, BlockDTO, Tag, BlockIndexTuple } from  './types'
-import { STORE_BLOCKS_AROUND_CURRENT, FORK_HEIGHT_1_7, FORK_HEIGHT_1_8, MINING_HASH_ALG, MIN_DIFF_FORK_1_8 } from './constants'
+import { ReturnCode, BlockDTO, } from  './types'
+import { STORE_BLOCKS_AROUND_CURRENT, MIN_DIFF_FORK_1_8 } from './constants'
 import { Block } from './Block'
-import {  } from './Poa'
-
-import Arweave from 'arweave'
-import { bufferToBigInt, bigIntToBuffer256 } from './utils/buffer-utilities'
 
 
 

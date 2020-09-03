@@ -14,6 +14,9 @@ import { nodeUtils_updateWallets, nodeUtils_IsWalletInvalid } from './NodeUtils'
 import { wallet_ownerToAddressString } from './Wallet'
 
 
+//BDSBase & BDS for /height/509850 hash/si5OoWK-OcYt3LOEDCP2V4SWuj5X5n1LdoTh09-DtOppz_VkE72Cb0DCvygYMbW5
+const BDS_BASE = "dOljnXSULT9pTX4wiagcUOqrZZjBWLwKBR3Aoe3-HhNAW_CiKHNsrvqwL14x6BMm"
+const BDS = "uLdZH6FVM-TI_KiA8oZCGbqXwknwyg69ur7KPrSMVPcBljPnIzeOhnPRPyOoifWV"
 
 let blockKnownHash: Block
 let prevBlockKnownHash: Block
@@ -50,8 +53,7 @@ describe('Block tests, with specific data input', () => {
 		let hash = await generateBlockDataSegmentBase(blockKnownHash)
 		let data = Arweave.utils.bufferTob64Url(hash)
 		
-		expect(data).toEqual("dOljnXSULT9pTX4wiagcUOqrZZjBWLwKBR3Aoe3-HhNAW_CiKHNsrvqwL14x6BMm") 
-		//BDSBase for /height/509850 hash/si5OoWK-OcYt3LOEDCP2V4SWuj5X5n1LdoTh09-DtOppz_VkE72Cb0DCvygYMbW5
+		expect(data).toEqual(BDS_BASE) //BDSBase for /height/509850 hash/si5OoWK-OcYt3LOEDCP2V4SWuj5X5n1LdoTh09-DtOppz_VkE72Cb0DCvygYMbW5
 	})
 
 	it('generateBlockDataSegment returns a valid BSD hash', async () => {
@@ -59,8 +61,7 @@ describe('Block tests, with specific data input', () => {
 		let hash = await generateBlockDataSegment(blockKnownHash)
 		let data = Arweave.utils.bufferTob64Url(hash)
 
-		expect(data).toEqual("uLdZH6FVM-TI_KiA8oZCGbqXwknwyg69ur7KPrSMVPcBljPnIzeOhnPRPyOoifWV") 
-		//BDSBase for /height/509850 hash/si5OoWK-OcYt3LOEDCP2V4SWuj5X5n1LdoTh09-DtOppz_VkE72Cb0DCvygYMbW5
+		expect(data).toEqual(BDS) //BDS for /height/509850 hash/si5OoWK-OcYt3LOEDCP2V4SWuj5X5n1LdoTh09-DtOppz_VkE72Cb0DCvygYMbW5
 	})
 
 	it('getIndepHash returns a valid hash', async () => {

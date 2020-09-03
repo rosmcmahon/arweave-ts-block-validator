@@ -1,5 +1,5 @@
-import { HOST_SERVER, FORK_HEIGHT_1_8, DATA_CHUNK_SIZE, MAX_PATH_SIZE } from './constants'
-import { BlockDTO, Tag } from './types'
+import { HOST_SERVER, FORK_HEIGHT_1_8, DATA_CHUNK_SIZE, MAX_PATH_SIZE, FORK_HEIGHT_2_0 } from './constants'
+import { BlockDTO, Tag, BlockIndexTuple } from './types'
 import Arweave from 'arweave'
 import Axios from 'axios'
 import deepHash from './utils/deepHash'
@@ -7,6 +7,7 @@ import { Poa } from './Poa'
 import { arrayCompare } from './utils/buffer-utilities'
 import { Tx } from './Tx'
 import { arrayFlatten } from './utils/merkle'
+import { unbalancedMerkle_root, unbalancedMerkle_hashBlockIndexEntry } from './utils/UnbalancedMerkle'
 
 
 /* Actual binary data for a Block. Usually translated from a Block JSON Data Transfer Object */
@@ -196,3 +197,43 @@ export const  block_verifyWeaveSize = (block: Block, prevBlock: Block, txs: Tx[]
 
 	return block.weave_size == newSize
 }
+
+// export const block_verifyTxRoot = (block: Block) => {
+// 	return arrayCompare(block.tx_root, await generateTxRootForBlock(block.txs))
+// }
+
+// const generateTxRootForBlock = async (txs: Tx[]) => {
+// 	// %% @doc Given a list of TXs in various formats, or a block, generate the
+// 	// %% correct TX merkle tree root.
+// 	// generate_tx_root_for_block(TXs)  ->
+// 	// 	SizeTaggedTXs = generate_size_tagged_list_from_txs(TXs),
+// 	// 	SizeTaggedDataRoots = [{Root, Offset} || {{_, Root}, Offset} <- SizeTaggedTXs], 
+// 	// 	{Root, _Tree} = ar_merkle:generate_tree(SizeTaggedDataRoots),
+// 	// 	Root.
+// 	let sizeTaggedTxs = generate_size_tagged_list_from_txs(txs)
+// 	let sizeTaggedDataRoots = generateSizeTaggedDataRootsStructure(sizeTaggedTxs)
+// 	const { root, tree } = merkle_generate_tree(sizeTaggedDataRoots) //we need to alter merkle.ts
+
+// 	return root
+// }
+
+export const block_verifyBlockHashListMerkle = async (block: Block, prevBlock: Block, blockIndex: BlockIndexTuple[]) => {
+	if(block.height<FORK_HEIGHT_2_0) throw new Error("Unavailable: block_verifyBlockHashListMerkle < FORK_HEIGHT_2_0")
+	// Check that the given merkle root in a new block is valid.
+	// verify_block_hash_list_merkle(NewB, CurrentB, BI) ->
+	// 	NewB#block.hash_list_merkle ==
+	// 		ar_unbalanced_merkle:root(
+	// 			CurrentB#block.hash_list_merkle,
+	// 			{CurrentB#block.indep_hash, CurrentB#block.weave_size, CurrentB#block.tx_root},
+	// 			fun ar_unbalanced_merkle:hash_block_index_entry/1
+	// 		).
+	
+	return arrayCompare(
+		block.hash_list_merkle, 
+		await unbalancedMerkle_root(
+			prevBlock.hash_list_merkle,
+			await unbalancedMerkle_hashBlockIndexEntry(prevBlock.indep_hash, prevBlock.weave_size, prevBlock.tx_root)
+		)
+	)
+}
+

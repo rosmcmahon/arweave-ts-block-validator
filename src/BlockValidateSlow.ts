@@ -1,6 +1,6 @@
 
 import { ReturnCode, BlockIndexTuple, Wallet_List } from  './types'
-import { Block, getIndepHash, generateBlockDataSegment, block_verifyDepHash, blockFieldSizeLimit, block_verifyWeaveSize } from './Block'
+import { Block, getIndepHash, generateBlockDataSegment, block_verifyDepHash, blockFieldSizeLimit, block_verifyWeaveSize, block_verifyBlockHashListMerkle } from './Block'
 import { poa_validate, poa_modifyDiff } from './Poa'
 import { retarget_validateDiff } from './Retarget'
 import { weave_hash } from './Weave'
@@ -61,8 +61,13 @@ export const validateBlockSlow = async (block: Block, prevBlock: Block, blockInd
 	// 9. txs: (mempool? weaveState?) N.B. Need the BlockTXPairs for this test! requires 50 blocks. long tx checks
 	// if( ar_tx_replay_pool:verify_block_txs === invalid ) return false
 
-	// 10. tx_root: (hopefully can use merkle.ts)
+	// 10. tx_root: (need to rewrite merkle.ts)
 	// ar_block:verify_tx_root(NewB) === false; return false
+
+	// if( ! await block_verifyTxRoot(block) ){
+	// 	return {code: 400, message: "Invalid tx_root", height: block.height}
+	// }
+
 
 	// 11. weave_size: 
 	// ar_block:verify_weave_size(NewB, OldB, TXs) === false; return false
@@ -72,6 +77,9 @@ export const validateBlockSlow = async (block: Block, prevBlock: Block, blockInd
 
 	// 12. block_index_root: (unbalance_merkle - might be quick actually!)
 	// ar_block:verify_block_hash_list_merkle(NewB, OldB, BI) === false; return false
+	if( ! await block_verifyBlockHashListMerkle(block, prevBlock, blockIndex) ){
+		return {code: 400, message: "Invalid block index root", height: block.height}
+	}
 
 	// 5. pow: (depends on RandomX)
 	// POW = ar_weave:hash( ar_block:generate_block_data_segment(NewB), Nonce, Height );

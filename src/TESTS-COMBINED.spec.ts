@@ -4,7 +4,7 @@ import { BlockDTO, ReturnCode, BlockIndexTuple, Wallet_List } from './types'
 import { STORE_BLOCKS_AROUND_CURRENT, HOST_SERVER, RETARGET_BLOCKS } from './constants'
 import { validateBlockJson, validateBlockQuick } from "./BlockValidateQuick"
 import { validateBlockSlow } from './BlockValidateSlow'
-import { Block,	generateBlockDataSegmentBase, generateBlockDataSegment, getIndepHash, blockFieldSizeLimit, block_verifyWeaveSize } from './Block'
+import { Block,	generateBlockDataSegmentBase, generateBlockDataSegment, getIndepHash, blockFieldSizeLimit, block_verifyWeaveSize, block_verifyBlockHashListMerkle } from './Block'
 import { poa_validate, poa_findChallengeBlock, poa_modifyDiff } from './Poa'
 import { retarget_validateDiff } from './Retarget'
 import { nodeUtils_updateWallets, nodeUtils_IsWalletInvalid } from './NodeUtils'
@@ -103,6 +103,19 @@ describe('Block tests, for any data input', () => {
 
 		//now mix the blocks up to get invalid size
 		result = block_verifyWeaveSize(prevBlock, block, block.txs)
+		
+		expect(result).toEqual(false) 
+	})
+
+	it('block_verifyBlockHashListMerkle returns true/false for valid/invalid block index root hash', async () => {
+
+		expect.assertions(2)
+		let result = await block_verifyBlockHashListMerkle(block, prevBlock, blockIndex)
+		
+		expect(result).toEqual(true) 
+
+		//now mix the blocks up to get invalid blockIndex root hash
+		result = result = await block_verifyBlockHashListMerkle(prevBlock, block, blockIndex)
 		
 		expect(result).toEqual(false) 
 	})
