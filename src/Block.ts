@@ -1,4 +1,4 @@
-import { HOST_SERVER } from './constants'
+import { HOST_SERVER, FORK_HEIGHT_1_8, DATA_CHUNK_SIZE, MAX_PATH_SIZE } from './constants'
 import { BlockDTO, Tag } from './types'
 import Arweave from 'arweave'
 import Axios from 'axios'
@@ -6,6 +6,7 @@ import deepHash from './utils/deepHash'
 import { Poa } from './Poa'
 import { arrayCompare } from './utils/buffer-utilities'
 import { Tx } from './Tx'
+import { arrayFlatten } from './utils/merkle'
 
 
 /* Actual binary data for a Block. Usually translated from a Block JSON Data Transfer Object */
@@ -160,4 +161,38 @@ export const generateBlockDataSegmentBase = async (block: Block): Promise<Uint8A
 
 export const block_verifyDepHash = (block: Block, pow: Uint8Array) => {
 	return arrayCompare(block.hash, pow)
+}
+
+export const blockFieldSizeLimit = (block: Block) => {
+	if(block.height<FORK_HEIGHT_1_8) throw new Error("Block.blockFieldSizeLimit < FORK_HEIGHT_1_8 not implenented")
+	// if( Arweave.utils.bufferToString(block.reward_addr) === "unclaimed" ) <- needs to be implemented for mining
+
+	let diffBytesLimit = 78
+	let chunkSize = block.poa.chunk.length
+	let dataPathSize = block.poa.data_path.length
+
+	return block.nonce.length <= 512
+		&& block.previous_block.length <= 48 
+		&& block.timestamp.toString().length <= 12
+		&& block.last_retarget.toString().length <= 12
+		&& block.diff.toString().length <= diffBytesLimit
+		&& block.height.toString().length <= 20
+		&& block.hash.length <= 48
+		&& block.indep_hash.length <= 48
+		&& block.reward_addr.length <= 32
+		&& arrayFlatten(block.tags).length <= 2048
+		&& block.weave_size.toString().length <= 64
+		&& block.block_size.toString().length <= 64
+		&& chunkSize <= DATA_CHUNK_SIZE
+		&& dataPathSize <= MAX_PATH_SIZE
+}
+
+export const  block_verifyWeaveSize = (block: Block, prevBlock: Block, txs: Tx[]) => {
+	let newSize = prevBlock.weave_size
+	for (let i = 0; i < txs.length; i++) {
+		const tx = txs[i];
+		newSize += tx.data_size
+	}
+
+	return block.weave_size == newSize
 }

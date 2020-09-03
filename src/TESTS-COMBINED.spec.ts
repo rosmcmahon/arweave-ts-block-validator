@@ -4,7 +4,7 @@ import { BlockDTO, ReturnCode, BlockIndexTuple, Wallet_List } from './types'
 import { STORE_BLOCKS_AROUND_CURRENT, HOST_SERVER, RETARGET_BLOCKS } from './constants'
 import { validateBlockJson, validateBlockQuick } from "./BlockValidateQuick"
 import { validateBlockSlow } from './BlockValidateSlow'
-import { Block,	generateBlockDataSegmentBase, generateBlockDataSegment, getIndepHash } from './Block'
+import { Block,	generateBlockDataSegmentBase, generateBlockDataSegment, getIndepHash, blockFieldSizeLimit, block_verifyWeaveSize } from './Block'
 import { poa_validate, poa_findChallengeBlock, poa_modifyDiff } from './Poa'
 import { retarget_validateDiff } from './Retarget'
 import { nodeUtils_updateWallets, nodeUtils_IsWalletInvalid } from './NodeUtils'
@@ -84,6 +84,30 @@ describe('BlockValidateQuick Tests', () => {
     res = validateBlockQuick(test, block.height-1 )
     expect(res).toEqual({code: 400, message: "Difficulty too low"})
 	})
+})
+
+describe('Block tests, for any data input', () => {
+
+	it('blockFieldSizeLimit returns true for valid field sizes', async () => {
+		expect.assertions(1)
+		let result = blockFieldSizeLimit(block)
+		
+		expect(result).toEqual(true) 
+	})
+
+	it('block_verifyWeaveSize returns true/false for valid/invalid block weave size', async () => {
+		expect.assertions(2)
+		let result = block_verifyWeaveSize(block, prevBlock, block.txs)
+		
+		expect(result).toEqual(true) 
+
+		//now mix the blocks up to get invalid size
+		result = block_verifyWeaveSize(prevBlock, block, block.txs)
+		
+		expect(result).toEqual(false) 
+	})
+
+
 })
 
 

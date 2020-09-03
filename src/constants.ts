@@ -88,3 +88,11 @@ export const USD_PER_GBY_DECAY_ANNUAL = 0.995 // i.e. 0.5% annual decay rate
 // the $/AR exchange rate was ?INITIAL_USD_PER_AR.
 export const INITIAL_USD_PER_AR_HEIGHT = FORK_HEIGHT_1_9
 export const INITIAL_USD_PER_AR_DIFF = 29n
+
+/* Block field size limits */
+// Max size of a single data chunk, in bytes.
+export const DATA_CHUNK_SIZE = 256 * 1024
+// Max size of the PoA data path, in bytes.
+export const MAX_PATH_SIZE = 256 * 1024
+// The size of data chunk hashes, in bytes.
+export const CHUNK_ID_HASH_SIZE = 32

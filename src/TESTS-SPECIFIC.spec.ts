@@ -4,7 +4,7 @@ import { BlockDTO, ReturnCode, BlockIndexTuple, Wallet_List } from './types'
 import { STORE_BLOCKS_AROUND_CURRENT, HOST_SERVER, RETARGET_BLOCKS } from './constants'
 import { validateBlockJson, validateBlockQuick } from "./BlockValidateQuick"
 import { validateBlockSlow } from './BlockValidateSlow'
-import { Block,	generateBlockDataSegmentBase, generateBlockDataSegment, getIndepHash } from './Block'
+import { Block,	generateBlockDataSegmentBase, generateBlockDataSegment, getIndepHash, blockFieldSizeLimit } from './Block'
 import { poa_validate, poa_findChallengeBlock, poa_modifyDiff } from './Poa'
 import { retarget_validateDiff } from './Retarget'
 import { weave_hash } from './Weave'
@@ -15,8 +15,6 @@ import { wallet_ownerToAddressString } from './Wallet'
 
 
 
-let res: ReturnCode
-let blockJson: BlockDTO
 let blockKnownHash: Block
 let prevBlockKnownHash: Block
 let prevWalletList: Wallet_List[]
@@ -45,7 +43,8 @@ beforeAll(async () => {
 	}
 }, 60000)
 
-describe('Block tests', () => {
+describe('Block tests, with specific data input', () => {
+
 	it('generateBlockDataSegmentBase returns a valid BSDBase hash', async () => {
 		expect.assertions(1)
 		let hash = await generateBlockDataSegmentBase(blockKnownHash)
@@ -53,7 +52,7 @@ describe('Block tests', () => {
 		
 		expect(data).toEqual("dOljnXSULT9pTX4wiagcUOqrZZjBWLwKBR3Aoe3-HhNAW_CiKHNsrvqwL14x6BMm") 
 		//BDSBase for /height/509850 hash/si5OoWK-OcYt3LOEDCP2V4SWuj5X5n1LdoTh09-DtOppz_VkE72Cb0DCvygYMbW5
-	}, 20000)
+	})
 
 	it('generateBlockDataSegment returns a valid BSD hash', async () => {
 		expect.assertions(1)
@@ -62,14 +61,14 @@ describe('Block tests', () => {
 
 		expect(data).toEqual("uLdZH6FVM-TI_KiA8oZCGbqXwknwyg69ur7KPrSMVPcBljPnIzeOhnPRPyOoifWV") 
 		//BDSBase for /height/509850 hash/si5OoWK-OcYt3LOEDCP2V4SWuj5X5n1LdoTh09-DtOppz_VkE72Cb0DCvygYMbW5
-	}, 20000)
+	})
 
 	it('getIndepHash returns a valid hash', async () => {
 		expect.assertions(1)
 		let hash: any = await getIndepHash(blockKnownHash)
 		
 		expect(new Uint8Array(hash)).toEqual(blockKnownHash.indep_hash) 
-	}, 20000)
+	})
 
 })
 
@@ -102,16 +101,16 @@ describe('Wallet_List tests', () => {
 	it('WalletList. Validates that invalid transactions result in invalid wallet list', async () => {
 		expect.assertions(3)
 
-		expect(prevWalletList.length).toBeGreaterThan(19000)
+		expect(prevWalletList.length).toBeGreaterThan(19000) // make sure we have walletList data
 
 		let { updatedWallets } = await nodeUtils_updateWallets(blockKnownHash, prevWalletList, prevBlockKnownHash.reward_pool, prevBlockKnownHash.height)
 
 		expect(updatedWallets).toBeDefined()
 
-		let res = false // result should be false for invalid wallet list
+		let result = true // result should be false for invalid wallet list
 		let txs = blockKnownHash.txs
 
-		// let's invalidate the wallet list
+		// let's invalidate the wallet list by interfering with the first tx
 		let sender = await wallet_ownerToAddressString(txs[0].owner)
 		for (let i = 0; i < updatedWallets.length; i++) {
 			const entry = updatedWallets[i];
@@ -120,15 +119,12 @@ describe('Wallet_List tests', () => {
 				break;
 			}
 		}
-
-		for (let i = 0; i < txs.length; i++) {
-			const tx = txs[i];
-			if(await nodeUtils_IsWalletInvalid(tx, updatedWallets)){
-				res = false
-				break;
-			}
+		// 
+		if(await nodeUtils_IsWalletInvalid(txs[0], updatedWallets)){
+			result = false
 		}
-		expect(res).toEqual(false)
+	
+		expect(result).toEqual(false)
 
 	}, 20000)
 	

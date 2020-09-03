@@ -1,6 +1,6 @@
 
 import { ReturnCode, BlockIndexTuple, Wallet_List } from  './types'
-import { Block, getIndepHash, generateBlockDataSegment, block_verifyDepHash } from './Block'
+import { Block, getIndepHash, generateBlockDataSegment, block_verifyDepHash, blockFieldSizeLimit, block_verifyWeaveSize } from './Block'
 import { poa_validate, poa_modifyDiff } from './Poa'
 import { retarget_validateDiff } from './Retarget'
 import { weave_hash } from './Weave'
@@ -43,36 +43,40 @@ export const validateBlockSlow = async (block: Block, prevBlock: Block, blockInd
 	// 7. wallet_list: 
 	// UpdatedWallets = update_wallets(NewB, Wallets, RewardPool, Height)
 	// if(any wallets are invalid <is_wallet_invalid> ) return "Invalid updated wallet list"
-	
 	let { updatedWallets } = await nodeUtils_updateWallets(block, walletList, prevBlock.reward_pool, prevBlock.height)
-
-	// for (let index = 0; index < block.txs.length; index++) {
-	// 	const tx = block.txs[index];
-	// 	if( await nodeUtils_IsWalletInvalid(tx, updatedWallets) ){
-	// 		console.log("Invalid wallet list")
-	// 		return {code: 400, message: "Invalid wallet list. txid:"+tx.idString, height: block.height}
-	// 	}
-	// }
+	// check the updatedWallets
+	for (let index = 0; index < block.txs.length; index++) {
+		const tx = block.txs[index];
+		if( await nodeUtils_IsWalletInvalid(tx, updatedWallets) ){
+			return {code: 400, message: "Invalid wallet list. txid:"+tx.idString, height: block.height}
+		}
+	}
 	
 	// 8. block_field_sizes: (block field size checks, no dependencies)
 	// if(! ar_block:block_field_size_limit(NewB) ) return false
+	if( ! blockFieldSizeLimit(block) ){
+		return {code: 400, message: "Received block with invalid field size"}
+	}
 
-	// 9. txs: (mempool? weaveState?)
+	// 9. txs: (mempool? weaveState?) N.B. Need the BlockTXPairs for this test! requires 50 blocks. long tx checks
 	// if( ar_tx_replay_pool:verify_block_txs === invalid ) return false
 
-	// 10. tx_root: 
+	// 10. tx_root: (hopefully can use merkle.ts)
 	// ar_block:verify_tx_root(NewB) === false; return false
 
-	// 11. weave_size:
+	// 11. weave_size: 
 	// ar_block:verify_weave_size(NewB, OldB, TXs) === false; return false
+	if( ! block_verifyWeaveSize(block, prevBlock, block.txs) ){
+		return {code: 400, message: "Invalid weave size", height: block.height}
+	}
 
-	// 12. block_index_root:
+	// 12. block_index_root: (unbalance_merkle - might be quick actually!)
 	// ar_block:verify_block_hash_list_merkle(NewB, OldB, BI) === false; return false
 
 	// 5. pow: (depends on RandomX)
 	// POW = ar_weave:hash( ar_block:generate_block_data_segment(NewB), Nonce, Height );
-	// if(! ar_mine:validate(POW, ar_poa:modify_diff(Diff, POA#poa.option), Height) ) return false
 	// if(! ar_block:verify_dep_hash(NewB, POW) ) return false
+	// if(! ar_mine:validate(POW, ar_poa:modify_diff(Diff, POA#poa.option), Height) ) return false
 	let pow = await weave_hash((await generateBlockDataSegment(block)), block.nonce, block.height)
 	if( ! block_verifyDepHash(block, pow) ){
 		return {code: 400, message: "Invalid PoW hash", height: block.height}
