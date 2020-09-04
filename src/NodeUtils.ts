@@ -137,7 +137,7 @@ export const nodeUtils_calculateRewardPoolPerpetual = (
 					{BaseReward + Take, NewPool - Take}
 			end.
 	*/
-	let inflation = BigInt(calculateInflation(height).toFixed(0))
+	let inflation = BigInt(calculateInflation(height).floor())
 	let txsCost = 0n
 	let txsReward = 0n
 	txs.forEach(tx => {
@@ -145,7 +145,7 @@ export const nodeUtils_calculateRewardPoolPerpetual = (
 		let txReward: bigint
 		if(ADD_ERLANG_ROUNDING_ERROR){
 			txReward = BigInt(
-				( new Decimal(MINING_REWARD_MULTIPLIER).mul(txFee.toString()) ).div(MINING_REWARD_MULTIPLIER + 1).toFixed(0)
+				( new Decimal(MINING_REWARD_MULTIPLIER).mul(txFee.toString()) ).div(MINING_REWARD_MULTIPLIER + 1).floor()
 			)
 		} else{
 			txReward = txFee / MINING_REWARD_DIVIDER
@@ -221,7 +221,7 @@ export const nodeUtils_ApplyTxs = async (walletList: Wallet_List[], txs: Tx[], h
 	// 	do_apply_tx(WalletList, TX, Height).
 
 	txs.forEach( async tx => {
-		walletList = await nodeUtils_ApplyTx(walletList, tx, height)
+		walletList = await nodeUtils_ApplyTx(walletList, tx, height) 
 	})
 	return walletList
 }

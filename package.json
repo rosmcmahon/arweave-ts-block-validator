@@ -11,7 +11,7 @@
     "test:clear": "jest --clearCache --verbose",
     "start:scratch": "node --max-old-space-size=4096 -r ts-node/register ./test/scratchpad-tests.ts",
     "start:pow": "node --max-old-space-size=1024 -r ts-node/register ./test/pow-tests.ts",
-    "test:e2e": "jest --config ./test/jest-e2e.json --verbose",
+    "test:e2e": "jest --config ./test/jest-e2e.json --verbose"
   },
   "author": "Ros McMahon <rosmcmahon@gmail.com>",
   "license": "GPL-3.0",

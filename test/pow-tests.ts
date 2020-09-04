@@ -3,7 +3,7 @@ import { Block, generateBlockDataSegment } from "../src/Block"
 import { Wallet_List } from "../src/types"
 import { HOST_SERVER } from "../src/constants"
 import { weave_hash } from "../src/Weave"
-import { mine_validate } from "../src/Mine"
+import { validateMiningDifficulty } from "../src/mine"
 import { poa_modifyDiff } from "../src/Poa"
 import { arrayCompare } from "../src/utils/buffer-utilities"
 
@@ -56,7 +56,7 @@ const main = async () => {
 	}
 
 	//check poa.option = 1
-	let test1 = mine_validate(pow1, poa_modifyDiff(block1.diff, block1.poa.option), block1.height)
+	let test1 = validateMiningDifficulty(pow1, poa_modifyDiff(block1.diff, block1.poa.option), block1.height)
 
 	if (test1) {
 		console.log("TEST PASSED: poa.option = 1")
@@ -79,7 +79,7 @@ const main = async () => {
 	}
 	
 	//check poa.option = 2
-	let test2 = mine_validate(pow2, poa_modifyDiff(block2.diff, block2.poa.option), block2.height)
+	let test2 = validateMiningDifficulty(pow2, poa_modifyDiff(block2.diff, block2.poa.option), block2.height)
 	if (test2) {
 		console.log("TEST PASSED: poa.option = 2")
 	} else {

@@ -4,7 +4,7 @@ import { Block, getIndepHash, generateBlockDataSegment, block_verifyDepHash, blo
 import { poa_validate, poa_modifyDiff } from './Poa'
 import { retarget_validateDiff } from './Retarget'
 import { weave_hash } from './Weave'
-import { mine_validate } from './Mine'
+import { validateMiningDifficulty } from './mine'
 import { nodeUtils_updateWallets, nodeUtils_IsWalletInvalid } from './NodeUtils'
 
 
@@ -89,7 +89,7 @@ export const validateBlockSlow = async (block: Block, prevBlock: Block, blockInd
 	if( ! block_verifyDepHash(block, pow) ){
 		return {code: 400, message: "Invalid PoW hash", height: block.height}
 	}
-	if( ! mine_validate(pow, poa_modifyDiff(block.diff, block.poa.option), block.height) ){
+	if( ! validateMiningDifficulty(pow, poa_modifyDiff(block.diff, block.poa.option), block.height) ){
 		return {code: 400, message: "Invalid PoW", height: block.height}
 	}
 

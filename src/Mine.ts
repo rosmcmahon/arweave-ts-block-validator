@@ -15,7 +15,7 @@ import { bufferToInt } from './utils/buffer-utilities'
 // }
 
 
-export const mine_validate = (bdsHash: Uint8Array, diff: number, height: number) => {
+export const validateMiningDifficulty = (bdsHash: Uint8Array, diff: number, height: number) => {
 
 	if(height < FORK_HEIGHT_1_8){
 		throw new Error("mineValidate not implemented for < FORK_HEIGHT_1_8")

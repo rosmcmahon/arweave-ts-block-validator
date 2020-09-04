@@ -251,7 +251,6 @@ const generateSizeTaggedList = (txs: Tx[]) => {
 	// generate_size_tagged_list_from_txs(TXs) ->
 	// 	lists:reverse(
 	// 		element(2,
-
 	// 			lists:foldl(
 	// 				fun(TX, {Pos, List}) ->
 	// 					End = Pos + TX#tx.data_size,
@@ -260,7 +259,6 @@ const generateSizeTaggedList = (txs: Tx[]) => {
 	// 				{0, []},
 	// 				lists:sort(TXs)
 	// 			)
-
 	// 		)
 	// 	).
 
@@ -283,10 +281,8 @@ const generateSizeTaggedList = (txs: Tx[]) => {
 			{ data: {id: tx.id, root: get_tx_data_root(tx)}, offset: pos },
 		]
 	}
-	// reverse list
-	// let reversed = list.reverse()
 
-	return list // already reversed
+	return list // already reversed when being created
 }
 
 

@@ -1,7 +1,7 @@
 import { RANDOMX_KEY_SWAP_FREQ } from "./constants"
 import { Block } from "./Block"
 import Arweave from "arweave"
-import { mineRandomx_initLight, mineRandomx_hashLight } from "./MineRandomx"
+import { mineRandomx_initLight, mineRandomx_hashLight } from "./mineRandomx"
 
 /**
  * Based on ar_randomx_state.erl in name only.
