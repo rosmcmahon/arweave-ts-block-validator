@@ -24,7 +24,7 @@ export const FORK_HEIGHT_1_9 = /*(process.env.NODE_ENV !== "production") ? 0 :*/
 export const FORK_HEIGHT_2_0 = /*(process.env.NODE_ENV !== "production") ? 0 :*/ 422250
 export const FORK_HEIGHT_2_2 = /*(process.env.NODE_ENV !== "production") ? 0 :*/ 500000
 
-export const  POA_MIN_MAX_OPTION_DEPTH = 100
+export const POA_MIN_MAX_OPTION_DEPTH = 100
 
 
 // Mining difficulty and retarget constants

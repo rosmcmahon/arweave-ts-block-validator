@@ -19,8 +19,10 @@ export function bufferToBigInt(buffer: Uint8Array): bigint {
   return value
 }
 
-export const arrayCompare = (a: Uint8Array | any[], b: Uint8Array | any[]) =>
-	a.every((value: any, index: any) => b[index] === value)
+export const arrayCompare = (a: Uint8Array | any[], b: Uint8Array | any[]) => {
+  return a.every((value: any, index: any) => b[index] === value)
+}
+
 
 export function intToBuffer256(note: number): Uint8Array {
   const buffer = new Uint8Array(32);

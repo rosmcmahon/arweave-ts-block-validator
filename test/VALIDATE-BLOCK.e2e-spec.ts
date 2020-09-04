@@ -1,13 +1,15 @@
 import axios from "axios"
-import { validateBlockSlow } from "../src/BlockValidateSlow"
-import { ReturnCode, BlockIndexTuple, Wallet_List } from "../src/types"
+import { ReturnCode, BlockIndexTuple, Wallet_List, BlockDTO } from "../src/types"
 import { Block } from "../src/Block"
 import { HOST_SERVER, RETARGET_BLOCKS } from "../src/constants"
+import { validateBlockQuick } from "../src/blockValidateQuick"
+import { validateBlockSlow } from "../src/blockValidateSlow"
 
 
 
 
 let res: ReturnCode
+let blockJson: BlockDTO
 let block: Block
 let prevBlock: Block
 let blockIndex: BlockIndexTuple[]  //for PoA and full test
@@ -33,7 +35,8 @@ beforeAll(async () => {
 			axios.get('https://arweave.net/block/height/'+(workingHeight-1).toString()+'/wallet_list'), //arweave.net keeps old
 		])
 		blockIndex = bIndex.data
-
+		
+		blockJson = bj1.data
 		block = await Block.createFromDTO(bj1.data)
 		prevBlock = await Block.createFromDTO(bj2.data)
 		prevBlockWalletList = (bj2WalletList.data)
@@ -48,7 +51,17 @@ beforeAll(async () => {
 
 
 
-describe('BlockValidateSlow does complete slow validation tests', ()=> {
+describe('BlockValidateQuick completes e2e Quick validation tests', ()=> {
+
+  it('blockValidateQuick should return true for a valid block', async () => {
+		let result = await validateBlockQuick(blockJson, block, block.height )
+		
+    expect(result).toEqual({code: 200, message: "Block quick check OK"})
+  })
+
+})
+
+describe('blockValidateSlow completes e2e Slow validation tests', ()=> {
 
 	it('validateBlockSlow should return true when given valid block data', async () => {
 		expect.assertions(1)
@@ -56,6 +69,5 @@ describe('BlockValidateSlow does complete slow validation tests', ()=> {
 			
 		expect(res).toEqual({code:200, message:"Block slow check OK"})
 	}, 20000)
-
 
 })

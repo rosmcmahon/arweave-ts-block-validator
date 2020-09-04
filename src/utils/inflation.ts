@@ -1,7 +1,7 @@
 import { Decimal } from 'decimal.js'
-import { BLOCKS_PER_YEAR, GENESIS_TOKENS, WINSTON_PER_AR } from './constants'
+import { BLOCKS_PER_YEAR, GENESIS_TOKENS, WINSTON_PER_AR } from '../constants'
 
-export const inflation_calculate = (height: number) => {
+export const calculateInflation = (height: number) => {
 	/*
 		calculate_base(Height) ->
 			WINSTON_PER_AR * (

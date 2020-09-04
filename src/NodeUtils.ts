@@ -2,7 +2,7 @@ import { FORK_HEIGHT_1_8, FORK_HEIGHT_2_0, MINING_REWARD_DIVIDER, ADD_ERLANG_ROU
 import { Block } from './Block'
 import { Tx } from './Tx'
 import { Wallet_List } from './types'
-import { inflation_calculate } from './Inflation'
+import { calculateInflation } from './utils/inflation'
 import { txPerpetualStorage_usdToAr, txPerpetualStorage_getCostPerBlockAtTimestamp } from './TxPerpetualStorage'
 import Arweave from 'arweave'
 import { wallet_ownerToAddressString } from './Wallet'
@@ -137,7 +137,7 @@ export const nodeUtils_calculateRewardPoolPerpetual = (
 					{BaseReward + Take, NewPool - Take}
 			end.
 	*/
-	let inflation = BigInt(inflation_calculate(height).toFixed(0))
+	let inflation = BigInt(calculateInflation(height).toFixed(0))
 	let txsCost = 0n
 	let txsReward = 0n
 	txs.forEach(tx => {

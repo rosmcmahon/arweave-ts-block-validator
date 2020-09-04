@@ -3,7 +3,7 @@ import { BlockIndexTuple } from "./types"
 import * as Merkle from './utils/merkle'
 import { bufferToBigInt } from './utils/buffer-utilities'
 import { POA_MIN_MAX_OPTION_DEPTH, ALTERNATIVE_POA_DIFF_MULTIPLIER } from './constants'
-import { difficulty_multiplyDiff } from "./Difficulty"
+import { multiplyDifficulty } from "./utils/difficulty"
 
 export interface Poa {
 	// A succinct proof of access to a recall byte found in a TX.
@@ -109,7 +109,7 @@ const poaValidateChunk = async (chunkId: Uint8Array, poa: Poa) => {
 	// validate_chunk(ChunkID, POA) ->
 	// 	ChunkID == ar_tx:generate_chunk_id(POA#poa.chunk).
 	let hashed = await txGenerateChunkId(poa.chunk)
-	return Buffer.from(chunkId).equals(hashed) //arrayCompare(chunkId, hashed)
+	return Buffer.from(chunkId).equals(hashed) 
 }
 
 const txGenerateChunkId = async (data: Uint8Array) => {
@@ -160,7 +160,7 @@ export const poa_modifyDiff = (diff: bigint, option: number) => {
 		return diff
 	}
 	return poa_modifyDiff(
-		difficulty_multiplyDiff(diff, ALTERNATIVE_POA_DIFF_MULTIPLIER),
+		multiplyDifficulty(diff, ALTERNATIVE_POA_DIFF_MULTIPLIER),
 		option - 1
 	)
 }

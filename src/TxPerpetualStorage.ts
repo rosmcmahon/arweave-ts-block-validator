@@ -2,7 +2,7 @@ import { BLOCKS_PER_YEAR, N_REPLICATIONS, USD_PER_GBY_2019, USD_PER_GBY_2018, US
 import { Decimal } from 'decimal.js'
 import { retarget_switchToLinearDiff } from './Retarget'
 import { bufferToBigInt } from "./utils/buffer-utilities"
-import { inflation_calculate } from "./Inflation"
+import { calculateInflation } from "./utils/inflation"
 
 export const txPerpetualStorage_usdToAr = (usd: Decimal, diff: bigint, height: number): bigint => {
 	if(height < FORK_HEIGHT_1_9) throw new Error("txPerpetualStorageUsdToAr not impleneted for height < FORK_HEIGHT_1_9")
@@ -19,8 +19,8 @@ export const txPerpetualStorage_usdToAr = (usd: Decimal, diff: bigint, height: n
 	Decimal.config({precision: 50})
 	let initialDiff = retarget_switchToLinearDiff( INITIAL_USD_PER_AR_DIFF )
 	let deltaP = (MAX_DIFF - initialDiff) / (MAX_DIFF - diff)
-	let initialInflation = inflation_calculate(INITIAL_USD_PER_AR_HEIGHT) //a constant
-	let deltaInflation = inflation_calculate(height).dividedBy(initialInflation)
+	let initialInflation = calculateInflation(INITIAL_USD_PER_AR_HEIGHT) //a constant
+	let deltaInflation = calculateInflation(height).dividedBy(initialInflation)
 
 	let retNumerator = usd.mul(WINSTON_PER_AR).mul(deltaInflation)
 	let retDenominator = new Decimal( (BigInt(INITIAL_USD_PER_AR_HEIGHT) * deltaP).toString() )

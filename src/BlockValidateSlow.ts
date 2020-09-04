@@ -1,6 +1,6 @@
 
 import { ReturnCode, BlockIndexTuple, Wallet_List } from  './types'
-import { Block, getIndepHash, generateBlockDataSegment, block_verifyDepHash, blockFieldSizeLimit, block_verifyWeaveSize, block_verifyBlockHashListMerkle } from './Block'
+import { Block, getIndepHash, generateBlockDataSegment, block_verifyDepHash, blockFieldSizeLimit, block_verifyWeaveSize, block_verifyBlockHashListMerkle, block_verifyTxRoot } from './Block'
 import { poa_validate, poa_modifyDiff } from './Poa'
 import { retarget_validateDiff } from './Retarget'
 import { weave_hash } from './Weave'
@@ -64,9 +64,9 @@ export const validateBlockSlow = async (block: Block, prevBlock: Block, blockInd
 	// 10. tx_root: (need to rewrite merkle.ts)
 	// ar_block:verify_tx_root(NewB) === false; return false
 
-	// if( ! await block_verifyTxRoot(block) ){
-	// 	return {code: 400, message: "Invalid tx_root", height: block.height}
-	// }
+	if( ! await block_verifyTxRoot(block) ){
+		return {code: 400, message: "Invalid tx_root", height: block.height}
+	}
 
 
 	// 11. weave_size: 

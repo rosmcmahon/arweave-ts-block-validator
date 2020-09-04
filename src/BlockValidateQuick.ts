@@ -4,18 +4,22 @@ import { Block } from './Block'
 
 
 
-export const validateBlockJson = async (blockJson: BlockDTO, height: number): Promise<ReturnCode> => {
+export const validateBlockJson = async (blockJson: BlockDTO) => {
 	let block: Block
 	try {
 		block = await Block.createFromDTO(blockJson)
 	} catch (error) {
 		console.log('error',error)
-		return {code: 400, message: "Invalid blockJson."}
+		return false
 	}
-	return {code: 200, message: "Block Json OK."}
+	return true
 }
 
-export const validateBlockQuick = (block: Block, currentHeight: number):ReturnCode =>{
+export const validateBlockQuick = (blockJson: BlockDTO, block: Block, currentHeight: number):ReturnCode =>{
+
+	if( ! validateBlockJson(blockJson) ){
+		return {code: 400, message: "Invalid blockJson."}
+	}
 
 	/* 2 steps for quick, initial validation (disregarding http bound steps). Return as fast as possible */
 

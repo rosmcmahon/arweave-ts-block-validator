@@ -1,13 +1,10 @@
 import axios from 'axios'
-import Arweave from "arweave"
 import { BlockDTO, ReturnCode, BlockIndexTuple, Wallet_List } from './types'
 import { STORE_BLOCKS_AROUND_CURRENT, HOST_SERVER, RETARGET_BLOCKS } from './constants'
-import { validateBlockJson, validateBlockQuick } from "./BlockValidateQuick"
-import { validateBlockSlow } from './BlockValidateSlow'
-import { Block,	generateBlockDataSegmentBase, generateBlockDataSegment, getIndepHash, blockFieldSizeLimit, block_verifyWeaveSize, block_verifyBlockHashListMerkle } from './Block'
+import { validateBlockJson, validateBlockQuick } from './blockValidateQuick'
+import { Block, blockFieldSizeLimit, block_verifyWeaveSize, block_verifyBlockHashListMerkle, block_verifyTxRoot } from './Block'
 import { poa_validate, poa_findChallengeBlock, poa_modifyDiff } from './Poa'
 import { retarget_validateDiff } from './Retarget'
-import { nodeUtils_updateWallets, nodeUtils_IsWalletInvalid } from './NodeUtils'
 
 /* *** Initialise all test data, and use in one big test file *** */
 
@@ -28,6 +25,10 @@ beforeAll(async () => {
 		//we want height % 10 so we get a difficulty retarget block
 		let workingHeight = currentHeight - (currentHeight % RETARGET_BLOCKS)
 		//518960 <- Invalid difficulty
+		//DiffInverse for 518960:
+		//14231183094510643579717614561666284022583822524602630177890580299776
+
+		//520740 contains v1 txs
 
 		const [
 			bIndex, 
@@ -64,16 +65,16 @@ beforeAll(async () => {
 describe('BlockValidateQuick Tests', () => {
 
   it('validateBlockJson should return true for a valid block', async () => {
-		res = await validateBlockJson(blockJson, blockJson.height-1 )
+		let result = await validateBlockJson(blockJson )
 		
-    expect(res).toEqual({code: 200, message: "Block Json OK."})
+    expect(result).toEqual(true)
   })
 
   it('validateBlockQuick should return false for an out of range height', async () => {
-    let ahead = validateBlockQuick( block, block.height - (STORE_BLOCKS_AROUND_CURRENT+10) )
+    let ahead = validateBlockQuick(blockJson, block, block.height - (STORE_BLOCKS_AROUND_CURRENT+10) )
 		expect(ahead).toEqual({code: 400, message: "Height is too far ahead"})
 		
-    let behind = validateBlockQuick( block, block.height + (STORE_BLOCKS_AROUND_CURRENT+10) )
+    let behind = validateBlockQuick(blockJson, block, block.height + (STORE_BLOCKS_AROUND_CURRENT+10) )
     expect(behind).toEqual({code: 400, message: "Height is too far behind"})
 	})
 	
@@ -81,7 +82,7 @@ describe('BlockValidateQuick Tests', () => {
 		let test = Object.assign({},block)
 		test.diff = 1n		                                 //TODO: better good/bad difficulties
 
-    res = validateBlockQuick(test, block.height-1 )
+    res = validateBlockQuick(blockJson, test, block.height-1 )
     expect(res).toEqual({code: 400, message: "Difficulty too low"})
 	})
 })
@@ -108,7 +109,6 @@ describe('Block tests, for any data input', () => {
 	})
 
 	it('block_verifyBlockHashListMerkle returns true/false for valid/invalid block index root hash', async () => {
-
 		expect.assertions(2)
 		let result = await block_verifyBlockHashListMerkle(block, prevBlock, blockIndex)
 		
@@ -118,6 +118,18 @@ describe('Block tests, for any data input', () => {
 		result = result = await block_verifyBlockHashListMerkle(prevBlock, block, blockIndex)
 		
 		expect(result).toEqual(false) 
+	})
+
+	it('block_verifyTxRoot returns true/false for valid/invalid tx_root hash', async () => {
+		expect.assertions(2)
+		let good = await block_verifyTxRoot(block)
+
+		let badBlock = Object.assign({}, block)
+		badBlock.tx_root = new Uint8Array(badBlock.tx_root.length)
+		let bad = await block_verifyTxRoot(badBlock)
+
+		expect(good).toEqual(true) 
+		expect(bad).toEqual(false) 
 	})
 
 

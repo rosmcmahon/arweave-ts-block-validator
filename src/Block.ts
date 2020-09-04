@@ -4,10 +4,11 @@ import Arweave from 'arweave'
 import Axios from 'axios'
 import deepHash from './utils/deepHash'
 import { Poa } from './Poa'
-import { arrayCompare } from './utils/buffer-utilities'
+import { arrayCompare, bufferToInt } from './utils/buffer-utilities'
 import { Tx } from './Tx'
-import { arrayFlatten } from './utils/merkle'
-import { unbalancedMerkle_root, unbalancedMerkle_hashBlockIndexEntry } from './utils/UnbalancedMerkle'
+import { arrayFlatten, MerkleElement, computeRootHash } from './utils/merkle'
+import { unbalancedMerkle_root, unbalancedMerkle_hashBlockIndexEntry } from './utils/unbalanced-merkle'
+// import { merkle2_generate_tree, MerkleElement } from './utils/Merke2'
 
 
 /* Actual binary data for a Block. Usually translated from a Block JSON Data Transfer Object */
@@ -195,39 +196,13 @@ export const  block_verifyWeaveSize = (block: Block, prevBlock: Block, txs: Tx[]
 		newSize += tx.data_size
 	}
 
-	return block.weave_size == newSize
+	return block.weave_size === newSize
 }
-
-// export const block_verifyTxRoot = (block: Block) => {
-// 	return arrayCompare(block.tx_root, await generateTxRootForBlock(block.txs))
-// }
-
-// const generateTxRootForBlock = async (txs: Tx[]) => {
-// 	// %% @doc Given a list of TXs in various formats, or a block, generate the
-// 	// %% correct TX merkle tree root.
-// 	// generate_tx_root_for_block(TXs)  ->
-// 	// 	SizeTaggedTXs = generate_size_tagged_list_from_txs(TXs),
-// 	// 	SizeTaggedDataRoots = [{Root, Offset} || {{_, Root}, Offset} <- SizeTaggedTXs], 
-// 	// 	{Root, _Tree} = ar_merkle:generate_tree(SizeTaggedDataRoots),
-// 	// 	Root.
-// 	let sizeTaggedTxs = generate_size_tagged_list_from_txs(txs)
-// 	let sizeTaggedDataRoots = generateSizeTaggedDataRootsStructure(sizeTaggedTxs)
-// 	const { root, tree } = merkle_generate_tree(sizeTaggedDataRoots) //we need to alter merkle.ts
-
-// 	return root
-// }
 
 export const block_verifyBlockHashListMerkle = async (block: Block, prevBlock: Block, blockIndex: BlockIndexTuple[]) => {
 	if(block.height<FORK_HEIGHT_2_0) throw new Error("Unavailable: block_verifyBlockHashListMerkle < FORK_HEIGHT_2_0")
+
 	// Check that the given merkle root in a new block is valid.
-	// verify_block_hash_list_merkle(NewB, CurrentB, BI) ->
-	// 	NewB#block.hash_list_merkle ==
-	// 		ar_unbalanced_merkle:root(
-	// 			CurrentB#block.hash_list_merkle,
-	// 			{CurrentB#block.indep_hash, CurrentB#block.weave_size, CurrentB#block.tx_root},
-	// 			fun ar_unbalanced_merkle:hash_block_index_entry/1
-	// 		).
-	
 	return arrayCompare(
 		block.hash_list_merkle, 
 		await unbalancedMerkle_root(
@@ -237,3 +212,92 @@ export const block_verifyBlockHashListMerkle = async (block: Block, prevBlock: B
 	)
 }
 
+export const block_verifyTxRoot = async (block: Block) => {
+	return arrayCompare(block.tx_root, await generateTxRootForBlock(block.txs))
+}
+
+const generateTxRootForBlock = async (txs: Tx[]) => {
+	// %% @doc Given a list of TXs in various formats, or a block, generate the
+	// %% correct TX merkle tree root.
+	// generate_tx_root_for_block(TXs)  ->
+	// 	SizeTaggedTXs = generate_size_tagged_list_from_txs(TXs),
+	// 	SizeTaggedDataRoots = [{Root, Offset} || {{_, Root}, Offset} <- SizeTaggedTXs], 
+	// 	{Root, _Tree} = ar_merkle:generate_tree(SizeTaggedDataRoots),
+	// 	Root.
+	
+	let sizeTaggedTxs = generateSizeTaggedList(txs)
+	let sizeTaggedDataRoots = generateSizeTaggedDataRootsStructure(sizeTaggedTxs)
+	const root = await computeRootHash(sizeTaggedDataRoots) 
+
+	return root
+}
+
+const generateSizeTaggedDataRootsStructure = (sizeTaggedTxs: SizeTagged[]): MerkleElement[] => {
+	return sizeTaggedTxs.map( sizeTagged => {
+		let { data, offset } = sizeTagged
+		let { root } = data
+		return { data: root, note: offset }
+	})
+}
+
+interface SizeTagged {
+	data: {
+		id: Uint8Array
+		root: Uint8Array
+	},
+	offset: bigint
+}
+const generateSizeTaggedList = (txs: Tx[]) => {
+	// generate_size_tagged_list_from_txs(TXs) ->
+	// 	lists:reverse(
+	// 		element(2,
+
+	// 			lists:foldl(
+	// 				fun(TX, {Pos, List}) ->
+	// 					End = Pos + TX#tx.data_size,
+	// 					{End, [{{TX#tx.id, get_tx_data_root(TX)}, End} | List]}
+	// 				end,
+	// 				{0, []},
+	// 				lists:sort(TXs)
+	// 			)
+
+	// 		)
+	// 	).
+
+	// first sort the txs by format then id
+	const sortTxs = (txs: Tx[]) => {
+		let idSort = txs.sort((a,b) => bufferToInt(a.id) - bufferToInt(b.id))
+		let formatSort = idSort.sort((a,b) => a.format - b.format)
+		return formatSort
+	}
+	let sortedTxs = sortTxs(txs)
+
+	// do the fold on these sortedTxs
+	let pos = 0n
+	let list: SizeTagged[] = []
+	for (let i = 0; i < sortedTxs.length; i++) {
+		const tx = sortedTxs[i];
+		pos += tx.data_size
+		list = [
+			...list,
+			{ data: {id: tx.id, root: get_tx_data_root(tx)}, offset: pos },
+		]
+	}
+	// reverse list
+	// let reversed = list.reverse()
+
+	return list // already reversed
+}
+
+
+const get_tx_data_root = (tx: Tx) => {
+	// get_tx_data_root(#tx{ format = 2, data_root = DataRoot }) ->
+	// 	DataRoot;
+	// get_tx_data_root(TX) ->
+	// 	(ar_tx:generate_chunk_tree(TX))#tx.data_root.
+	if( tx.format === 1){
+		// we'll do this later
+		throw new Error("get_tx_data_root tx.format == 1 not supported yet!")
+	}
+	return tx.data_root
+}
