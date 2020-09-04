@@ -2,7 +2,7 @@ import axios from 'axios'
 import Arweave from "arweave"
 import { Wallet_List } from './types'
 import { HOST_SERVER } from './constants'
-import { Block,	generateBlockDataSegmentBase, generateBlockDataSegment, getIndepHash, blockFieldSizeLimit } from './Block'
+import { Block,	generateBlockDataSegmentBase, generateBlockDataSegment, getIndepHash, block_verifyTxRoot } from './Block'
 import { nodeUtils_updateWallets, nodeUtils_IsWalletInvalid } from './NodeUtils'
 import { wallet_ownerToAddressString } from './Wallet'
 
@@ -14,6 +14,7 @@ const BDS_KNOWN_HASH = "uLdZH6FVM-TI_KiA8oZCGbqXwknwyg69ur7KPrSMVPcBljPnIzeOhnPR
 let blockKnownHash: Block
 let prevBlockKnownHash: Block
 let prevWalletList: Wallet_List[]
+let v1BigV2Block: Block
 
 
 beforeAll(async () => {
@@ -23,16 +24,19 @@ beforeAll(async () => {
 			bjKnownHash, 
 			bjPrevKnownHash, 
 			bjPrevWalletList, 
+			bjV1BigV2,
 		] = await Promise.all([
 			axios.get(HOST_SERVER+'/block/height/509850'), //known hash, poa option 1, has 4 txs
 			axios.get(HOST_SERVER+'/block/height/509849'), //known hash, poa option 2
 			axios.get('https://arweave.net/block/height/509849/wallet_list'), //arweave.net keeps old wallet_list
+			axios.get(HOST_SERVER+'/block/height/520919'), //contains BIG v1 data tx (needs chunking) + v2 txs
 		])
 
 		blockKnownHash = await Block.createFromDTO(bjKnownHash.data)
 		prevBlockKnownHash = await Block.createFromDTO(bjPrevKnownHash.data)
 		prevWalletList = bjPrevWalletList.data
-		
+		v1BigV2Block = await Block.createFromDTO(bjV1BigV2.data)
+
 	}catch(e){
 		console.debug('Network error! Could not retrieve tests data!', e.code)
 		process.exit(1)
@@ -62,6 +66,18 @@ describe('Block tests, with known hash data outputs', () => {
 		let hash: any = await getIndepHash(blockKnownHash)
 		
 		expect(new Uint8Array(hash)).toEqual(blockKnownHash.indep_hash) 
+	})
+
+	it('block_verifyTxRoot returns true/false for valid/invalid tx_root hash', async () => {
+		expect.assertions(2)
+		let good = await block_verifyTxRoot(v1BigV2Block)
+
+		let badBlock = Object.assign({}, v1BigV2Block)
+		badBlock.tx_root = new Uint8Array(Buffer.from("bad data"))
+		let bad = await block_verifyTxRoot(badBlock)
+
+		expect(good).toEqual(true) 
+		expect(bad).toEqual(false) 
 	})
 
 })

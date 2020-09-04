@@ -5,7 +5,7 @@ import Axios from 'axios'
 import deepHash from './utils/deepHash'
 import { Poa } from './Poa'
 import { arrayCompare, bufferToInt } from './utils/buffer-utilities'
-import { Tx } from './Tx'
+import { Tx, generateV1TxDataRoot } from './Tx'
 import { arrayFlatten, MerkleElement, computeRootHash } from './utils/merkle'
 import { unbalancedMerkle_root, unbalancedMerkle_hashBlockIndexEntry } from './utils/unbalanced-merkle'
 // import { merkle2_generate_tree, MerkleElement } from './utils/Merke2'
@@ -225,7 +225,7 @@ const generateTxRootForBlock = async (txs: Tx[]) => {
 	// 	{Root, _Tree} = ar_merkle:generate_tree(SizeTaggedDataRoots),
 	// 	Root.
 	
-	let sizeTaggedTxs = generateSizeTaggedList(txs)
+	let sizeTaggedTxs = await generateSizeTaggedList(txs)
 	let sizeTaggedDataRoots = generateSizeTaggedDataRootsStructure(sizeTaggedTxs)
 	const root = await computeRootHash(sizeTaggedDataRoots) 
 
@@ -247,7 +247,8 @@ interface SizeTagged {
 	},
 	offset: bigint
 }
-const generateSizeTaggedList = (txs: Tx[]) => {
+
+const generateSizeTaggedList = async (txs: Tx[]) => {
 	// generate_size_tagged_list_from_txs(TXs) ->
 	// 	lists:reverse(
 	// 		element(2,
@@ -263,11 +264,6 @@ const generateSizeTaggedList = (txs: Tx[]) => {
 	// 	).
 
 	// first sort the txs by format then id
-	const sortTxs = (txs: Tx[]) => {
-		let idSort = txs.sort((a,b) => bufferToInt(a.id) - bufferToInt(b.id))
-		let formatSort = idSort.sort((a,b) => a.format - b.format)
-		return formatSort
-	}
 	let sortedTxs = sortTxs(txs)
 
 	// do the fold on these sortedTxs
@@ -278,22 +274,29 @@ const generateSizeTaggedList = (txs: Tx[]) => {
 		pos += tx.data_size
 		list = [
 			...list,
-			{ data: {id: tx.id, root: get_tx_data_root(tx)}, offset: pos },
+			{ data: {id: tx.id, root: await get_tx_data_root(tx)}, offset: pos },
 		]
 	}
 
 	return list // already reversed when being created
 }
 
+const sortTxs = (txs: Tx[]) => {
+	// sort the txs by format then id
+	let idSort = txs.sort((a,b) => bufferToInt(a.id) - bufferToInt(b.id))
+	let formatSort = idSort.sort((a,b) => a.format - b.format)
+	return formatSort
+}
 
-const get_tx_data_root = (tx: Tx) => {
+
+const get_tx_data_root = async (tx: Tx) => {
 	// get_tx_data_root(#tx{ format = 2, data_root = DataRoot }) ->
 	// 	DataRoot;
 	// get_tx_data_root(TX) ->
 	// 	(ar_tx:generate_chunk_tree(TX))#tx.data_root.
 	if( tx.format === 1){
-		// we'll do this later
-		throw new Error("get_tx_data_root tx.format == 1 not supported yet!")
+		return await generateV1TxDataRoot(tx)
 	}
 	return tx.data_root
 }
+

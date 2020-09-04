@@ -61,9 +61,8 @@ export const validateBlockSlow = async (block: Block, prevBlock: Block, blockInd
 	// 9. txs: (mempool? weaveState?) N.B. Need the BlockTXPairs for this test! requires 50 blocks. long tx checks
 	// if( ar_tx_replay_pool:verify_block_txs === invalid ) return false
 
-	// 10. tx_root: (need to rewrite merkle.ts)
+	// 10. tx_root: 
 	// ar_block:verify_tx_root(NewB) === false; return false
-
 	if( ! await block_verifyTxRoot(block) ){
 		return {code: 400, message: "Invalid tx_root", height: block.height}
 	}
@@ -75,7 +74,7 @@ export const validateBlockSlow = async (block: Block, prevBlock: Block, blockInd
 		return {code: 400, message: "Invalid weave size", height: block.height}
 	}
 
-	// 12. block_index_root: (unbalance_merkle - might be quick actually!)
+	// 12. block_index_root:
 	// ar_block:verify_block_hash_list_merkle(NewB, OldB, BI) === false; return false
 	if( ! await block_verifyBlockHashListMerkle(block, prevBlock, blockIndex) ){
 		return {code: 400, message: "Invalid block index root", height: block.height}

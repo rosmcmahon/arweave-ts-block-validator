@@ -105,7 +105,7 @@ async function buildLayers(
  * Recursively search through all branches of the tree,
  * and generate a proof for each leaf node.
  */
-function generateProofs(root: MerkelNode) {
+export function generateProofs(root: MerkelNode) {
   const proofs = resolveBranchProofs(root);
   if (!Array.isArray(proofs)) {
     return [proofs];

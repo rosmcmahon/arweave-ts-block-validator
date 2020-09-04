@@ -1,9 +1,9 @@
 import axios from 'axios'
 import { BlockDTO, ReturnCode, BlockIndexTuple, Wallet_List } from './types'
-import { STORE_BLOCKS_AROUND_CURRENT, HOST_SERVER, RETARGET_BLOCKS } from './constants'
+import { STORE_BLOCKS_AROUND_CURRENT, HOST_SERVER } from './constants'
 import { validateBlockJson, validateBlockQuick } from './blockValidateQuick'
-import { Block, blockFieldSizeLimit, block_verifyWeaveSize, block_verifyBlockHashListMerkle, block_verifyTxRoot } from './Block'
-import { poa_validate, poa_findChallengeBlock, poa_modifyDiff } from './Poa'
+import { Block, blockFieldSizeLimit, block_verifyWeaveSize, block_verifyBlockHashListMerkle } from './Block'
+import { poa_validate, poa_findChallengeBlock } from './Poa'
 import { retarget_validateDiff } from './Retarget'
 
 /* *** Initialise all test data, and use in one big test file *** */
@@ -23,12 +23,11 @@ beforeAll(async () => {
 	try{
 		const currentHeight = Number((await axios.get(HOST_SERVER+'/info')).data.height)
 		//we want height % 10 so we get a difficulty retarget block
-		let workingHeight = currentHeight - (currentHeight % RETARGET_BLOCKS)
+		let workingHeight = 520919//currentHeight - (currentHeight % RETARGET_BLOCKS)
 		//518960 <- Invalid difficulty
 		//DiffInverse for 518960:
 		//14231183094510643579717614561666284022583822524602630177890580299776
 
-		//520740 contains v1 txs
 
 		const [
 			bIndex, 
@@ -65,12 +64,15 @@ beforeAll(async () => {
 describe('BlockValidateQuick Tests', () => {
 
   it('validateBlockJson should return true for a valid block', async () => {
+		expect.assertions(1)
 		let result = await validateBlockJson(blockJson )
 		
     expect(result).toEqual(true)
-  })
+  }, 20000)
 
   it('validateBlockQuick should return false for an out of range height', async () => {
+		expect.assertions(2)
+
     let ahead = validateBlockQuick(blockJson, block, block.height - (STORE_BLOCKS_AROUND_CURRENT+10) )
 		expect(ahead).toEqual({code: 400, message: "Height is too far ahead"})
 		
@@ -79,6 +81,7 @@ describe('BlockValidateQuick Tests', () => {
 	})
 	
 	it('validateBlockQuick should return false for difficulty too low', async () => {
+		expect.assertions(1)
 		let test = Object.assign({},block)
 		test.diff = 1n		                                 //TODO: better good/bad difficulties
 
@@ -87,7 +90,7 @@ describe('BlockValidateQuick Tests', () => {
 	})
 })
 
-describe('Block tests, for any data input', () => {
+describe('Block tests, general validation tests', () => {
 
 	it('blockFieldSizeLimit returns true for valid field sizes', async () => {
 		expect.assertions(1)
@@ -110,34 +113,22 @@ describe('Block tests, for any data input', () => {
 
 	it('block_verifyBlockHashListMerkle returns true/false for valid/invalid block index root hash', async () => {
 		expect.assertions(2)
-		let result = await block_verifyBlockHashListMerkle(block, prevBlock, blockIndex)
+		let good = await block_verifyBlockHashListMerkle(block, prevBlock, blockIndex)
 		
-		expect(result).toEqual(true) 
+		expect(good).toEqual(true) 
 
 		//now mix the blocks up to get invalid blockIndex root hash
-		result = result = await block_verifyBlockHashListMerkle(prevBlock, block, blockIndex)
+		let bad = await block_verifyBlockHashListMerkle(prevBlock, block, blockIndex)
 		
-		expect(result).toEqual(false) 
-	})
-
-	it('block_verifyTxRoot returns true/false for valid/invalid tx_root hash', async () => {
-		expect.assertions(2)
-		let good = await block_verifyTxRoot(block)
-
-		let badBlock = Object.assign({}, block)
-		badBlock.tx_root = new Uint8Array(badBlock.tx_root.length)
-		let bad = await block_verifyTxRoot(badBlock)
-
-		expect(good).toEqual(true) 
 		expect(bad).toEqual(false) 
 	})
 
-
 })
 
-
 describe('PoA tests', () => {
+
 	it('Poa.poaFindChallengeBlock returns a valid block depth', async () => {
+		expect.assertions(2)
 		let testByte =  500000n
 	
 		const {txRoot, blockBase, blockTop, bh} = poa_findChallengeBlock(testByte, blockIndex)
@@ -160,6 +151,7 @@ describe('PoA tests', () => {
 describe('Difficulty tests', () => {
 
 	it('Difficulty. retarget_ValidateDiff Validate that a new block has an appropriate difficulty.', async () =>{
+		expect.assertions(2)
 		let retarget = retarget_validateDiff(block, prevBlock)
 		let noRetarget = retarget_validateDiff(prevBlock, prevPrevBlock)
 
