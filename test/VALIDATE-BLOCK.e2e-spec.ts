@@ -7,7 +7,6 @@ import { validateBlockSlow } from "../src/blockValidateSlow"
 
 
 
-
 let res: ReturnCode
 let blockJson: BlockDTO
 let block: Block

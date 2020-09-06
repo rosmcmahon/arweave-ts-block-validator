@@ -1,6 +1,6 @@
 import axios from 'axios'
 import { BlockDTO, ReturnCode, BlockIndexTuple, Wallet_List } from './types'
-import { STORE_BLOCKS_AROUND_CURRENT, HOST_SERVER } from './constants'
+import { STORE_BLOCKS_AROUND_CURRENT, HOST_SERVER, RETARGET_BLOCKS } from './constants'
 import { validateBlockJson, validateBlockQuick } from './blockValidateQuick'
 import { Block, blockFieldSizeLimit, block_verifyWeaveSize, block_verifyBlockHashListMerkle } from './Block'
 import { poa_validate, poa_findChallengeBlock } from './Poa'
@@ -23,7 +23,7 @@ beforeAll(async () => {
 	try{
 		const currentHeight = Number((await axios.get(HOST_SERVER+'/info')).data.height)
 		//we want height % 10 so we get a difficulty retarget block
-		let workingHeight = 520919//currentHeight - (currentHeight % RETARGET_BLOCKS)
+		let workingHeight = currentHeight - (currentHeight % RETARGET_BLOCKS)
 		//518960 <- Invalid difficulty
 		//DiffInverse for 518960:
 		//14231183094510643579717614561666284022583822524602630177890580299776

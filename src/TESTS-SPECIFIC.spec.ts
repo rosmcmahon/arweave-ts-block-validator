@@ -10,11 +10,12 @@ import { wallet_ownerToAddressString } from './Wallet'
 //BDSBase & BDS for /height/509850 hash/si5OoWK-OcYt3LOEDCP2V4SWuj5X5n1LdoTh09-DtOppz_VkE72Cb0DCvygYMbW5
 const BDS_BASE_KNOWN_HASH = "dOljnXSULT9pTX4wiagcUOqrZZjBWLwKBR3Aoe3-HhNAW_CiKHNsrvqwL14x6BMm"
 const BDS_KNOWN_HASH = "uLdZH6FVM-TI_KiA8oZCGbqXwknwyg69ur7KPrSMVPcBljPnIzeOhnPRPyOoifWV"
+const HEIGHT_V1_TX = "520919" //contains eIcAGwqFCHek3EvpiRXdsESZAPKLXJMzco-7lWm4yO4 v1 data tx (6MB+, needs chunking) + random v2 txs
 
 let blockKnownHash: Block
 let prevBlockKnownHash: Block
 let prevWalletList: Wallet_List[]
-let v1BigV2Block: Block
+let v1BigV2Block: Block 
 
 
 beforeAll(async () => {
@@ -29,7 +30,7 @@ beforeAll(async () => {
 			axios.get(HOST_SERVER+'/block/height/509850'), //known hash, poa option 1, has 4 txs
 			axios.get(HOST_SERVER+'/block/height/509849'), //known hash, poa option 2
 			axios.get('https://arweave.net/block/height/509849/wallet_list'), //arweave.net keeps old wallet_list
-			axios.get(HOST_SERVER+'/block/height/520919'), //contains BIG v1 data tx (needs chunking) + v2 txs
+			axios.get(HOST_SERVER+'/block/height/'+HEIGHT_V1_TX), //contains BIG v1 data tx (needs chunking) + v2 txs
 		])
 
 		blockKnownHash = await Block.createFromDTO(bjKnownHash.data)
@@ -70,7 +71,7 @@ describe('Block tests, with known hash data outputs', () => {
 
 	it('block_verifyTxRoot returns true/false for valid/invalid tx_root hash', async () => {
 		expect.assertions(2)
-		let good = await block_verifyTxRoot(v1BigV2Block)
+		let good = await block_verifyTxRoot(v1BigV2Block) // this block contains v2 & v1 mixed txs. v1 large data needs chunking also
 
 		let badBlock = Object.assign({}, v1BigV2Block)
 		badBlock.tx_root = new Uint8Array(Buffer.from("bad data"))

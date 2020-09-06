@@ -8,10 +8,10 @@ import { arrayCompare, bufferToInt } from './utils/buffer-utilities'
 import { Tx, generateV1TxDataRoot } from './Tx'
 import { arrayFlatten, MerkleElement, computeRootHash } from './utils/merkle'
 import { unbalancedMerkle_root, unbalancedMerkle_hashBlockIndexEntry } from './utils/unbalanced-merkle'
-// import { merkle2_generate_tree, MerkleElement } from './utils/Merke2'
 
 
-/* Actual binary data for a Block. Usually translated from a Block JSON Data Transfer Object */
+/* Binary data for a Block. Usually translated from a Block JSON Data Transfer Object (BlockDTO) */
+
 export class Block {
 	nonce: Uint8Array							// The nonce used to satisfy the PoW problem when mined.
 	previous_block: Uint8Array 		// Block ID (indep_hash) of the previous block in the weave.
@@ -33,7 +33,7 @@ export class Block {
 	reward_pool: bigint						// Current pool of mining rewards.
 	weave_size: bigint						// Current size of the weave in bytes (counts tx data fields).
 	block_size: number  					// The total size of transaction data inside this block.
-	cumulative_diff: bigint // The sum of average number of hashes tried to mine blocks over all previous blocks.
+	cumulative_diff: bigint 			// The sum of average number of hashes tried to mine blocks over all previous blocks.
 	hash_list_merkle: Uint8Array	// The merkle root of the block index.
 	poa: Poa											// The access proof used to generate this block.
 

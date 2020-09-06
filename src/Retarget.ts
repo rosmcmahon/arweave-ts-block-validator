@@ -157,6 +157,7 @@ const calculateDifficultyLinearALGEBRA = (oldDiff: bigint, ts: bigint, last: big
 	// inlining betweenNums function, and substituting:
 	// etd = timeDelta = actualTime / RETARGET_BLOCK_TIME
 	let diffInverse: bigint
+	// this is the level 2 between function
 	const between2 = (maxLessDiffInverse: bigint) => {
 		if(maxLessDiffInverse < MIN_DIFF_FORK_1_8){
 			return MIN_DIFF_FORK_1_8

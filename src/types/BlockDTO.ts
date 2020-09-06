@@ -1,6 +1,12 @@
 import { Tag } from './Tag'
 
-/* Template for a Block "Data Transfer Object" for use in the http API */
+/**
+ * Template for a Block "Data Transfer Object" JSON in http transfers. 
+ * 
+ * We use a class as this is concrete in the underlying EMCAScript, as opposed to a notional TypeScript
+ * interface. The idea being that this can be checked at run-time as opposed to compile time.
+ */
+
 export class BlockDTO {
 	nonce: string								// The nonce used to satisfy the PoW problem when mined. Base64Url string
 	previous_block: string			// indep_hash of the previous block in the weave.
@@ -26,6 +32,7 @@ export class BlockDTO {
 }
 
 /* A proof of access to a recall byte found in a TX. */
+
 class PoaDTO {
 	option: string							// Number. The recall byte option (a sequence number) chosen.
 	tx_path: string							// Base64url encoded. Path through the Merkle tree of TXs in the block.
