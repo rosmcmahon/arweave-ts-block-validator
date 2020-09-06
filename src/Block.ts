@@ -13,30 +13,29 @@ import { unbalancedMerkle_root, unbalancedMerkle_hashBlockIndexEntry } from './u
 
 /* Actual binary data for a Block. Usually translated from a Block JSON Data Transfer Object */
 export class Block {
-	/* member variables, for more details see BlockJson.ts */
-	nonce: Uint8Array // The nonce used to satisfy the PoW problem when mined.
-	previous_block: Uint8Array // indep_hash of the previous block in the weave.
-	timestamp: bigint // POSIX time of block discovery.
-	last_retarget: bigint // POSIX time of the last difficulty retarget.
-	diff: bigint  // Mining difficulty. Floats must be used to match erlang maths
-	diffString: string  // Original string must be used to match hashing
-	height:number // How many blocks have passed since the genesis block.
-	hash: Uint8Array // PoW hash of the block must satisfy the block's difficulty.
-	indep_hash: Uint8Array // = [] // The hash of the block including `hash` and `nonce` the block identifier.
-	txids: Uint8Array[]  //  a list of TX identifiers 
-	txs: Tx[]  // A list of Tx objects 
-	tx_root: Uint8Array // = <<>> // Merkle root of the tree of transactions' data roots.
-	tx_tree: Uint8Array[]  // Merkle tree of transactions' data roots. Not stored.
-	hash_list?: Uint8Array[] //  "A list of hashes used for fork recovery 
-	wallet_list: Uint8Array // = unset
-	reward_addr: Uint8Array // Address to credit mining reward or the unclaimed atom.
-	tags: Tag[]  // Miner specified tags to store with the block.
-	reward_pool: bigint  // Current pool of mining rewards.
-	weave_size: bigint  // Current size of the weave in bytes (counts tx data fields).
-	block_size: number  // The total size of transaction data inside this block.
-	cumulative_diff: bigint  // The sum of average number of hashes tried to mine blocks over all previous blocks.
-	hash_list_merkle: Uint8Array //The merkle root of the block index.
-	poa: Poa // The access proof used to generate this block.
+	nonce: Uint8Array							// The nonce used to satisfy the PoW problem when mined.
+	previous_block: Uint8Array 		// Block ID (indep_hash) of the previous block in the weave.
+	timestamp: bigint 						// POSIX time of block discovery.
+	last_retarget: bigint 				// POSIX time of the last difficulty retarget.
+	diff: bigint  								// Mining (PoW) difficulty. The number a PoW hash must be greater than.
+	diffString: string						// Original string must be used to match hashing
+	height:number									// How many blocks have passed since the genesis block.
+	hash: Uint8Array 							// PoW hash of the block must satisfy the block's difficulty.
+	indep_hash: Uint8Array 				// Block ID. The hash of the block including `hash` and `nonce`.
+	txids: Uint8Array[]  					// List of the block's Tx identifiers 
+	txs: Tx[]  										// List of the block's actual Tx objects 
+	tx_root: Uint8Array						// Merkle root of the tree of transactions' data roots.
+	tx_tree: Uint8Array[]					// Merkle tree of transactions' data roots.
+	hash_list?: Uint8Array[]			// A list of hashes used for fork recovery 
+	wallet_list: Uint8Array				// Large download, retrieve separately
+	reward_addr: Uint8Array				// Address to credit mining reward or the unclaimed atom.
+	tags: Tag[]  									// Unused? Miner specified tags to store with the block.
+	reward_pool: bigint						// Current pool of mining rewards.
+	weave_size: bigint						// Current size of the weave in bytes (counts tx data fields).
+	block_size: number  					// The total size of transaction data inside this block.
+	cumulative_diff: bigint // The sum of average number of hashes tried to mine blocks over all previous blocks.
+	hash_list_merkle: Uint8Array	// The merkle root of the block index.
+	poa: Poa											// The access proof used to generate this block.
 
 	static async createFromDTO(dto: BlockDTO){
 		let b = new Block()
@@ -74,9 +73,7 @@ export class Block {
 			data_path: Arweave.utils.b64UrlToBuffer(dto.poa.data_path),
 			chunk: Arweave.utils.b64UrlToBuffer(dto.poa.chunk)
 		}	
-		if(dto.hash_list){ 
-			b.hash_list = dto.hash_list.map(b64url=>Arweave.utils.b64UrlToBuffer(b64url)) 
-		}
+	
 		return b
 	}
 
