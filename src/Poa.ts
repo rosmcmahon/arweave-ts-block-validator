@@ -3,14 +3,14 @@ import { BlockIndexTuple } from "./types"
 import * as Merkle from './utils/merkle'
 import { bufferToBigInt } from './utils/buffer-utilities'
 import { POA_MIN_MAX_OPTION_DEPTH, ALTERNATIVE_POA_DIFF_MULTIPLIER } from './constants'
-import { multiplyDifficulty } from "./utils/difficulty"
+import { multiplyDifficulty } from "./difficulty"
 
 export interface Poa {
 	// A succinct proof of access to a recall byte found in a TX.
-	option: number //= "1" // The recall byte option (a sequence number) chosen.
-	tx_path: Uint8Array // b64url encoded concatanation of hashes? // Path through the Merkle tree of TXs in the block.
-	data_path: Uint8Array // b64url encoded concatanation of hashes? // Path through the Merkle tree of chunk IDs to the required chunk.
-	chunk: Uint8Array // b64url encoded data // The required data chunk.
+	option: number				// The recall byte option (a sequence number) chosen.
+	tx_path: Uint8Array		// base64url encoded concatanation of hashes. Path through the Merkle tree of TXs in the block.
+	data_path: Uint8Array	// base64url encoded concatanation of hashes. Path through the Merkle tree of chunk IDs to the required chunk.
+	chunk: Uint8Array			// base64url encoded data. The required data chunk.
 }
 
 /* Validate a complete proof of access object */
@@ -21,29 +21,17 @@ export const poa_validate = async (prevIndepHash: Uint8Array, prevWeaveSize: big
 	// The weave does not have data yet.
 	if(prevWeaveSize === 0n) return true
 
-	// validate(_H, _WS, BI, #poa{ option = Option })
-	// 		when Option > length(BI) andalso Option > ?MIN_MAX_OPTION_DEPTH ->
-	// 	false;
 	if( (poa.option > blockIndex.length) && (poa.option > POA_MIN_MAX_OPTION_DEPTH) ){ 
 		return false
 	}
 
-	// validate(LastIndepHash, WeaveSize, BI, POA) ->
-	// 	RecallByte = calculate_challenge_byte(LastIndepHash, WeaveSize, POA#poa.option),
-	// 	{TXRoot, BlockBase, BlockTop, _BH} = find_challenge_block(RecallByte, BI),
-	// 	validate_tx_path(RecallByte - BlockBase, TXRoot, BlockTop - BlockBase, POA).
+	/* Find the recall byte */
 
-	// calculate_challenge_byte(_, 0, _) -> 0;
-	// calculate_challenge_byte(LastIndepHash, WeaveSize, Option) ->
-	// 	binary:decode_unsigned(multihash(LastIndepHash, Option)) rem WeaveSize.
-	// -----------------------------------
-	// if(prevWeaveSize===0){ // we have already returned true for this condition
-	// 	recallByte = 0n
-	// }else{
 	let recallByte: bigint = bufferToBigInt(await poaMultiHash(prevIndepHash, poa.option)) % prevWeaveSize
 
 	const {txRoot, blockBase, blockTop, bh} = poa_findChallengeBlock(recallByte, blockIndex)
 
+	/* Validate */
 
 	return await validateTxPath( (recallByte - blockBase), txRoot, (blockTop - blockBase), poa )
 }

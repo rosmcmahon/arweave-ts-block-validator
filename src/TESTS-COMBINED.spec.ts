@@ -4,7 +4,7 @@ import { STORE_BLOCKS_AROUND_CURRENT, HOST_SERVER, RETARGET_BLOCKS } from './con
 import { validateBlockJson, validateBlockQuick } from './blockValidateQuick'
 import { Block, blockFieldSizeLimit, block_verifyWeaveSize, block_verifyBlockHashListMerkle } from './Block'
 import { poa_validate, poa_findChallengeBlock } from './Poa'
-import { retarget_validateDiff } from './Retarget'
+import { retarget_validateDiff } from './difficulty-retarget'
 import { Tx } from './Tx'
 
 /* *** Initialise all test data, and use in one big test file *** */
@@ -163,7 +163,7 @@ describe('Tx (Transaction) tests', () => {
 	it('Tx. Checks that verify function works for v1 format txs', async () =>{
 		expect.assertions(1)
 		let v1Tx = await Tx.getByIdString('2ge-rXTTFeMjVEOkb2r3X1ZooyEH4foRI98CbvcimsQ')
-		let verify1 = await v1Tx.verify()
+		let verify1 = await v1Tx.verifySignature()
 
 		expect(verify1).toEqual(true)
 	}, 20000)
@@ -171,7 +171,7 @@ describe('Tx (Transaction) tests', () => {
 	it('Tx. Checks that verify function works for v2 format txs', async () =>{
 		expect.assertions(1)
 		let v2Tx = await Tx.getByIdString('B3cc0u87v0SwAkTWzHu1v3Sl2vpm1cXgRGPLjtGQJvI')
-		let verify2 = await v2Tx.verify()
+		let verify2 = await v2Tx.verifySignature()
 
 		expect(verify2).toEqual(true)
 	}, 20000)

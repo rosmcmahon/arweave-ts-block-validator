@@ -1,8 +1,8 @@
 
 import { ReturnCode, BlockIndexTuple, Wallet_List } from  './types'
-import { Block, getIndepHash, generateBlockDataSegment, block_verifyDepHash, blockFieldSizeLimit, block_verifyWeaveSize, block_verifyBlockHashListMerkle, block_verifyTxRoot } from './Block'
+import { Block, getIndepHash, generateBlockDataSegment, verifyBlockDepHash, blockFieldSizeLimit, block_verifyWeaveSize, block_verifyBlockHashListMerkle, block_verifyTxRoot } from './Block'
 import { poa_validate, poa_modifyDiff } from './Poa'
-import { retarget_validateDiff } from './Retarget'
+import { retarget_validateDiff } from './difficulty-retarget'
 import { weave_hash } from './Weave'
 import { validateMiningDifficulty } from './mine'
 import { nodeUtils_updateWallets, nodeUtils_IsWalletInvalid } from './NodeUtils'
@@ -61,6 +61,19 @@ export const validateBlockSlow = async (block: Block, prevBlock: Block, blockInd
 	// 9. txs: (mempool? weaveState?) N.B. Need the BlockTXPairs for this test! requires 50 blocks. long tx checks
 	// if( ar_tx_replay_pool:verify_block_txs === invalid ) return false
 
+	// let result = await ar_tx_replay_pool__verify_block_txs(
+	// 	block.txs, 
+	// 	block.diff, 
+	// 	prevBlock.height, 
+	// 	block.timestamp, 
+	// 	walletList, 
+	// 	blockTxPairs //need last 50 blocks?
+	// )
+	// if( !result ){
+	// 	return {code: 400, message: "Received block with invalid txs"}
+	// }
+	
+
 	// 10. tx_root: 
 	// ar_block:verify_tx_root(NewB) === false; return false
 	if( ! await block_verifyTxRoot(block) ){
@@ -85,7 +98,7 @@ export const validateBlockSlow = async (block: Block, prevBlock: Block, blockInd
 	// if(! ar_block:verify_dep_hash(NewB, POW) ) return false
 	// if(! ar_mine:validate(POW, ar_poa:modify_diff(Diff, POA#poa.option), Height) ) return false
 	let pow = await weave_hash((await generateBlockDataSegment(block)), block.nonce, block.height)
-	if( ! block_verifyDepHash(block, pow) ){
+	if( ! verifyBlockDepHash(block, pow) ){
 		return {code: 400, message: "Invalid PoW hash", height: block.height}
 	}
 	if( ! validateMiningDifficulty(pow, poa_modifyDiff(block.diff, block.poa.option), block.height) ){

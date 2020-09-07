@@ -1,6 +1,6 @@
 import { BLOCKS_PER_YEAR, N_REPLICATIONS, USD_PER_GBY_2019, USD_PER_GBY_2018, USD_PER_GBY_DECAY_ANNUAL, FORK_HEIGHT_1_9, MAX_DIFF, INITIAL_USD_PER_AR_HEIGHT, WINSTON_PER_AR, ADD_ERLANG_ROUNDING_ERROR, INITIAL_USD_PER_AR_DIFF } from "./constants"
 import { Decimal } from 'decimal.js'
-import { retarget_switchToLinearDiff } from './Retarget'
+import { retarget_switchToLinearDiff } from './difficulty-retarget'
 import { bufferToBigInt } from "./utils/buffer-utilities"
 import { calculateInflation } from "./utils/inflation"
 
@@ -46,16 +46,6 @@ export const txPerpetualStorage_getCostPerBlockAtTimestamp = (ts: bigint) => {
 	let dateTime = new Date(Number(ts)*1000) 
 	return getCostPerYearAtDatetime(dateTime).div(BLOCKS_PER_YEAR)
 }
-
-// %% TODO Use calendar:system_time_to_universal_time/2 in Erlang OTP-21.
-// system_time_to_universal_time(Time, TimeUnit) ->
-// 	Seconds = erlang:convert_time_unit(Time, TimeUnit, seconds),
-// 	DaysFrom0To1970 = 719528,
-// 	SecondsPerDay = 86400,
-// 	calendar:gregorian_seconds_to_datetime(Seconds + (DaysFrom0To1970 * SecondsPerDay)).
-
-
-
 
 const getCostPerYearAtDatetime = (dateTime: Date) => {
 // get_cost_per_year_at_datetime({{Y, M, _}, _} = DT) ->

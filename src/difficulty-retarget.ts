@@ -5,12 +5,6 @@ import { Decimal } from 'decimal.js'
 
 
 export const retarget_switchToLinearDiff = (diff: bigint) => {
-	/*
-		%% @doc The number a hash must be greater than, to give the same odds of success
-		%% as the old-style Diff (number of leading zeros in the bitstring).
-		switch_to_linear_diff(Diff) ->
-			erlang:trunc(math:pow(2, 256)) - erlang:trunc(math:pow(2, 256 - Diff)).
-	*/
 	return ( (2n ** 256n) - (2n ** (256n - diff)) ) 
 }
 
@@ -38,41 +32,19 @@ export const retarget_validateDiff = (block: Block, prevBlock: Block) => {
 }
 
 const calculateDifficulty = (oldDiff: bigint, ts: bigint, last: bigint, height: number) => {
-	/*
-		%% @doc Calculate a new difficulty, given an old difficulty and the period
-		%% since the last retarget occcurred.
-		-ifdef(FIXED_DIFF).
-		calculate_difficulty(_OldDiff, _TS, _Last, _Height) ->
-			?FIXED_DIFF.
-		-else.
-		calculate_difficulty(OldDiff, TS, Last, Height) ->
-			case {ar_fork:height_1_7(), ar_fork:height_1_8()} of
-				{Height, _} ->
-					switch_to_randomx_fork_diff(OldDiff);
-				{_, Height} ->
-					switch_to_linear_diff(OldDiff);
-				{_, H} when Height > H ->
-					calculate_difficulty_linear(OldDiff, TS, Last, Height);
-				_ ->
-					calculate_difficulty1(OldDiff, TS, Last, Height)
-			end.
-	*/
 	if(height <= FORK_HEIGHT_1_8){
 		throw new Error('retargetCalculateDifficulty for height <= FORK_HEIGHT_1_8 not implemented')
 	}
 	return calculateDifficultyLinear(oldDiff, ts, last, height)
 }
 
+/**
+ * Keyword: ADD_ERLANG_ROUNDING_ERROR
+ * The below function posits a possible solution to using floating point numbers in the calculation of the block difficulty.
+ * It is comment heavy, begins with the erlang code, and using algebra to generate equations that avoid early value calculations
+ * that would increase the rounding errors (floating or int) in the difficulty generated.
+ */
 const calculateDifficultyLinearALGEBRA = (oldDiff: bigint, ts: bigint, last: bigint, height: number): bigint => {
-	/*
-		calculate_difficulty_linear(OldDiff, TS, Last, Height) ->
-		case Height >= ar_fork:height_1_9() of
-			false ->
-				calculate_difficulty_legacy(OldDiff, TS, Last, Height);
-			true ->
-				calculate_difficulty_linear2(OldDiff, TS, Last, Height)
-		end.
-	*/
 	if(height < FORK_HEIGHT_1_9){
 		throw new Error("ar_retarget:calculate_difficulty_legacy not implemented")
 	}
@@ -104,7 +76,7 @@ const calculateDifficultyLinearALGEBRA = (oldDiff: bigint, ts: bigint, last: big
 	 * Looking at the above calculations, especially:
 	 * a) RETARGET_TOLERANCE_FLOAT = 0.1, and 
 	 * b) the multiplication of a very small float against a very large int here
-	 * DiffInverse = erlang:trunc((MaxDiff - OldDiff) * EffectiveTimeDelta)
+	 * `DiffInverse = erlang:trunc((MaxDiff - OldDiff) * EffectiveTimeDelta)`
 	 * The algebra can be chaged to avoid these types and mathematics as follows..
 	 * 
 	 * abs(1 - TimeDelta) < ?RETARGET_TOLERANCE
@@ -112,10 +84,11 @@ const calculateDifficultyLinearALGEBRA = (oldDiff: bigint, ts: bigint, last: big
 	 * RETARGET_TOLERANCE = 0.1,
 	 * and RETARGET_BLOCK_TIME = RETARGET_BLOCKS * TARGET_TIME = 120 * 10 = 1200
 	 * substituting:
-	 * TimeDelta becomes = ActualTime / RETARGET_BLOCKS * TARGET_TIME = actualTime / RETARGET_BLOCK_TIME
+	 * (TimeDelta) becomes = (ActualTime / RETARGET_BLOCKS * TARGET_TIME) = (actualTime / RETARGET_BLOCK_TIME)
 	 * ar_mine:max_difficulty becomes a bigint const 2^256 = MAX_DIFF (see constants.ts for all new constants)
-	 * MIN_DIFF_FORK_1_8 is a constant above FORK_HEIGHT_1_8 = MIN_DIFF_FORK_1_8
-	 * erlang:trunc is done automatically when we are using bigints as integer division is performed
+	 * `MinDiff = ar_mine:min_difficulty(Height)` is a constant above FORK_HEIGHT_1_8 = (MIN_DIFF_FORK_1_8)
+	 * erlang:trunc is done automatically when we are using bigints as integer division is performed, with 
+	 * fractional part thrown away.
 	 * 
 	 * We will also inline the "between(num, min, max)" clamp functions to give a tree of 
 	 * "between" clamp functions which avoids culmulative calculations and rounding errors associated
@@ -134,10 +107,9 @@ const calculateDifficultyLinearALGEBRA = (oldDiff: bigint, ts: bigint, last: big
 	 * Further algebra will be explained in the comments below
 	 */
 
-	debugger;
-	// let targetTime = RETARGET_BLOCK_TIME = RETARGET_BLOCKS * TARGET_TIME //1200n replaced by 1 constant
+	// let targetTime = RETARGET_BLOCK_TIME = RETARGET_BLOCKS * TARGET_TIME, i.e. replaced by a constant
 	let actualTime = ts - last
-	//let timeDelta  = actualTime / RETARGET_BLOCK_TIME // avoid this early division operation
+	//let timeDelta  = actualTime / RETARGET_BLOCK_TIME, we need to avoid this early division operation
 
 	// | 1 - (actualTime/RETARGET_BLOCK_TIME) | < RETARGET_TOLERANCE, becomes
 	// | RETARGET_BLOCK_TIME - actualTime | < RETARGET_BLOCK_TIME * RETARGET_TOLERANCE, becomes
@@ -150,14 +122,14 @@ const calculateDifficultyLinearALGEBRA = (oldDiff: bigint, ts: bigint, last: big
 		return oldDiff
 	}
 
-	//let maxDiff: bigint = mineMaxDiff() //2^256, just use MAX_DIFF
-	// let minDiff: bigint = mineMinDiff(height) //use MIN_DIFF_FORK_1_8
+	// let maxDiff: bigint = mineMaxDiff(), we just use the new constant MAX_DIFF
+	// let minDiff: bigint = mineMinDiff(height), use new constant MIN_DIFF_FORK_1_8
 	// let effectiveTimeDelta = betweenNums( timeDelta, (1/DIFF_ADJUSTMENT_UP_LIMIT), DIFF_ADJUSTMENT_DOWN_LIMIT )
 	// ** N.B. renaming effectiveTimeDelta => etd **
 	// inlining betweenNums function, and substituting:
 	// etd = timeDelta = actualTime / RETARGET_BLOCK_TIME
 	let diffInverse: bigint
-	// this is the level 2 between function
+	// Define the level 2 "between" function, which we will use later
 	const between2 = (maxLessDiffInverse: bigint) => {
 		if(maxLessDiffInverse < MIN_DIFF_FORK_1_8){
 			return MIN_DIFF_FORK_1_8
