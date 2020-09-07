@@ -5,6 +5,7 @@ import { HOST_SERVER, DATA_CHUNK_SIZE } from "./constants"
 import { MerkleElement, computeRootHash } from "./utils/merkle"
 import deepHash from "./utils/deepHash"
 import { bigIntToBuffer256, arrayCompare } from "./utils/buffer-utilities"
+import { wallet_ownerToAddressString } from "./Wallet"
 
 interface Tag {
 	name: string //these are left as base64url
@@ -28,7 +29,7 @@ export class Tx {
 	data: Uint8Array				// May be empty. May be submitted in a transfer transaction.
 	data_size: bigint				// Size (in bytes) of the transaction data.
 	data_tree: Uint8Array[]	// The merkle tree of data chunks, the field is not signed.
-	data_root: Uint8Array		// The merkle root of the merkle tree of data chunks.
+	private data_root: Uint8Array		// The merkle root of the merkle tree of data chunks.
 	signature: Uint8Array		// Transaction signature.
 	reward: bigint					// Transaction fee, in Winston.
 
@@ -57,6 +58,16 @@ export class Tx {
 		let txString = Arweave.utils.bufferTob64Url(txid)
 		let txDto = (await Axios.get(HOST_SERVER+'/tx/'+txString)).data
 		return new Tx(txDto)
+	}
+
+	public async getDataRoot() {
+		if( (this.format === 1) && (this.data_root.length == 0) ){
+			return await generateV1TxDataRoot(this)
+		}
+		if(this.format === 2){
+			return this.data_root
+		}
+		throw new Error("Cannot get tx data_root of unsupported tx format = " + this.format)
 	}
 
 	private async getSignatureData(): Promise<Uint8Array> {
@@ -101,11 +112,10 @@ export class Tx {
     }
 	} 
 	
-	async verify(): Promise<boolean> {
+	async verifySignature(): Promise<boolean> {
+    const sigHash = await Arweave.crypto.hash(this.signature)
 
-    const expectedId = await Arweave.crypto.hash(this.signature)
-
-    if( !arrayCompare(this.id, expectedId) ) {
+    if( !arrayCompare(this.id, sigHash) ) {
       throw new Error("Error: invalid signature or txid. Hash mismatch")
 		}
 		
@@ -116,10 +126,11 @@ export class Tx {
       signaturePayload,
       this.signature
     );
-  }
+	}
 
 }
 
+//#region generateV1TxDataRoot
 export const generateV1TxDataRoot = async (tx: Tx): Promise<Uint8Array> => {
 	if(tx.format !== 1) throw new Error("generateV1TxChunkTree only accepts V1 txs")
 
@@ -134,7 +145,6 @@ export const generateV1TxDataRoot = async (tx: Tx): Promise<Uint8Array> => {
 }
 
 const chunkBinary = (data: Uint8Array): Uint8Array[] => {
-
 	if(data.length < DATA_CHUNK_SIZE){
 		return [data]
 	}
@@ -151,7 +161,6 @@ interface SizeTaggedChunk {
 }
 
 const chunksToSizeTaggedChunks = (chunks: Uint8Array[]) => {
-	
 	let pos = 0n
 	let list: SizeTaggedChunk[] = []
 
@@ -179,4 +188,6 @@ const sizedChunksToSizedChunkHashes = async (sizeTaggedChunks: SizeTaggedChunk[]
 		)
 	)
 }
+//#endregion generateV1TxDataRoot
+
 

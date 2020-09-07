@@ -250,7 +250,7 @@ const generateSizeTaggedList = async (txs: Tx[]) => {
 		pos += tx.data_size
 		list = [
 			...list,
-			{ data: {id: tx.id, root: await get_tx_data_root(tx)}, offset: pos },
+			{ data: {id: tx.id, root: await tx.getDataRoot() }, offset: pos },
 		]
 	}
 
@@ -262,16 +262,5 @@ const sortTxs = (txs: Tx[]) => {
 	let idSort = txs.sort((a,b) => bufferToInt(a.id) - bufferToInt(b.id))
 	let formatSort = idSort.sort((a,b) => a.format - b.format)
 	return formatSort
-}
-
-
-const get_tx_data_root = async (tx: Tx) => {
-	if( tx.format === 1){
-		return await generateV1TxDataRoot(tx)
-	}
-	if(tx.format === 2){
-		return tx.data_root
-	}
-	throw new Error("Cannot get tx data_root of unsupported tx format = " + tx.format)
 }
 
