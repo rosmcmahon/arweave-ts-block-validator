@@ -1,5 +1,5 @@
 import { FORK_HEIGHT_1_8, MIN_DIFF_FORK_1_8 } from './constants'
-import { bufferToInt } from './utils/buffer-utilities'
+import { bufferToInt, bufferToBigInt } from './utils/buffer-utilities'
 
 
 /* N.B. THIS FUNCTION HAS BEEN REPLACED BY CONSTANT MIN_DIFF_FORK_1_8 */
@@ -15,11 +15,11 @@ import { bufferToInt } from './utils/buffer-utilities'
 // }
 
 
-export const validateMiningDifficulty = (bdsHash: Uint8Array, diff: number, height: number) => {
+export const validateMiningDifficulty = (bdsHash: Uint8Array, diff: bigint, height: number) => {
 
 	if(height < FORK_HEIGHT_1_8){
 		throw new Error("mineValidate not implemented for < FORK_HEIGHT_1_8")
 	}
 	
-	return bufferToInt(bdsHash) > diff
+	return bufferToBigInt(bdsHash) > diff
 }

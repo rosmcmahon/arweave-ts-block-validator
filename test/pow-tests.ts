@@ -14,7 +14,10 @@ const main = async () => {
 	let block2: Block
 	let block2WalletList: Wallet_List[]
 
-	/* test data set up */
+	const PASS = "\x1b[32mPASS:\x1b[0m"
+	const FAIL = "\x1b[31mFAIL:\x1b[0m"
+
+	/* Test data set up */
 
 	try{
 
@@ -37,11 +40,13 @@ const main = async () => {
 		process.exit(1)
 	}
 
-	/* the tests */ 
+	/* The tests */ 
+
+	/* Test 1: check pow hash and validate poa.option = 1 */
 
 	console.log('PoW. Validate pow satisfies mining difficulty and hash matches RandomX hash')
-
-	// test 1: check pow hash and validate poa.option = 1
+	console.log()
+	console.log('Test 1: check pow hash and validate poa.option = 1')
 
 	let pow1 = await weave_hash(
 		(await generateBlockDataSegment(block1)), 
@@ -50,21 +55,24 @@ const main = async () => {
 	)
 
 	if( arrayCompare(pow1,block1.hash) ){
-		console.log("TEST PASSED: PoW hash == RandomX hash")
+		console.log(PASS, "PoW 1 hash == RandomX hash")
 	}else{
-		console.log("TEST FAIED: PoW hash != RandomX hash")
+		console.log(FAIL, "PoW 1 hash != RandomX hash")
 	}
 
 	//check poa.option = 1
 	let test1 = validateMiningDifficulty(pow1, poa_modifyDiff(block1.diff, block1.poa.option), block1.height)
 
 	if (test1) {
-		console.log("TEST PASSED: poa.option = 1")
+		console.log(PASS, "Difficulty valid poa.option = 1")
 	} else {
-		console.log("TEST FAILED: poa.option = 1")
+		console.log(FAIL, "Difficulty invalid with poa.option = 1")
 	}
 
-	// test 2: check pow hash and validate poa.option = 2
+	/* Test 2: check pow hash and validate poa.option = 2 */
+
+	console.log()
+	console.log('Test 2: check pow hash and validate poa.option = 2')
 	
 	let pow2 = await weave_hash(
 		(await generateBlockDataSegment(block2)), 
@@ -73,17 +81,17 @@ const main = async () => {
 	)
 
 	if( arrayCompare(pow2,block2.hash) ){
-		console.log("TEST PASSED: PoW 2 hash == RandomX hash")
+		console.log(PASS, "PoW 2 hash == RandomX hash")
 	}else{
-		console.log("TEST FAIED: PoW 2 hash != RandomX hash")
+		console.log(FAIL, "PoW 2 hash != RandomX hash")
 	}
 	
 	//check poa.option = 2
 	let test2 = validateMiningDifficulty(pow2, poa_modifyDiff(block2.diff, block2.poa.option), block2.height)
 	if (test2) {
-		console.log("TEST PASSED: poa.option = 2")
+		console.log(PASS, "Difficulty valid poa.option = 2")
 	} else {
-		console.log("TEST FAILED: poa.option = 2")
+		console.log(FAIL, "Difficulty invalid with poa.option = 2")
 	}
 
 
