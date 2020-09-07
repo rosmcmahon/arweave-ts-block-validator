@@ -8,7 +8,8 @@
  * - Removed all referenced to Chunked data
  */
 import Arweave from "arweave";
-import { bigIntToBuffer256, arrayCompare, bufferToInt } from "./buffer-utilities";
+import { bigIntToBuffer256, arrayCompare, bufferToInt, bufferToBigInt } from "./buffer-utilities";
+import { off } from "process";
 
 
 export interface MerkleElement {
@@ -197,21 +198,21 @@ async function hash(data: Uint8Array | Uint8Array[]) {
 
 
 export async function validatePath(
-  id: Uint8Array, dest: number, leftBound: number, rightBound: number, path: Uint8Array
+  id: Uint8Array, dest: bigint, leftBound: bigint, rightBound: bigint, path: Uint8Array
 ): Promise<
   | false
-  | { data: Uint8Array; offset: number; leftBound: number; rightBound: number; chunkSize: number }
+  | { data: Uint8Array; offset: bigint; leftBound: bigint; rightBound: bigint; chunkSize: bigint }
 > {
-  if (rightBound <= 0) {
+  if (rightBound <= 0n) {
     return false;
   }
 
   if (dest >= rightBound) {
-    return validatePath(id, 0, rightBound - 1, rightBound, path);
+    return validatePath(id, 0n, rightBound - 1n, rightBound, path);
   }
 
-  if (dest < 0) {
-    return validatePath(id, 0, 0, rightBound, path);
+  if (dest < 0n) {
+    return validatePath(id, 0n, 0n, rightBound, path);
   }
 
   if (path.length == HASH_SIZE + NOTE_SIZE) {
@@ -229,7 +230,7 @@ export async function validatePath(
     if (result) {
       return {
         data: pathData,
-        offset: rightBound - 1,
+        offset: rightBound - 1n,
         leftBound: leftBound,
         rightBound: rightBound,
         chunkSize: rightBound - leftBound
@@ -244,7 +245,7 @@ export async function validatePath(
     left.length + right.length,
     left.length + right.length + NOTE_SIZE
   );
-  const offset = bufferToInt(offsetBuffer);
+  const offset = bufferToBigInt(offsetBuffer);
 
   const remainder = path.slice(
     left.length + right.length + offsetBuffer.length
@@ -262,14 +263,14 @@ export async function validatePath(
         left,
         dest,
         leftBound,
-        Math.min(rightBound, offset),
+        /*Math.min*/(rightBound < offset) ? rightBound : offset,
         remainder
       );
     }
     return await validatePath(
       right,
       dest,
-      Math.max(leftBound, offset),
+      /*Math.max*/(leftBound > offset) ? rightBound: offset,
       rightBound,
       remainder
     );

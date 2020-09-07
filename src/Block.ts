@@ -32,7 +32,7 @@ export class Block {
 	tags: Tag[]  									// Unused? Miner specified tags to store with the block.
 	reward_pool: bigint						// Current pool of mining rewards.
 	weave_size: bigint						// Current size of the weave in bytes (counts tx data fields).
-	block_size: number  					// The total size of transaction data inside this block.
+	block_size: bigint  					// The total size of transaction data inside this block.
 	cumulative_diff: bigint 			// The sum of average number of hashes tried to mine blocks over all previous blocks.
 	hash_list_merkle: Uint8Array	// The merkle root of the block index.
 	poa: Poa											// The access proof used to generate this block.
@@ -64,7 +64,7 @@ export class Block {
 		})
 		b.reward_pool = BigInt(dto.reward_pool)
 		b.weave_size = BigInt(dto.weave_size)
-		b.block_size = dto.block_size
+		b.block_size = BigInt(dto.block_size)
 		b.cumulative_diff = BigInt(dto.cumulative_diff)
 		b.hash_list_merkle = Arweave.utils.b64UrlToBuffer(dto.hash_list_merkle)
 		b.poa = {
@@ -158,7 +158,7 @@ export const generateBlockDataSegmentBase = async (block: Block): Promise<Uint8A
 	])
 }
 
-export const block_verifyDepHash = (block: Block, pow: Uint8Array) => {
+export const verifyBlockDepHash = (block: Block, pow: Uint8Array) => {
 	return arrayCompare(block.hash, pow)
 }
 
@@ -214,14 +214,6 @@ export const block_verifyTxRoot = async (block: Block) => {
 }
 
 const generateTxRootForBlock = async (txs: Tx[]) => {
-	// %% @doc Given a list of TXs in various formats, or a block, generate the
-	// %% correct TX merkle tree root.
-	// generate_tx_root_for_block(TXs)  ->
-	// 	SizeTaggedTXs = generate_size_tagged_list_from_txs(TXs),
-	// 	SizeTaggedDataRoots = [{Root, Offset} || {{_, Root}, Offset} <- SizeTaggedTXs], 
-	// 	{Root, _Tree} = ar_merkle:generate_tree(SizeTaggedDataRoots),
-	// 	Root.
-	
 	let sizeTaggedTxs = await generateSizeTaggedList(txs)
 	let sizeTaggedDataRoots = generateSizeTaggedDataRootsStructure(sizeTaggedTxs)
 	const root = await computeRootHash(sizeTaggedDataRoots) 
@@ -246,24 +238,11 @@ interface SizeTagged {
 }
 
 const generateSizeTaggedList = async (txs: Tx[]) => {
-	// generate_size_tagged_list_from_txs(TXs) ->
-	// 	lists:reverse(
-	// 		element(2,
-	// 			lists:foldl(
-	// 				fun(TX, {Pos, List}) ->
-	// 					End = Pos + TX#tx.data_size,
-	// 					{End, [{{TX#tx.id, get_tx_data_root(TX)}, End} | List]}
-	// 				end,
-	// 				{0, []},
-	// 				lists:sort(TXs)
-	// 			)
-	// 		)
-	// 	).
 
 	// first sort the txs by format then id
 	let sortedTxs = sortTxs(txs)
 
-	// do the fold on these sortedTxs
+	// do the fold on these sortedTxs and reverse the output array
 	let pos = 0n
 	let list: SizeTagged[] = []
 	for (let i = 0; i < sortedTxs.length; i++) {
@@ -275,7 +254,7 @@ const generateSizeTaggedList = async (txs: Tx[]) => {
 		]
 	}
 
-	return list // already reversed when being created
+	return list 
 }
 
 const sortTxs = (txs: Tx[]) => {
@@ -287,13 +266,12 @@ const sortTxs = (txs: Tx[]) => {
 
 
 const get_tx_data_root = async (tx: Tx) => {
-	// get_tx_data_root(#tx{ format = 2, data_root = DataRoot }) ->
-	// 	DataRoot;
-	// get_tx_data_root(TX) ->
-	// 	(ar_tx:generate_chunk_tree(TX))#tx.data_root.
 	if( tx.format === 1){
 		return await generateV1TxDataRoot(tx)
 	}
-	return tx.data_root
+	if(tx.format === 2){
+		return tx.data_root
+	}
+	throw new Error("Cannot get tx data_root of unsupported tx format = " + tx.format)
 }
 

@@ -278,9 +278,7 @@ const calculateDifficultyLinear = (oldDiff: bigint, ts: bigint, last: bigint, he
 	} else{
 		diffInverseInt = BigInt(diffInverse)
 	}
-
-	debugger;
-
+	
 	let returnValue = betweenBigInts(
 		MAX_DIFF - diffInverseInt,
 		MIN_DIFF_FORK_1_8,

@@ -45,29 +45,15 @@ export const poa_validate = async (prevIndepHash: Uint8Array, prevWeaveSize: big
 	const {txRoot, blockBase, blockTop, bh} = poa_findChallengeBlock(recallByte, blockIndex)
 
 
-	return await validateTxPath( Number(recallByte - blockBase), txRoot, Number(blockTop - blockBase), poa )
+	return await validateTxPath( (recallByte - blockBase), txRoot, (blockTop - blockBase), poa )
 }
 
-const validateTxPath = async (blockOffset: number, txRoot: Uint8Array, blockEndOffset: number, poa: Poa): Promise<boolean> =>{
-	// validate_tx_path(BlockOffset, TXRoot, BlockEndOffset, POA) ->
-	// 	Validation =
-	// 		ar_merkle:validate_path(
-	// 			TXRoot,
-	// 			BlockOffset,
-	// 			BlockEndOffset,
-	// 			POA#poa.tx_path
-	// 		),
-	// 	case Validation of
-	// 		false -> false;
-	// 		{DataRoot, StartOffset, EndOffset} ->
-	// 			TXOffset = BlockOffset - StartOffset,
-	// 			validate_data_path(DataRoot, TXOffset, EndOffset - StartOffset, POA)
-	// 	end.
+const validateTxPath = async (blockOffset: bigint, txRoot: Uint8Array, blockEndOffset: bigint, poa: Poa): Promise<boolean> =>{
+	let merkleTxPathResult = await Merkle.validatePath(txRoot, blockOffset, 0n, blockEndOffset, poa.tx_path ) 
 
-	let merkleTxPathResult = await Merkle.validatePath(txRoot, blockOffset, 0, blockEndOffset, poa.tx_path ) 
+	//Merkle.validatePath returns false | data...
 
 	if(merkleTxPathResult === false){
-		// console.debug('merkleTxPathResult === false')
 		return false
 	}
 
@@ -78,25 +64,12 @@ const validateTxPath = async (blockOffset: number, txRoot: Uint8Array, blockEndO
 	return await validateDataPath(dataRoot, txOffset, endOffset-startOffset, poa)
 }
 
-const validateDataPath = async (dataRoot: Uint8Array, txOffset: number, endOffset: number, poa: Poa) => {
-	// validate_data_path(DataRoot, TXOffset, EndOffset, POA) ->
-	// 	Validation =
-	// 		ar_merkle:validate_path(
-	// 			DataRoot,
-	// 			TXOffset,
-	// 			EndOffset,
-	// 			POA#poa.data_path
-	// 		),
-	// 	case Validation of
-	// 		false -> false;
-	// 		{ChunkID, _, _} ->
-	// 			validate_chunk(ChunkID, POA)
-	// 	end.
+const validateDataPath = async (dataRoot: Uint8Array, txOffset: bigint, endOffset: bigint, poa: Poa) => {
+	let merkleDataPathResult = await Merkle.validatePath(dataRoot, txOffset, 0n, endOffset, poa.data_path)
 
-	let merkleDataPathResult = await Merkle.validatePath(dataRoot, txOffset, 0, endOffset, poa.data_path)
+	//Merkle.validatePath returns false | data...
 
 	if(merkleDataPathResult === false){
-		console.debug('merkleDataPathResult === false')
 		return false
 	}
 
@@ -106,23 +79,15 @@ const validateDataPath = async (dataRoot: Uint8Array, txOffset: number, endOffse
 }
 
 const poaValidateChunk = async (chunkId: Uint8Array, poa: Poa) => {
-	// validate_chunk(ChunkID, POA) ->
-	// 	ChunkID == ar_tx:generate_chunk_id(POA#poa.chunk).
 	let hashed = await txGenerateChunkId(poa.chunk)
 	return Buffer.from(chunkId).equals(hashed) 
 }
 
 const txGenerateChunkId = async (data: Uint8Array) => {
-	// 	%% @doc Generate a chunk ID according to the specification found in the TX record.
-	// generate_chunk_id(Chunk) ->
-	// 	crypto:hash(sha256, Chunk).
 	return await Arweave.crypto.hash(data)
 }
 
 const poaMultiHash = async (data: Uint8Array, remaining: number): Promise<Uint8Array> => {
-	// multihash(X, Remaining) when Remaining =< 0 -> X;
-	// multihash(X, Remaining) ->
-	// 	multihash(crypto:hash(?HASH_ALG, X), Remaining - 1).
 	if(remaining <= 0){
 		return data;
 	}
@@ -134,10 +99,6 @@ export const poa_findChallengeBlock = (byte: bigint, blockIndex: BlockIndexTuple
 	// The base of the block is the weave_size tag of the previous_block. 
 	// Traverse down the block index until the challenge block is inside the block's bounds.
 	// Where: blockIndex[0] is the latest block, and blockIndex[blockIndex.length-1] is the earliest block
-	// find_challenge_block(Byte, [{BH, BlockTop, TXRoot}, {_, BlockBase, _} | _])
-	// 	when (Byte >= BlockBase) andalso (Byte < BlockTop) -> {TXRoot, BlockBase, BlockTop, BH};
-	// find_challenge_block(Byte, [_ | BI]) ->
-	// 	find_challenge_block(Byte, BI).
 	let index0 = 0;
 	let index1 = 1;
 	while (index1 !== blockIndex.length) { //we should never reach past the first block without finding the block
