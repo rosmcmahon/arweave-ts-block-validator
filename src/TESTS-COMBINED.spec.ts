@@ -5,6 +5,7 @@ import { validateBlockJson, validateBlockQuick } from './blockValidateQuick'
 import { Block, blockFieldSizeLimit, block_verifyWeaveSize, block_verifyBlockHashListMerkle } from './Block'
 import { poa_validate, poa_findChallengeBlock } from './Poa'
 import { retarget_validateDiff } from './Retarget'
+import { Tx } from './Tx'
 
 /* *** Initialise all test data, and use in one big test file *** */
 
@@ -99,16 +100,11 @@ describe('Block tests, general validation tests', () => {
 		expect(result).toEqual(true) 
 	})
 
-	it('block_verifyWeaveSize returns true/false for valid/invalid block weave size', async () => {
-		expect.assertions(2)
+	it('block_verifyWeaveSize returns true for valid block weave size', async () => {
+		expect.assertions(1)
 		let result = block_verifyWeaveSize(block, prevBlock, block.txs)
 		
 		expect(result).toEqual(true) 
-
-		//now mix the blocks up to get invalid size
-		result = block_verifyWeaveSize(prevBlock, block, block.txs)
-		
-		expect(result).toEqual(false) 
 	})
 
 	it('block_verifyBlockHashListMerkle returns true/false for valid/invalid block index root hash', async () => {
@@ -158,6 +154,26 @@ describe('Difficulty tests', () => {
 		expect(retarget).toEqual(true)
 		expect(noRetarget).toEqual(true)
 
+	}, 20000)
+
+})
+
+describe('Tx (Transaction) tests', () => {
+
+	it('Tx. Checks that verify function works for v1 format txs', async () =>{
+		expect.assertions(1)
+		let v1Tx = await Tx.getByIdString('2ge-rXTTFeMjVEOkb2r3X1ZooyEH4foRI98CbvcimsQ')
+		let verify1 = await v1Tx.verify()
+
+		expect(verify1).toEqual(true)
+	}, 20000)
+
+	it('Tx. Checks that verify function works for v2 format txs', async () =>{
+		expect.assertions(1)
+		let v2Tx = await Tx.getByIdString('B3cc0u87v0SwAkTWzHu1v3Sl2vpm1cXgRGPLjtGQJvI')
+		let verify2 = await v2Tx.verify()
+
+		expect(verify2).toEqual(true)
 	}, 20000)
 
 })

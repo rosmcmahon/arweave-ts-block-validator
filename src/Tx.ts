@@ -3,6 +3,13 @@ import Arweave from "arweave"
 import Axios from "axios"
 import { HOST_SERVER, DATA_CHUNK_SIZE } from "./constants"
 import { MerkleElement, computeRootHash } from "./utils/merkle"
+import deepHash from "./utils/deepHash"
+import { bigIntToBuffer256, arrayCompare } from "./utils/buffer-utilities"
+
+interface Tag {
+	name: string //these are left as base64url
+	value: string
+}
 
 /**
  * A Transacion (Tx)
@@ -31,7 +38,7 @@ export class Tx {
 		this.id = Arweave.utils.b64UrlToBuffer(dto.id)
 		this.last_tx = Arweave.utils.b64UrlToBuffer(dto.last_tx)
 		this.owner = Arweave.utils.b64UrlToBuffer(dto.owner)
-		this.tags = dto.tags // do these get decoded?
+		this.tags = dto.tags // leave as b64url for hashing functions
 		this.target = dto.target
 		this.quantity = BigInt(dto.quantity)
 		this.data = Arweave.utils.b64UrlToBuffer(dto.data)
@@ -52,11 +59,65 @@ export class Tx {
 		return new Tx(txDto)
 	}
 
-}
+	private async getSignatureData(): Promise<Uint8Array> {
+    switch (this.format) {
+      case 1:
+        let tagString = this.tags.reduce((accumulator: string, tag: Tag) => {
+          return (
+            accumulator +
+            Arweave.utils.b64UrlToString(tag.name) +
+            Arweave.utils.b64UrlToString(tag.value)
+          );
+        }, "");
 
-interface Tag {
-	name: string //should these be decoded from b64url ?
-	value: string
+        return Arweave.utils.concatBuffers([
+					this.owner,
+					Arweave.utils.b64UrlToBuffer(this.target),
+					this.data,
+					Arweave.utils.stringToBuffer(this.quantity.toString()),
+					Arweave.utils.stringToBuffer(this.reward.toString()),
+					this.last_tx,
+          Arweave.utils.stringToBuffer(tagString)
+        ]);
+      case 2:
+        const tagList: [Uint8Array, Uint8Array][] = this.tags.map(tag => [
+          Arweave.utils.b64UrlToBuffer(tag.name),
+          Arweave.utils.b64UrlToBuffer(tag.value),
+        ]);
+
+        return await deepHash([
+          Arweave.utils.stringToBuffer(this.format.toString()),
+          this.owner,
+          Arweave.utils.b64UrlToBuffer(this.target),
+          Arweave.utils.stringToBuffer(this.quantity.toString()),
+          Arweave.utils.stringToBuffer(this.reward.toString()),
+          this.last_tx,
+          tagList,
+          Arweave.utils.stringToBuffer(this.data_size.toString()),
+          this.data_root,
+        ]);
+      default:
+        throw new Error(`Unexpected transaction format: ${this.format}`);
+    }
+	} 
+	
+	async verify(): Promise<boolean> {
+
+    const expectedId = await Arweave.crypto.hash(this.signature)
+
+    if( !arrayCompare(this.id, expectedId) ) {
+      throw new Error("Error: invalid signature or txid. Hash mismatch")
+		}
+		
+		const signaturePayload = await this.getSignatureData();
+
+    return Arweave.crypto.verify(
+      Arweave.utils.bufferTob64Url(this.owner),
+      signaturePayload,
+      this.signature
+    );
+  }
+
 }
 
 export const generateV1TxDataRoot = async (tx: Tx): Promise<Uint8Array> => {
