@@ -53,7 +53,7 @@ export class Block {
 		let promises: Promise<Tx>[] = dto.txs.map( txid => Tx.getByIdString(txid) )
 		b.txs = await Promise.all( promises )
 		b.tx_root = Arweave.utils.b64UrlToBuffer(dto.tx_root)
-		b.tx_tree = [] // dto.tx_tree.map(b64urlTxHash=>Arweave.utils.b64UrlToBuffer(b64urlTxHash)) //!!! need to do this later!!,
+		b.tx_tree = dto.tx_tree.map(b64urlTxHash=>Arweave.utils.b64UrlToBuffer(b64urlTxHash)) //Unused in DTO?
 		b.wallet_list = Arweave.utils.b64UrlToBuffer(dto.wallet_list)
 		b.reward_addr = Arweave.utils.b64UrlToBuffer(dto.reward_addr) // N.B. should be set to `new Uint8Array("unclaimed")` when mining
 		b.tags = dto.tags.map((tag:Tag) => {

@@ -25,10 +25,6 @@ beforeAll(async () => {
 		const currentHeight = Number((await axios.get(HOST_SERVER+'/info')).data.height)
 		//we want height % 10 so we get a difficulty retarget block
 		let workingHeight = currentHeight - (currentHeight % RETARGET_BLOCKS)
-		//518960 <- Invalid difficulty
-		//DiffInverse for 518960:
-		//14231183094510643579717614561666284022583822524602630177890580299776
-
 
 		const [
 			bIndex, 

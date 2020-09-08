@@ -5,7 +5,7 @@ an arweave block validator, nothing more
 
 First clone the repo & enter the root folder
 
-- To build on Windows you will need the infamously tricky to install node-gyp toolchain, although it has greatly improved lately, try this:
+To build on Windows you will need the infamously tricky to install node-gyp toolchain, although it has greatly improved lately, try this:
 
 ```
 npm install --global --production windows-build-tools

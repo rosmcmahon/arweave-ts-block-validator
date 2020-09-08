@@ -213,7 +213,7 @@ const calculateDifficultyLinear = (oldDiff: bigint, ts: bigint, last: bigint, he
 					)
 			end.
 	*/
-	Decimal.config({ precision: 100 }) // I tried to make precision worse to match erlang, can't reach the swwet spot
+	Decimal.config({ precision: 100 }) // I tried to make precision worse to match erlang, can't reach the sweet spot
 	let targetTime = new Decimal(RETARGET_BLOCKS * TARGET_TIME) //1200n
 	let actualTime = new Decimal( (ts - last).toString() )
 	let timeDelta = actualTime.dividedBy(targetTime)
