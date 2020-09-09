@@ -1,4 +1,4 @@
-import { FORK_HEIGHT_1_8, FORK_HEIGHT_2_0, MINING_REWARD_DIVIDER, ADD_ERLANG_ROUNDING_ERROR, MINING_REWARD_MULTIPLIER } from './constants'
+import { FORK_HEIGHT_1_8, FORK_HEIGHT_2_0, MINING_REWARD_DIVIDER_MODIFIED, ADD_ERLANG_ROUNDING_ERROR, MINING_REWARD_MULTIPLIER } from './constants'
 import { Block } from './Block'
 import { Tx } from './Tx'
 import { Wallet_List } from './types'
@@ -114,7 +114,7 @@ export const nodeUtils_calculateRewardPoolPerpetual = (
 					//becomes: erlang:trunc((0.2) * TXFee / ((0.2) + 1)),
 					//becomes: erlang:trunc(5*(0.2) * TXFee / 5*((0.2) + 1)),
 					//becomes: erlang:trunc(1 * TXFee / (1 + 5)),
-					//becomes: erlang:trunc(TXFee / 6),
+					//becomes: erlang:trunc(TXFee / 6), <= new constant MINING_REWARD_DIVIDER_MODIFIED
 					{TXCostAcc + TXFee - TXReward, TXRewardAcc + TXReward}
 				end,
 				{0, 0},
@@ -148,7 +148,7 @@ export const nodeUtils_calculateRewardPoolPerpetual = (
 				( new Decimal(MINING_REWARD_MULTIPLIER).mul(txFee.toString()) ).div(MINING_REWARD_MULTIPLIER + 1).floor()
 			)
 		} else{
-			txReward = txFee / MINING_REWARD_DIVIDER
+			txReward = txFee / MINING_REWARD_DIVIDER_MODIFIED
 		}
 		txsCost += (txFee - txReward)
 		txsReward += txReward

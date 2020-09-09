@@ -35,4 +35,4 @@ lerna-debug.log*
 
 # Other
 
-/test/scratchpad-tests.ts
+# /test/scratchpad-tests.ts

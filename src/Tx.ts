@@ -19,10 +19,8 @@ export class Tx {
 	format:number						// 1 or 2.
 	idString: string				// txid as a b64url encoded string
 	id: Uint8Array					// txid
-	//// Either the ID of the previous transaction made from this wallet or
-	//// the hash of one of the last ?MAX_TX_ANCHOR_DEPTH blocks.
-	last_tx: Uint8Array 
-	owner: Uint8Array				// Public key of transaction owner in b64url 
+	last_tx: Uint8Array			// Either id of last tx from same wallet, or block id from last 50 blocks
+	owner: Uint8Array				// Public key of transaction owner
 	tags: Tag[]							// Indexable TX category identifiers.
 	target: string					// Address of the recipient, if any.
 	quantity: bigint				// Amount of Winston to send, if any.
@@ -112,11 +110,13 @@ export class Tx {
     }
 	} 
 	
-	async verifySignature(): Promise<boolean> {
+	async verify(): Promise<boolean> {
+		/* This function verifies the signature and txid */
     const sigHash = await Arweave.crypto.hash(this.signature)
 
     if( !arrayCompare(this.id, sigHash) ) {
-      throw new Error("Error: invalid signature or txid. Hash mismatch")
+			// invalid signature or txid. Hash mismatch
+			return false
 		}
 		
 		const signaturePayload = await this.getSignatureData();

@@ -1,4 +1,4 @@
-import { BLOCKS_PER_YEAR, N_REPLICATIONS, USD_PER_GBY_2019, USD_PER_GBY_2018, USD_PER_GBY_DECAY_ANNUAL, FORK_HEIGHT_1_9, MAX_DIFF, INITIAL_USD_PER_AR_HEIGHT, WINSTON_PER_AR, ADD_ERLANG_ROUNDING_ERROR, INITIAL_USD_PER_AR_DIFF } from "./constants"
+import { BLOCKS_PER_YEAR, N_REPLICATIONS, USD_PER_GBY_2019, USD_PER_GBY_2018, USD_PER_GBY_DECAY_ANNUAL, FORK_HEIGHT_1_9, MAX_DIFF, INITIAL_USD_PER_AR_HEIGHT, WINSTON_PER_AR, ADD_ERLANG_ROUNDING_ERROR, INITIAL_USD_PER_AR_DIFF, TX_SIZE_BASE, MINING_REWARD_DIVIDER } from "./constants"
 import { Decimal } from 'decimal.js'
 import { retarget_switchToLinearDiff } from './difficulty-retarget'
 import { bufferToBigInt } from "./utils/buffer-utilities"
@@ -68,19 +68,11 @@ const getCostPerYearAtDatetime = (dateTime: Date) => {
 	return cy.mul(N_REPLICATIONS)
 }
 
-// prev_jun_30_year(Y, M) when M < 7 ->
-// 	Y - 1;
-// prev_jun_30_year(Y, _M) ->
-// 	Y.
 const prev_jun_30_year = (y: number, m: number) => {
 	if(m < 6) return y-1  // JS months are 0-11
 	return y
 }
 
-// next_jun_30_year(Y, M) when M < 7 ->
-// 	Y;
-// next_jun_30_year(Y, _M) ->
-// 	Y + 1.
 const next_jun_30_year = (y: number, m: number) => {
 	if(m < 6) return y  
 	return y+1
@@ -119,3 +111,70 @@ const usd_p_gby = (y: number) => {
 	let t = y - 2019
 	return k.mul( Decimal.exp( a.mul(t) ) )
 }
+
+export const txPerpetualStorage_calculateTxFee = (size: bigint, diff: bigint, height: number, timestamp: bigint) => {
+	// calculate_tx_fee(DataSize, Diff, Height, Timestamp) ->
+	// 	TXCost = calculate_tx_cost(DataSize, Diff, Height, Timestamp),
+	// 	TXReward = calculate_tx_reward(TXCost),
+	// 	TXCost + TXReward.
+
+	let txCost = calculate_tx_cost(size, diff, height, timestamp)
+
+	// calculate_tx_reward(TXCost) ->
+	//	erlang:trunc(TXCost * ?MINING_REWARD_MULTIPLIER).
+	let txReward = txCost / MINING_REWARD_DIVIDER //integer division
+
+	return txCost + txReward
+}
+
+const calculate_tx_cost = (size: bigint, diff: bigint, height: number, timestamp: bigint) => {
+	if(height < FORK_HEIGHT_1_9) throw new Error("calculate_tx_cost not supported below FORK_HEIGHT_1_9")
+	// %% @doc Perpetual storage cost to the network.
+	// calculate_tx_cost(Bytes, Diff, Height, Timestamp) ->
+	// 	GBs = (?TX_SIZE_BASE + Bytes) / (1024 * 1024 * 1024),
+	// 	PerGB = usd_to_ar(perpetual_cost_at_timestamp(Timestamp), Diff, Height),
+	// 	StorageCost = PerGB * GBs,
+	// 	HashingCost = StorageCost,
+	// 	erlang:trunc(StorageCost + HashingCost).
+
+	/* N.B. These calculations are subject to JS Number rounding errors, and not expected to match Erlang values */
+
+	let bytes = TX_SIZE_BASE + size
+	// let gigaBytes = Number(bytes) / (1024 ** 3) // this will likely be a miniscule fractional number
+	let perGb = txPerpetualStorage_usdToAr(
+		perpetual_cost_at_timestamp(timestamp),
+		diff,
+		height,
+	)
+	// let storageCost = perGb * gigaBytes
+	// let hashingCost = storageCost // ???
+	// return BigInt( storageCost + hashingCost )
+	// or more succinctly:
+	return (2n * perGb * bytes) / (1024n ** 3n)
+}
+
+const perpetual_cost_at_timestamp = (timestamp: bigint) => {
+	// perpetual_cost_at_timestamp(Timestamp) ->
+	// 	K = get_cost_per_year_at_timestamp(Timestamp),
+	// 	perpetual_cost(K, ?USD_PER_GBY_DECAY_ANNUAL).
+	let k: Decimal = get_cost_per_year_at_timestamp(timestamp)
+
+	// return perpetual_cost(k, USD_PER_GBY_DECAY_ANNUAL)
+	
+	// perpetual_cost(Init, Decay) ->
+	// 	Init / - math:log(Decay).
+
+	return k.dividedBy( Decimal.ln(USD_PER_GBY_DECAY_ANNUAL) ).negated()
+}
+
+const get_cost_per_year_at_timestamp = (ts: bigint) => {
+	// %% @doc Cost to store 1GB per year at the given time.
+	// -spec get_cost_per_year_at_timestamp(Timestamp::integer()) -> usd().
+	// get_cost_per_year_at_timestamp(Timestamp) ->
+	// 	Datetime = system_time_to_universal_time(Timestamp, seconds),
+	// 	get_cost_per_year_at_datetime(Datetime).
+	let dateTime = new Date(Number(ts)*1000) 
+	
+	return getCostPerYearAtDatetime(dateTime)
+}
+

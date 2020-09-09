@@ -159,7 +159,7 @@ describe('Tx (Transaction) tests', () => {
 	it('Tx. Checks that verify function works for v1 format txs', async () =>{
 		expect.assertions(1)
 		let v1Tx = await Tx.getByIdString('2ge-rXTTFeMjVEOkb2r3X1ZooyEH4foRI98CbvcimsQ')
-		let verify1 = await v1Tx.verifySignature()
+		let verify1 = await v1Tx.verify()
 
 		expect(verify1).toEqual(true)
 	}, 20000)
@@ -167,7 +167,7 @@ describe('Tx (Transaction) tests', () => {
 	it('Tx. Checks that verify function works for v2 format txs', async () =>{
 		expect.assertions(1)
 		let v2Tx = await Tx.getByIdString('B3cc0u87v0SwAkTWzHu1v3Sl2vpm1cXgRGPLjtGQJvI')
-		let verify2 = await v2Tx.verifySignature()
+		let verify2 = await v2Tx.verify()
 
 		expect(verify2).toEqual(true)
 	}, 20000)

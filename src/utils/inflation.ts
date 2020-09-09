@@ -13,7 +13,7 @@ export const calculateInflation = (height: number) => {
 	 * Rough maths says the return int value need to be correct to about 19 decimal places (decreasing as the years pass) 
 	 */
 	Decimal.config({precision: 25, rounding: Decimal.ROUND_FLOOR}) // more than enough precision
-	let log2 = Decimal.ln(2) //a float constatnt
+	let log2 = Decimal.ln(2) //a float constant
 	let years = new Decimal(height).dividedBy(BLOCKS_PER_YEAR)
 	let powerExp = Decimal.pow(2,-(years)) //2^years_since_genesis
 	let bigFloat = Decimal.mul(0.2, GENESIS_TOKENS).mul(powerExp).mul(log2)
