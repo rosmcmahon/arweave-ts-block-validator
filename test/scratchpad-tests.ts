@@ -4,7 +4,7 @@ import { Block } from '../src/Block';
 import { Wallet_List, BlockDTO, BlockIndexTuple, BlockTxsPairs } from '../src/types';
 import { ar_tx_replay_pool__verify_block_txs } from '../src/tx-replay-pool';
 import { Tx } from 'src/Tx';
-import { wallet_jwkToAddressString } from 'src/Wallet';
+import { wallet_jwkToAddressString } from 'src/wallet';
 
 const PASS = "\x1b[32mPASS\x1b[0m"
 const FAIL = "\x1b[31mFAIL\x1b[0m"

@@ -4,8 +4,7 @@ import Axios from "axios"
 import { HOST_SERVER, DATA_CHUNK_SIZE } from "./constants"
 import { MerkleElement, computeRootHash } from "./utils/merkle"
 import deepHash from "./utils/deepHash"
-import { bigIntToBuffer256, arrayCompare } from "./utils/buffer-utilities"
-import { wallet_ownerToAddressString } from "./Wallet"
+import { arrayCompare } from "./utils/buffer-utilities"
 
 interface Tag {
 	name: string //these are left as base64url

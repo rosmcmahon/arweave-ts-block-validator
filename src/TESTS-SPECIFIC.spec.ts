@@ -3,8 +3,8 @@ import Arweave from "arweave"
 import { Wallet_List } from './types'
 import { HOST_SERVER } from './constants'
 import { Block,	generateBlockDataSegmentBase, generateBlockDataSegment, getIndepHash, block_verifyTxRoot } from './Block'
-import { nodeUtils_updateWallets, nodeUtils_IsWalletInvalid } from './NodeUtils'
-import { wallet_ownerToAddressString } from './Wallet'
+import { nodeUtils_updateWallets, nodeUtils_IsWalletInvalid } from './node-utils'
+import { wallet_ownerToAddressString } from './wallet'
 
 
 //BDSBase & BDS for /height/509850 hash/si5OoWK-OcYt3LOEDCP2V4SWuj5X5n1LdoTh09-DtOppz_VkE72Cb0DCvygYMbW5

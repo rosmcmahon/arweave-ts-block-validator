@@ -3,9 +3,9 @@ import { ReturnCode, BlockIndexTuple, Wallet_List } from  './types'
 import { Block, getIndepHash, generateBlockDataSegment, verifyBlockDepHash, blockFieldSizeLimit, block_verifyWeaveSize, block_verifyBlockHashListMerkle, block_verifyTxRoot } from './Block'
 import { validatePoa, poa_modifyDiff } from './Poa'
 import { retarget_validateDiff } from './difficulty-retarget'
-import { weave_hash } from './Weave'
+import { weave_hash } from './weave-hash'
 import { validateMiningDifficulty } from './mine'
-import { nodeUtils_updateWallets, nodeUtils_IsWalletInvalid } from './NodeUtils'
+import { nodeUtils_updateWallets, nodeUtils_IsWalletInvalid } from './node-utils'
 
 
 export const validateBlockSlow = async (block: Block, prevBlock: Block, blockIndex: BlockIndexTuple[], walletList: Wallet_List[]): Promise<ReturnCode> => {

@@ -1,10 +1,10 @@
 import { Tx } from "./Tx";
 import { Wallet_List, BlockTxsPairs, Tag } from "./types";
 import { FORK_HEIGHT_1_8, BLOCK_TX_COUNT_LIMIT, BLOCK_TX_DATA_SIZE_LIMIT, WALLET_GEN_FEE, TX_DATA_SIZE_LIMIT } from "./constants";
-import { wallet_ownerToAddressString } from "./Wallet";
+import { wallet_ownerToAddressString } from "./wallet";
 import Arweave from "arweave";
-import { nodeUtils_ApplyTx } from "./NodeUtils";
-import { txPerpetualStorage_calculateTxFee } from "./TxPerpetualStorage";
+import { nodeUtils_ApplyTx } from "./node-utils";
+import { txPerpetualStorage_calculateTxFee } from "./tx-perpetual-storage";
 
 
 

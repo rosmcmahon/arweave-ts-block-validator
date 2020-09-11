@@ -3,9 +3,9 @@ import { Block } from './Block'
 import { Tx } from './Tx'
 import { Wallet_List } from './types'
 import { calculateInflation } from './utils/inflation'
-import { txPerpetualStorage_usdToAr, txPerpetualStorage_getCostPerBlockAtTimestamp } from './TxPerpetualStorage'
+import { txPerpetualStorage_usdToAr, txPerpetualStorage_getCostPerBlockAtTimestamp } from './tx-perpetual-storage'
 import Arweave from 'arweave'
-import { wallet_ownerToAddressString } from './Wallet'
+import { wallet_ownerToAddressString } from './wallet'
 import Decimal from 'decimal.js'
 
 
