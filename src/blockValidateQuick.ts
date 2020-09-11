@@ -4,24 +4,13 @@ import { Block } from './Block'
 
 
 
-export const validateBlockJson = async (blockJson: BlockDTO) => {
-	let block: Block
-	try {
-		block = await Block.createFromDTO(blockJson)
-	} catch (error) {
-		console.log('error',error)
-		return false
-	}
-	return true
-}
+export const validateBlockQuick = (block: Block, currentHeight: number):ReturnCode =>{
 
-export const validateBlockQuick = (blockJson: BlockDTO, block: Block, currentHeight: number):ReturnCode =>{
-
-	if( ! validateBlockJson(blockJson) ){
-		return {code: 400, message: "Invalid blockJson."}
-	}
-
-	/* 2 steps for quick, initial validation (disregarding http bound steps). Return as fast as possible */
+	/**
+	 * The following 2 steps are taken from ar_http_iface_middleware:post_block
+	 * Just 2 quick steps for initial validation - disregarding http bound steps.
+	 * Idea is to return as fast as possible if block invalid
+	 */
 
 	// 1. check block height range is +/- STORE_BLOCKS_BEHIND_CURRENT from current
 	if(block.height < (currentHeight - STORE_BLOCKS_AROUND_CURRENT)){

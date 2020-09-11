@@ -8,7 +8,6 @@ import { validateBlockSlow } from "../src/blockValidateSlow"
 
 
 let res: ReturnCode
-let blockJson: BlockDTO
 let block: Block
 let prevBlock: Block
 let blockIndex: BlockIndexTuple[]  //for PoA and full test
@@ -35,7 +34,6 @@ beforeAll(async () => {
 		])
 		blockIndex = bIndex.data
 		
-		blockJson = bj1.data
 		block = await Block.createFromDTO(bj1.data)
 		prevBlock = await Block.createFromDTO(bj2.data)
 		prevBlockWalletList = (bj2WalletList.data)
@@ -53,7 +51,7 @@ beforeAll(async () => {
 describe('BlockValidateQuick completes e2e Quick validation tests', ()=> {
 
   it('blockValidateQuick should return true for a valid block', async () => {
-		let result = await validateBlockQuick(blockJson, block, block.height )
+		let result = await validateBlockQuick(block, block.height )
 		
     expect(result).toEqual({code: 200, message: "Block quick check OK"})
   })

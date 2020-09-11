@@ -1,11 +1,12 @@
 import axios from 'axios'
 import { BlockDTO, ReturnCode, BlockIndexTuple, Wallet_List } from './types'
-import { STORE_BLOCKS_AROUND_CURRENT, HOST_SERVER, RETARGET_BLOCKS } from './constants'
-import { validateBlockJson, validateBlockQuick } from './blockValidateQuick'
+import { STORE_BLOCKS_AROUND_CURRENT, HOST_SERVER, RETARGET_BLOCKS, MIN_DIFF_FORK_1_8 } from './constants'
+import { validateBlockQuick } from './blockValidateQuick'
 import { Block, blockFieldSizeLimit, block_verifyWeaveSize, block_verifyBlockHashListMerkle } from './Block'
-import { poa_validate, poa_findChallengeBlock } from './Poa'
+import { validatePoa, findPoaChallengeBlock } from './Poa'
 import { retarget_validateDiff } from './difficulty-retarget'
 import { Tx } from './Tx'
+import { validateBlockSlow } from './blockValidateSlow'
 
 /* *** Initialise all test data, and use in one big test file *** */
 
@@ -60,45 +61,67 @@ beforeAll(async () => {
 
 describe('BlockValidateQuick Tests', () => {
 
-  it('validateBlockJson should return true for a valid block', async () => {
-		expect.assertions(1)
-		let result = await validateBlockJson(blockJson )
-		
-    expect(result).toEqual(true)
-  }, 20000)
-
   it('validateBlockQuick should return false for an out of range height', async () => {
 		expect.assertions(2)
 
-    let ahead = validateBlockQuick(blockJson, block, block.height - (STORE_BLOCKS_AROUND_CURRENT+10) )
+    let ahead = validateBlockQuick(block, block.height - (STORE_BLOCKS_AROUND_CURRENT+10) )
 		expect(ahead).toEqual({code: 400, message: "Height is too far ahead"})
 		
-    let behind = validateBlockQuick(blockJson, block, block.height + (STORE_BLOCKS_AROUND_CURRENT+10) )
+    let behind = validateBlockQuick(block, block.height + (STORE_BLOCKS_AROUND_CURRENT+10) )
     expect(behind).toEqual({code: 400, message: "Height is too far behind"})
 	})
 	
 	it('validateBlockQuick should return false for difficulty too low', async () => {
 		expect.assertions(1)
 		let test = Object.assign({},block)
-		test.diff = 1n		                                 //TODO: better good/bad difficulties
+		// set bad difficulty integer 1 below min diff
+		test.diff = MIN_DIFF_FORK_1_8 - 1n 
 
-    res = validateBlockQuick(blockJson, test, block.height-1 )
+    res = validateBlockQuick(test, block.height-1 )
     expect(res).toEqual({code: 400, message: "Difficulty too low"})
+	})
+
+})
+
+describe('BlockValidateSlow tests, general validation tests', () => {
+	it('Quickly returns false for quick validation against wrong previous block height or hash', async () => {
+		expect.assertions(2)
+		let badPrevBlock: Block
+
+		//create bad height
+		badPrevBlock = Object.assign({}, prevBlock)
+		badPrevBlock.height--
+		let badHeightResult = await validateBlockSlow(block, badPrevBlock, blockIndex, prevBlockWalletList)
+
+		expect(badHeightResult).toEqual({code: 400, message: "Invalid previous height"})
+
+		//create bad hash
+		badPrevBlock = Object.assign({}, prevBlock)
+		badPrevBlock.indep_hash = prevBlock.indep_hash.map(byte => byte ^ 0xff) //flip all the bits (╯°□°）╯︵ ┻━┻
+		let badHashResult = await validateBlockSlow(block, badPrevBlock, blockIndex, prevBlockWalletList)
+
+		expect(badHashResult).toEqual({code: 400, message: "Invalid previous block hash"})
 	})
 })
 
 describe('Block tests, general validation tests', () => {
 
-	it('blockFieldSizeLimit returns true for valid field sizes', async () => {
-		expect.assertions(1)
-		let result = blockFieldSizeLimit(block)
+	it('blockFieldSizeLimit returns true/false for valid/invalid field sizes', async () => {
+		expect.assertions(2)
+		let good = blockFieldSizeLimit(block)
 		
-		expect(result).toEqual(true) 
+		expect(good).toEqual(true) 
+
+		let badBlock = Object.assign({}, block)
+		badBlock.reward_addr = new Uint8Array(33) // this should be 256bit; 32 bytes
+		let bad = blockFieldSizeLimit(badBlock)
+
+		expect(bad).toEqual(false)
 	})
 
 	it('block_verifyWeaveSize returns true for valid block weave size', async () => {
 		expect.assertions(1)
-		let result = block_verifyWeaveSize(block, prevBlock, block.txs)
+		let result = block_verifyWeaveSize(block, prevBlock)
 		
 		expect(result).toEqual(true) 
 	})
@@ -119,11 +142,11 @@ describe('Block tests, general validation tests', () => {
 
 describe('PoA tests', () => {
 
-	it('Poa.poaFindChallengeBlock returns a valid block depth', async () => {
+	it('Poa.findPoaChallengeBlock returns a valid block depth', async () => {
 		expect.assertions(2)
-		let testByte =  500000n
+		let testByte =  10000000n
 	
-		const {txRoot, blockBase, blockTop, bh} = poa_findChallengeBlock(testByte, blockIndex)
+		const {txRoot, blockBase, blockTop, bh} = findPoaChallengeBlock(testByte, blockIndex)
 	
 		expect(testByte).toBeGreaterThan(blockBase) 
 		expect(testByte).toBeLessThanOrEqual(blockTop) 
@@ -131,9 +154,11 @@ describe('PoA tests', () => {
 	
 	it('Poa.validatePoa returns true/false for valid/invalid Poa', async () => {
 		expect.assertions(2)
-		let good = await poa_validate(prevBlock.indep_hash, prevBlock.weave_size, blockIndex, block.poa) 
-		let badPoa = prevBlock.poa
-		let bad = await poa_validate(prevBlock.indep_hash, prevBlock.weave_size, blockIndex, badPoa)
+		let good = await validatePoa(prevBlock.indep_hash, prevBlock.weave_size, blockIndex, block.poa) 
+
+		let badPoa = Object.assign({}, block.poa)
+		badPoa.chunk = block.poa.chunk.map(byte=> byte ^ 0xff) //flip all the bits (╯°□°）╯︵ ┻━┻
+		let bad = await validatePoa(prevBlock.indep_hash, prevBlock.weave_size, blockIndex, badPoa)
 	
 		expect(good).toEqual(true) 
 		expect(bad).toEqual(false) 
@@ -142,13 +167,24 @@ describe('PoA tests', () => {
 
 describe('Difficulty tests', () => {
 
-	it('Difficulty. retarget_ValidateDiff Validate that a new block has an appropriate difficulty.', async () =>{
+	it('Difficulty. retarget_ValidateDiff Validate that a new block has an appropriate Difficulty.', async () =>{
 		expect.assertions(2)
 		let retarget = retarget_validateDiff(block, prevBlock)
 		let noRetarget = retarget_validateDiff(prevBlock, prevPrevBlock)
 
 		expect(retarget).toEqual(true)
 		expect(noRetarget).toEqual(true)
+
+	}, 20000)
+
+	it('Difficulty. retarget_ValidateDiff returns false for bad Difficulty.', async () =>{
+		expect.assertions(1)
+		let badTimeBlock = Object.assign({}, block)
+		badTimeBlock.timestamp = prevBlock.last_retarget + 1n // this makes timedelta too short
+
+		let retarget = retarget_validateDiff(badTimeBlock, prevBlock)
+
+		expect(retarget).toEqual(false)
 
 	}, 20000)
 

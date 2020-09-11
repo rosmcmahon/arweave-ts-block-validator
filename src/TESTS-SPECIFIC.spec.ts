@@ -64,9 +64,9 @@ describe('Block tests, with known hash data outputs', () => {
 
 	it('getIndepHash returns a valid hash', async () => {
 		expect.assertions(1)
-		let hash: any = await getIndepHash(blockKnownHash)
+		let hash = await getIndepHash(blockKnownHash)
 		
-		expect(new Uint8Array(hash)).toEqual(blockKnownHash.indep_hash) 
+		expect(hash).toEqual(blockKnownHash.indep_hash) 
 	})
 
 	it('block_verifyTxRoot returns true/false for valid/invalid tx_root hash', async () => {
@@ -74,7 +74,7 @@ describe('Block tests, with known hash data outputs', () => {
 		let good = await block_verifyTxRoot(v1BigV2Block) // this block contains v2 & v1 mixed txs. v1 large data needs chunking also
 
 		let badBlock = Object.assign({}, v1BigV2Block)
-		badBlock.tx_root = new Uint8Array(Buffer.from("bad data"))
+		badBlock.txs.push(v1BigV2Block.txs[0]) // add an extra tx to mess up the tx_root computation
 		let bad = await block_verifyTxRoot(badBlock)
 
 		expect(good).toEqual(true) 

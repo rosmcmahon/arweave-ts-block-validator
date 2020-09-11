@@ -5,11 +5,10 @@
  * - Extra data output from validatePath
  * - Takes an array of type MerkleElement and generates tree from this
  * - All datas changed to bigints for tree generation
- * - Removed all referenced to Chunked data
+ * - Removed all references to Chunked data
  */
 import Arweave from "arweave";
-import { bigIntToBuffer256, arrayCompare, bufferToInt, bufferToBigInt } from "./buffer-utilities";
-import { off } from "process";
+import { bigIntToBuffer256, arrayCompare, bufferToBigInt } from "./buffer-utilities";
 
 
 export interface MerkleElement {

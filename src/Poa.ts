@@ -14,7 +14,7 @@ export interface Poa {
 }
 
 /* Validate a complete proof of access object */
-export const poa_validate = async (prevIndepHash: Uint8Array, prevWeaveSize: bigint, blockIndex: BlockIndexTuple[], poa: Poa): Promise<Boolean> => {
+export const validatePoa = async (prevIndepHash: Uint8Array, prevWeaveSize: bigint, blockIndex: BlockIndexTuple[], poa: Poa): Promise<Boolean> => {
 	
 	/* some quick returns */
 	
@@ -29,7 +29,7 @@ export const poa_validate = async (prevIndepHash: Uint8Array, prevWeaveSize: big
 
 	let recallByte: bigint = bufferToBigInt(await poaMultiHash(prevIndepHash, poa.option)) % prevWeaveSize
 
-	const {txRoot, blockBase, blockTop, bh} = poa_findChallengeBlock(recallByte, blockIndex)
+	const {txRoot, blockBase, blockTop, bh} = findPoaChallengeBlock(recallByte, blockIndex)
 
 	/* Validate */
 
@@ -55,7 +55,7 @@ const validateTxPath = async (blockOffset: bigint, txRoot: Uint8Array, blockEndO
 const validateDataPath = async (dataRoot: Uint8Array, txOffset: bigint, endOffset: bigint, poa: Poa) => {
 	let merkleDataPathResult = await Merkle.validatePath(dataRoot, txOffset, 0n, endOffset, poa.data_path)
 
-	//Merkle.validatePath returns false | data...
+	//Merkle.validatePath returns false | { data, ...others }
 
 	if(merkleDataPathResult === false){
 		return false
@@ -83,7 +83,7 @@ const poaMultiHash = async (data: Uint8Array, remaining: number): Promise<Uint8A
 	return poaMultiHash(hashX, remaining - 1 )
 }
 
-export const poa_findChallengeBlock = (byte: bigint, blockIndex: BlockIndexTuple[]) => {
+export const findPoaChallengeBlock = (byte: bigint, blockIndex: BlockIndexTuple[]) => {
 	// The base of the block is the weave_size tag of the previous_block. 
 	// Traverse down the block index until the challenge block is inside the block's bounds.
 	// Where: blockIndex[0] is the latest block, and blockIndex[blockIndex.length-1] is the earliest block
@@ -100,11 +100,10 @@ export const poa_findChallengeBlock = (byte: bigint, blockIndex: BlockIndexTuple
 		}
 		++index0; ++index1
 	}
-	//we should never get here
-	throw new Error('recallByte out of bounds of weave')
+	console.debug('recallByte out of bounds of weave') //we can never get here from given inputs
 }
 
-export const poa_modifyDiff = (diff: bigint, option: number) => {
+export const poa_modifyDiff = (diff: bigint, option: number): bigint => {
 	if(option === 1){
 		return diff
 	}

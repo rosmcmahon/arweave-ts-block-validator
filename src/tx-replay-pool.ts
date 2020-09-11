@@ -28,22 +28,12 @@ export const ar_tx_replay_pool__verify_block_txs = async (
 	}
 
 	let updatedWalletList: Wallet_List[] = Object.assign([], walletList)
-	// let updatedBlockTxxPairs: BlockTxsPairs = Object.assign({}, blockTxsPairs) // do not update, use mempool to storeupdates
-	let verifiedTxs: string[] = [] //just txids of verified txs
+	let verifiedTxs: string[] = [] //just txids of verified txs. plays the role of memPool here
 	let size = 0n
 
 	for (let i = 0; i < txs.length; i++) {
 		const tx = txs[i];
 
-		let verifyTxResult = await verify_tx(tx, diff, height, timestamp, updatedWalletList, blockTxsPairs, verifiedTxs)
-
-		if(!verifyTxResult){
-			return false
-		}
-		let { wallets: modifiedWallets, memPool: modifiedMemPool} = verifyTxResult
-		updatedWalletList = modifiedWallets
-		verifiedTxs = modifiedMemPool
-	
 		if(tx.format === 1){
 			size += tx.data_size
 		}
@@ -51,19 +41,29 @@ export const ar_tx_replay_pool__verify_block_txs = async (
 			console.log("BLOCK_TX_DATA_SIZE_LIMIT exceeded")
 			return false
 		}
+
+		let verifyTxResult = await validateTx(tx, diff, height, timestamp, updatedWalletList, blockTxsPairs, verifiedTxs)
+
+		if(!verifyTxResult){
+			return false
+		}
+		let { wallets: modifiedWallets, verifiedTxs: modifiedVerifiedTxs} = verifyTxResult
+		updatedWalletList = modifiedWallets
+		verifiedTxs = modifiedVerifiedTxs
 	}
 
 	return true
 }
 
-const verify_tx = async (tx: Tx, diff: bigint, height: number, timestamp: bigint, wallets: Wallet_List[], blockTxsPairs: BlockTxsPairs, verifiedTxs: string[]) => {
-	if(height<FORK_HEIGHT_1_8) throw new Error("ar_tx_replay_verify_txs unsupported before FORK_HEIGHT_1_8")
+/* based on ar_tx_replay_pool:verify_tx */
+const validateTx = async (tx: Tx, diff: bigint, height: number, timestamp: bigint, wallets: Wallet_List[], blockTxsPairs: BlockTxsPairs, verifiedTxs: string[]) => {
+	if(height<FORK_HEIGHT_1_8) throw new Error("tx-replay_verify_txs unsupported before FORK_HEIGHT_1_8")
 
 	let lastTxString = Arweave.utils.bufferTob64Url(tx.last_tx)
 
 	// if( ! ar_tx:verify(TX, Diff, Height, FloatingWallets, Timestamp, VerifySignature) ) 
 	// 	return false
-	if( !ar_tx__verify__combined1n2(tx, diff, height, timestamp, wallets) ){
+	if( ! verifyTx(tx, diff, height, timestamp, wallets) ){
 		return false
 	}
 	
@@ -71,7 +71,7 @@ const verify_tx = async (tx: Tx, diff: bigint, height: number, timestamp: bigint
 	// if( maps:is_key(TX#tx.last_tx, Mempool) )
 	// 	return false
 	if( verifiedTxs.includes(lastTxString) ){
-		console.log('ar_tx_replay_pool.verify_tx returning false '+lastTxString+' in verifiedTxs')
+		console.log('tx-replay-pool.verify_tx: '+lastTxString+' already in verifiedTxs')
 		return false
 	}
 
@@ -87,7 +87,7 @@ const verify_tx = async (tx: Tx, diff: bigint, height: number, timestamp: bigint
 		verifiedTxs.push(tx.idString)
 		//apply tx to modified wallets
 		wallets = await nodeUtils_ApplyTx(wallets, tx, null)
-		return {wallets, memPool: verifiedTxs}
+		return {wallets, verifiedTxs}
 	}
 
 	//// anchor_check
@@ -113,7 +113,7 @@ const verify_tx = async (tx: Tx, diff: bigint, height: number, timestamp: bigint
 	// 	return false ; tx_already_in_mempool
 	// }
 	if( verifiedTxs.includes(tx.idString)){
-		console.log("tx_already_in_mempool")
+		console.log("tx already in verifiedTxs")
 		return false
 	}
 
@@ -125,7 +125,7 @@ const verify_tx = async (tx: Tx, diff: bigint, height: number, timestamp: bigint
 	verifiedTxs.push(tx.idString)
 	wallets = await nodeUtils_ApplyTx(wallets, tx, null)
 	
-	return {wallets, memPool: verifiedTxs}
+	return {wallets, verifiedTxs}
 }
 
 const weave_map_contains_tx = (txid: string, blockTxsPairs: BlockTxsPairs) => {
@@ -150,7 +150,8 @@ const ar_tx__check_last_tx = async (wallets: Wallet_List[], tx: Tx) => {
 }
 
 //#region ar_tx__verifyAllChecks
-export const ar_tx__verify__combined1n2 = async (tx: Tx, diff: bigint, height: number, timestamp: bigint, wallets: Wallet_List[]) => {
+/* based on ar_tx:verify */
+export const verifyTx = async (tx: Tx, diff: bigint, height: number, timestamp: bigint, wallets: Wallet_List[]) => {
 	if(tx.quantity < 0n){
 		console.log("quantity_negative")
 		return false
@@ -171,7 +172,7 @@ export const ar_tx__verify__combined1n2 = async (tx: Tx, diff: bigint, height: n
 
 	/**
 	 * These types of shape checks are probably out of scope here.
-	 * They should be done on the incoming DTO / Tag object creation, at source so to speak.
+	 * They should be done on the incoming DTO / object creation, at source so to speak.
 	 */
 	if( ! tag_field_legal(tx) ){
 		console.log("tag_field_illegally_specified")
@@ -179,7 +180,7 @@ export const ar_tx__verify__combined1n2 = async (tx: Tx, diff: bigint, height: n
 	}
 
 	if( ! await validate_overspend(tx, await nodeUtils_ApplyTx(wallets, tx, null)) ){
-		console.log("overspend in tx")
+		console.log("overspend in tx", tx.idString)
 		return false
 	}
 
@@ -318,9 +319,9 @@ const tx_field_size_limit_v1 = (tx: Tx) => {
 		&& getTagsLength(tx.tags) <= 2048
 		&& tx.target.length <= 43
 		&& tx.quantity.toString().length <= 21
-		&& tx.data.length <= TX_DATA_SIZE_LIMIT
 		&& tx.signature.length <= 512
 		&& tx.reward.toString().length <= 21
+		&& tx.data.length <= TX_DATA_SIZE_LIMIT
 }
 const tx_field_size_limit_v2 = async (tx: Tx) => {
 	return tx.id.length <= 32
@@ -329,9 +330,9 @@ const tx_field_size_limit_v2 = async (tx: Tx) => {
 		&& getTagsLength(tx.tags) <= 2048
 		&& tx.target.length <= 43
 		&& tx.quantity.toString().length <= 21
-		&& tx.data_size.toString().length <= 21
 		&& tx.signature.length <= 512
 		&& tx.reward.toString().length <= 21
+		&& tx.data_size.toString().length <= 21
 		&& (await tx.getDataRoot()).length <= 32
 }
 

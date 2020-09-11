@@ -9,9 +9,7 @@ import Arweave from 'arweave'
 type DeepHashChunk = Uint8Array | DeepHashChunks;
 interface DeepHashChunks extends Array<DeepHashChunk> {}
 
-export default async function deepHash(
-  data: DeepHashChunk
-): Promise<Uint8Array> {
+export default async function deepHash(data: DeepHashChunk): Promise<Uint8Array> {
   if (Array.isArray(data)) {
     const tag = Arweave.utils.concatBuffers([
       Arweave.utils.stringToBuffer("list"),
@@ -37,10 +35,7 @@ export default async function deepHash(
   return await Arweave.crypto.hash(taggedHash, "SHA-384");
 }
 
-async function deepHashChunks(
-  chunks: DeepHashChunks,
-  acc: Uint8Array
-): Promise<Uint8Array> {
+async function deepHashChunks(chunks: DeepHashChunks, acc: Uint8Array): Promise<Uint8Array> {
   if (chunks.length < 1) {
     return acc;
   }

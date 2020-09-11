@@ -5,8 +5,8 @@ import Axios from 'axios'
 import deepHash from './utils/deepHash'
 import { Poa } from './Poa'
 import { arrayCompare, bufferToInt } from './utils/buffer-utilities'
-import { Tx, generateV1TxDataRoot } from './Tx'
-import { arrayFlatten, MerkleElement, computeRootHash } from './utils/merkle'
+import { Tx } from './Tx'
+import { MerkleElement, computeRootHash } from './utils/merkle'
 import { unbalancedMerkle_root, unbalancedMerkle_hashBlockIndexEntry } from './utils/unbalanced-merkle'
 
 
@@ -94,15 +94,16 @@ export class Block {
 	
 }
 
-export const getIndepHash = async (block: Block): Promise<Uint8Array> => {
+export const getIndepHash = async (block: Block) => {
 
 	let BDS: Uint8Array = await generateBlockDataSegment(block)
 
-	return await deepHash([
+	let deep =  await deepHash([
 		BDS, 
 		block.hash, 
 		block.nonce,
 	])
+	return new Uint8Array(deep)
 }
 
 export const generateBlockDataSegment = async (block: Block): Promise<Uint8Array> => {
@@ -179,15 +180,25 @@ export const blockFieldSizeLimit = (block: Block) => {
 		&& block.hash.length <= 48
 		&& block.indep_hash.length <= 48
 		&& block.reward_addr.length <= 32
-		&& arrayFlatten(block.tags).length <= 2048
+		&& getTagsLength(block.tags) <= 2048
 		&& block.weave_size.toString().length <= 64
 		&& block.block_size.toString().length <= 64
 		&& chunkSize <= DATA_CHUNK_SIZE
 		&& dataPathSize <= MAX_PATH_SIZE
 }
 
-export const  block_verifyWeaveSize = (block: Block, prevBlock: Block, txs: Tx[]) => {
+const getTagsLength = (tags: Tag[]) => {
+	let total = 0
+	for (let i = 0; i < tags.length; i++) {
+		const tag = tags[i];
+		total += tag.name.length + tag.value.length
+	}
+	return total
+}
+
+export const  block_verifyWeaveSize = (block: Block, prevBlock: Block) => {
 	let newSize = prevBlock.weave_size
+	let txs = block.txs
 	for (let i = 0; i < txs.length; i++) {
 		const tx = txs[i];
 		newSize += tx.data_size

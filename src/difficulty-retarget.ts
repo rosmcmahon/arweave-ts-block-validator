@@ -17,15 +17,15 @@ export const retarget_validateDiff = (block: Block, prevBlock: Block) => {
 			prevBlock.last_retarget,
 			block.height,
 		)
-		if(block.diff !== calculated){
-			console.debug('block.diff', block.diff)
-			console.debug('Number(block.diff)', BigInt(Number(block.diff)))
-			console.debug('calculated', calculated)
-			console.debug('Number(calculated)', BigInt(Number(calculated)))
-			console.debug('block.height', block.height)
-		}
+		// if(block.diff !== calculated){
+		// 	console.debug('block.diff', block.diff)
+		// 	console.debug('Number(block.diff)', BigInt(Number(block.diff)))
+		// 	console.debug('calculated', calculated)
+		// 	console.debug('Number(calculated)', BigInt(Number(calculated)))
+		// 	console.debug('block.height', block.height)
+		// }
 		return Number(block.diff) === Number(calculated) 
-		// added even more rounding to make tests green, however, this will not help later calculations that rely on calculateDifficultyLinear
+		// add even more rounding to make tests green
 	}
 
 	return (block.diff===prevBlock.diff) && (block.last_retarget===prevBlock.last_retarget)
@@ -213,8 +213,8 @@ const calculateDifficultyLinear = (oldDiff: bigint, ts: bigint, last: bigint, he
 					)
 			end.
 	*/
-	Decimal.config({ precision: 100 }) // I tried to make precision worse to match erlang, can't reach the sweet spot
-	let targetTime = new Decimal(RETARGET_BLOCKS * TARGET_TIME) //1200n
+	Decimal.config({ precision: 100 }) //tried altering precision to match erlang, can't reach the sweet spot
+	let targetTime = new Decimal(RETARGET_BLOCKS * TARGET_TIME) 
 	let actualTime = new Decimal( (ts - last).toString() )
 	let timeDelta = actualTime.dividedBy(targetTime)
 	let oneMinusTimeDelta = new Decimal(1).minus(timeDelta).abs()

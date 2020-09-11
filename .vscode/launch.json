@@ -31,11 +31,12 @@
 		{
 			"type": "node",
 			"request": "launch",
-			"name": "Launch Program",
+			"name": "Launch Scratchpad",
 			"skipFiles": [
 				"<node_internals>/**"
 			],
-			"program": "${workspaceFolder}\\dist\\index.js",
+      "program": "${workspaceFolder}/test/scratchpad-tests.ts",
+      "preLaunchTask": "tsc: build - tsconfig.json",
 			"outFiles": [
 				"${workspaceFolder}/**/*.js"
 			]

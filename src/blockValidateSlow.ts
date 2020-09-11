@@ -1,7 +1,7 @@
 
 import { ReturnCode, BlockIndexTuple, Wallet_List } from  './types'
 import { Block, getIndepHash, generateBlockDataSegment, verifyBlockDepHash, blockFieldSizeLimit, block_verifyWeaveSize, block_verifyBlockHashListMerkle, block_verifyTxRoot } from './Block'
-import { poa_validate, poa_modifyDiff } from './Poa'
+import { validatePoa, poa_modifyDiff } from './Poa'
 import { retarget_validateDiff } from './difficulty-retarget'
 import { weave_hash } from './Weave'
 import { validateMiningDifficulty } from './mine'
@@ -13,17 +13,17 @@ export const validateBlockSlow = async (block: Block, prevBlock: Block, blockInd
 
 	// 1. Verify the height of the new block is the one higher than the current height.
 	if(block.height !== prevBlock.height + 1){
-		return {code: 400, message: "Invalid height"}
+		return {code: 400, message: "Invalid previous height"}
 	}
 
 	// 2. Verify that the previous_block hash of the new block is the indep_hash of the current block.
 	if( ! Buffer.from(prevBlock.indep_hash).equals(block.previous_block) ){
-		return {code: 400, message: "Invalid previous_block"}
+		return {code: 400, message: "Invalid previous block hash"}
 	}
 
 	// 3. poa:
 	// if(! ar_poa:validate(OldB#block.indep_hash, OldB#block.weave_size, BI, POA) ) return false
-	if( ! await poa_validate(prevBlock.indep_hash, prevBlock.weave_size, blockIndex, block.poa) ){
+	if( ! await validatePoa(prevBlock.indep_hash, prevBlock.weave_size, blockIndex, block.poa) ){
 		return {code: 400, message: "Invalid PoA", height: block.height}
 	}
 
@@ -33,14 +33,14 @@ export const validateBlockSlow = async (block: Block, prevBlock: Block, blockInd
 		return {code: 400, message: "Invalid difficulty", height: block.height}
 	}
 
-	// 6. independent_hash:
+	// 5. independent_hash:
 	// if( ar_weave:indep_hash_post_fork_2_0(NewB) != NewB#block.indep_hash ) return false
 	let indepHash = await getIndepHash(block)
 	if( ! Buffer.from(indepHash).equals(block.indep_hash) ){
 		return {code: 400, message: "Invalid independent hash"}
 	}
 
-	// 7. wallet_list: 
+	// 6. wallet_list: 
 	// UpdatedWallets = update_wallets(NewB, Wallets, RewardPool, Height)
 	// if(any wallets are invalid <is_wallet_invalid> ) return "Invalid updated wallet list"
 	let { updatedWallets } = await nodeUtils_updateWallets(block, walletList, prevBlock.reward_pool, prevBlock.height)
@@ -52,13 +52,13 @@ export const validateBlockSlow = async (block: Block, prevBlock: Block, blockInd
 		}
 	}
 	
-	// 8. block_field_sizes: (block field size checks, no dependencies)
+	// 7. block_field_sizes: (block field size checks, no dependencies)
 	// if(! ar_block:block_field_size_limit(NewB) ) return false
 	if( ! blockFieldSizeLimit(block) ){
 		return {code: 400, message: "Received block with invalid field size"}
 	}
 
-	// 9. txs: (mempool? weaveState?) N.B. Need the BlockTXPairs for this test! requires 50 blocks. long tx checks
+	// 8. txs: (mempool? weaveState?) N.B. Need the BlockTXPairs for this test! requires 50 blocks. long tx checks
 	// if( ar_tx_replay_pool:verify_block_txs === invalid ) return false
 
 	// let result = await ar_tx_replay_pool__verify_block_txs(
@@ -74,26 +74,26 @@ export const validateBlockSlow = async (block: Block, prevBlock: Block, blockInd
 	// }
 	
 
-	// 10. tx_root: 
+	// 9. tx_root: 
 	// ar_block:verify_tx_root(NewB) === false; return false
 	if( ! await block_verifyTxRoot(block) ){
 		return {code: 400, message: "Invalid tx_root", height: block.height}
 	}
 
 
-	// 11. weave_size: 
+	// 10. weave_size: 
 	// ar_block:verify_weave_size(NewB, OldB, TXs) === false; return false
-	if( ! block_verifyWeaveSize(block, prevBlock, block.txs) ){
+	if( ! block_verifyWeaveSize(block, prevBlock) ){
 		return {code: 400, message: "Invalid weave size", height: block.height}
 	}
 
-	// 12. block_index_root:
+	// 11. block_index_root:
 	// ar_block:verify_block_hash_list_merkle(NewB, OldB, BI) === false; return false
 	if( ! await block_verifyBlockHashListMerkle(block, prevBlock, blockIndex) ){
 		return {code: 400, message: "Invalid block index root", height: block.height}
 	}
 
-	// 5. pow: (depends on RandomX)
+	// 12. pow: (depends on RandomX, so had to move to end of validations)
 	// POW = ar_weave:hash( ar_block:generate_block_data_segment(NewB), Nonce, Height );
 	// if(! ar_block:verify_dep_hash(NewB, POW) ) return false
 	// if(! ar_mine:validate(POW, ar_poa:modify_diff(Diff, POA#poa.option), Height) ) return false

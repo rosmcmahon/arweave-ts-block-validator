@@ -255,6 +255,7 @@ export const nodeUtils_ApplyTx = async (walletList: Wallet_List[], tx: Tx, UNUSE
 		const entry = walletList[i];
 		if(entry.address === address){
 			walletList = await nodeUtils_updateRecipientBalance(await nodeUtils_UpdateSenderBalance(walletList, tx), tx)
+			return walletList
 		}
 	}
 

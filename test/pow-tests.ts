@@ -1,7 +1,7 @@
 import axios from "axios"
 import { Block, generateBlockDataSegment } from "../src/Block"
 import { Wallet_List } from "../src/types"
-import { HOST_SERVER } from "../src/constants"
+import { HOST_SERVER, MAX_DIFF } from "../src/constants"
 import { weave_hash } from "../src/Weave"
 import { validateMiningDifficulty } from "../src/mine"
 import { poa_modifyDiff } from "../src/Poa"
@@ -54,7 +54,7 @@ const main = async () => {
 		block1.height
 	)
 
-	if( arrayCompare(pow1,block1.hash) ){
+	if( arrayCompare(pow1, block1.hash) ){
 		console.log(PASS, "PoW 1 hash == RandomX hash")
 	}else{
 		console.log(FAIL, "PoW 1 hash != RandomX hash")
@@ -80,7 +80,7 @@ const main = async () => {
 		block2.height
 	)
 
-	if( arrayCompare(pow2,block2.hash) ){
+	if( arrayCompare(pow2, block2.hash) ){
 		console.log(PASS, "PoW 2 hash == RandomX hash")
 	}else{
 		console.log(FAIL, "PoW 2 hash != RandomX hash")
@@ -94,6 +94,16 @@ const main = async () => {
 		console.log(FAIL, "Difficulty invalid with poa.option = 2")
 	}
 
+	console.log()
+	console.log('Test 3: assert validateMiningDifficulty returns false for bad Difficulty')
+
+	let test3 = validateMiningDifficulty(pow2, MAX_DIFF, block2.height)
+
+	if (test3) {
+		console.log(FAIL, "validateMiningDifficulty returned true for bad Difficulty")
+	} else {
+		console.log(PASS, "validateMiningDifficulty returned false for bad Difficulty")
+	}
 
 }
 main();
