@@ -8,9 +8,10 @@ import { txPerpetualStorage_calculateTxFee } from "./tx-perpetual-storage";
 import { WalletsObject } from "./classes/WalletsObject";
 import { serialize, deserialize } from "v8";
 
+/* This file is loosely based on `tx-replay-pool.erl` unless otherwiese stated */
 
-
-export const ar_tx_replay_pool__verify_block_txs = async (
+/* based on ar_tx_replay_pool:verify_block_txs */
+export const validateBlockTxs = async (
 	txs: Tx[],
 	diff: bigint,
 	height: number,
@@ -21,7 +22,7 @@ export const ar_tx_replay_pool__verify_block_txs = async (
 
 	if(height<FORK_HEIGHT_1_8) throw new Error("ar_tx_replay_pool__verify_block_txs invalid before FORK_HEIGHT_1_8")
 
-	if(txs === []){
+	if(txs === []){ 
 		return true
 	}
 
@@ -31,7 +32,7 @@ export const ar_tx_replay_pool__verify_block_txs = async (
 	}
 
 	let updatedWallets: WalletsObject = deserialize(serialize(prevBlockWallets)) // clone as this function is for validation
-	let verifiedTxs: string[] = [] //just txids of verified txs. plays the role of memPool here
+	let verifiedTxs: string[] = [] //just txids of verified txs. (plays the role of erlang memPool here)
 	let size = 0n
 
 	for (let i = 0; i < txs.length; i++) {
@@ -46,7 +47,7 @@ export const ar_tx_replay_pool__verify_block_txs = async (
 		}
 
 		// updatedWallets and verifiedTxs get updated directly
-		let verifyTxResult = await validateTx(tx, diff, height, timestamp, updatedWallets, blockTxsPairs, verifiedTxs)
+		let verifyTxResult = await validateBlockTx(tx, diff, height, timestamp, updatedWallets, blockTxsPairs, verifiedTxs)
 
 
 		if(verifyTxResult === false){
@@ -61,11 +62,11 @@ export const ar_tx_replay_pool__verify_block_txs = async (
 }
 
 /* based on ar_tx_replay_pool:verify_tx */
-const validateTx = async (tx: Tx, diff: bigint, height: number, timestamp: bigint, wallets: WalletsObject, blockTxsPairs: BlockTxsPairs, verifiedTxs: string[]) => {
+const validateBlockTx = async (tx: Tx, diff: bigint, height: number, timestamp: bigint, wallets: WalletsObject, blockTxsPairs: BlockTxsPairs, verifiedTxs: string[]) => {
 	if(height<FORK_HEIGHT_1_8) throw new Error("tx-replay_verify_txs unsupported before FORK_HEIGHT_1_8")
 
 	let lastTxString = Arweave.utils.bufferTob64Url(tx.last_tx)
-
+	
 	// if( ! ar_tx:verify(TX, Diff, Height, FloatingWallets, Timestamp, VerifySignature) ) 
 	// 	return false
 	if( ! await verifyTx(tx, diff, height, timestamp, wallets) ){
@@ -92,7 +93,7 @@ const validateTx = async (tx: Tx, diff: bigint, height: number, timestamp: bigin
 		verifiedTxs.push(tx.idString)
 		//apply tx to modified wallets
 		await nodeUtils_ApplyTx(wallets, tx)
-		return true // {wallets, verifiedTxs}
+		return true
 	}
 
 	//// anchor_check
@@ -130,7 +131,7 @@ const validateTx = async (tx: Tx, diff: bigint, height: number, timestamp: bigin
 	verifiedTxs.push(tx.idString)
 	await nodeUtils_ApplyTx(wallets, tx)
 	
-	return true //{wallets, verifiedTxs}
+	return true
 }
 
 const weave_map_contains_tx = (txid: string, blockTxsPairs: BlockTxsPairs) => {
@@ -153,7 +154,6 @@ const ar_tx__check_last_tx = async (wallets: WalletsObject, tx: Tx) => {
 	return false
 }
 
-//#region ar_tx__verifyAllChecks
 /* based on ar_tx:verify */
 export const verifyTx = async (tx: Tx, diff: bigint, height: number, timestamp: bigint, wallets: WalletsObject) => {
 	if(tx.quantity < 0n){

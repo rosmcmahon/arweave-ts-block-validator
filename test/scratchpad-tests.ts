@@ -1,14 +1,17 @@
 import axios from 'axios'
+import Arweave from 'arweave'
 import { HOST_SERVER, BLOCK_TX_COUNT_LIMIT, BLOCK_TX_DATA_SIZE_LIMIT } from '../src/constants';
 import { Block } from '../src/classes/Block';
 import { BlockDTO, BlockIndexTuple, BlockTxsPairs } from '../src/types';
-import { ar_tx_replay_pool__verify_block_txs } from '../src/tx-replay-pool';
+import { validateBlockTxs } from '../src/blockTxsValidation';
 import { Tx } from '../src/classes/Tx';
 import { WalletsObject, createWalletsFromDTO } from '../src/classes/WalletsObject';
 
+const arweave = Arweave.init({})
+
+// test convenience utilities
 const PASS = "\x1b[32mPASS\x1b[0m"
 const FAIL = "\x1b[31mFAIL\x1b[0m"
-
 const printTest = (b: boolean) => b ? console.log(PASS) : console.log(FAIL)
 
 const main = async () => {
@@ -29,6 +32,7 @@ const main = async () => {
 	let blockTxsPairs: BlockTxsPairs
 
 	let V1DATA_IDSTRING = 'eIcAGwqFCHek3EvpiRXdsESZAPKLXJMzco-7lWm4yO4'
+	let BLOCKID_HEIGHT_510000 = "RqCpcr175Xa3glLP7p-NOOw3h8_NZNaJbgqi29myyotpwuT_q83uBdbI9QutIk_i"
 
 	console.log("Preparing test data...")
 
@@ -83,14 +87,13 @@ const main = async () => {
 	console.log("prevBlockWallets numkeys", Object.keys(prevBlockWallets).length )
 	console.log("prevBlock.height", prevBlock.height )
 
-	// "overspend in tx UmE3zdrZIykfY_iY-fUU90Hcrf8XaKy3mtnk6mCLsH4"
-	// this tx cleans out the particular wallet leaving 0 AR, so our calc'd txCost must be over the actual price
 
 	//////////////////////////////////////////////////////////////////////////////////////
+	console.log('ar_tx_replay_pool__verify_block_txs tests')
 	console.log()
 	console.log("Validate txs. Returns true when valid data given")
 	
-	let result = await ar_tx_replay_pool__verify_block_txs(
+	let result = await validateBlockTxs(
 		block.txs, 
 		block.diff, 
 		prevBlock.height, 
@@ -104,13 +107,13 @@ const main = async () => {
 		console.log(FAIL, "Received block with invalid txs")
 	}
 
-	//////////////////////////////////////////////////////////////////////////////////////
+
 	console.log()
 	console.log("Validate txs. Returns false when BLOCK_TX_COUNT_LIMIT exceeded")
 
 	let bigArray = new Array(BLOCK_TX_COUNT_LIMIT + 1) //simulating too many txs
 
-	let badTxsCount = await ar_tx_replay_pool__verify_block_txs(
+	let badTxsCount = await validateBlockTxs(
 		bigArray, 
 		block.diff, 
 		prevBlock.height, 
@@ -120,9 +123,11 @@ const main = async () => {
 	)
 	printTest(badTxsCount === false)
 
-	//////////////////////////////////////////////////////////////////////////////////////
+
 	console.log()
 	console.log("Validate txs. Returns false when BLOCK_TX_DATA_SIZE_LIMIT exceeded")
+
+	// N.B this test needs a v1 tx to alter the data size, in the example we use 520919 & V1DATA_IDSTRING
 
 	let badSizeTxs: Tx[] = Object.assign([], block.txs)
 	let v1DataIndex = 0
@@ -136,7 +141,7 @@ const main = async () => {
 	badSizeTxs[v1DataIndex] = Object.assign({}, badSizeTxs[v1DataIndex]) // make a copy so as not to break the other tests
 	badSizeTxs[v1DataIndex].data_size = BigInt(BLOCK_TX_DATA_SIZE_LIMIT + 1) //simulating too much data for 1 block
 
-	let badTxSizeReturn = await ar_tx_replay_pool__verify_block_txs(
+	let badTxSizeReturn = await validateBlockTxs(
 		badSizeTxs, 
 		block.diff, 
 		prevBlock.height, 
@@ -146,6 +151,7 @@ const main = async () => {
 	)
 	printTest(badTxSizeReturn === false)
 
+	//////////////////////////////////////////////////////////////////////////////////////
 
 }
 main();
