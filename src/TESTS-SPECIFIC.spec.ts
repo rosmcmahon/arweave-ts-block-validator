@@ -1,10 +1,11 @@
 import axios from 'axios'
 import Arweave from "arweave"
-import { Wallet_List } from './types'
 import { HOST_SERVER } from './constants'
-import { Block,	generateBlockDataSegmentBase, generateBlockDataSegment, getIndepHash, block_verifyTxRoot } from './Block'
+import { Block,	generateBlockDataSegmentBase, generateBlockDataSegment, getIndepHash, block_verifyTxRoot } from './classes/Block'
 import { nodeUtils_updateWallets, nodeUtils_IsWalletInvalid } from './node-utils'
 import { wallet_ownerToAddressString } from './wallet'
+import { WalletsObject, createWalletsFromDTO } from './classes/WalletsObject'
+import { serialize, deserialize } from 'v8'
 
 
 //BDSBase & BDS for /height/509850 hash/si5OoWK-OcYt3LOEDCP2V4SWuj5X5n1LdoTh09-DtOppz_VkE72Cb0DCvygYMbW5
@@ -14,7 +15,7 @@ const HEIGHT_V1_TX = "520919" //contains eIcAGwqFCHek3EvpiRXdsESZAPKLXJMzco-7lWm
 
 let blockKnownHash: Block
 let prevBlockKnownHash: Block
-let prevWalletList: Wallet_List[]
+let prevWallets: WalletsObject
 let v1BigV2Block: Block 
 
 
@@ -35,7 +36,7 @@ beforeAll(async () => {
 
 		blockKnownHash = await Block.createFromDTO(bjKnownHash.data)
 		prevBlockKnownHash = await Block.createFromDTO(bjPrevKnownHash.data)
-		prevWalletList = bjPrevWalletList.data
+		prevWallets = createWalletsFromDTO(bjPrevWalletList.data)
 		v1BigV2Block = await Block.createFromDTO(bjV1BigV2.data)
 
 	}catch(e){
@@ -69,15 +70,24 @@ describe('Block tests, with known hash data outputs', () => {
 		expect(hash).toEqual(blockKnownHash.indep_hash) 
 	})
 
-	it('block_verifyTxRoot returns true/false for valid/invalid tx_root hash', async () => {
-		expect.assertions(2)
+	it('block_verifyTxRoot returns true for valid tx_root hash', async () => {
+		expect.assertions(1)
 		let good = await block_verifyTxRoot(v1BigV2Block) // this block contains v2 & v1 mixed txs. v1 large data needs chunking also
 
-		let badBlock = Object.assign({}, v1BigV2Block)
-		badBlock.txs.push(v1BigV2Block.txs[0]) // add an extra tx to mess up the tx_root computation
+		expect(good).toEqual(true) 
+	})
+
+	it('block_verifyTxRoot returns false for invalid tx_root hash', async () => {
+		expect.assertions(1)
+
+		//clone enough
+		let badBlock = Object.assign({},v1BigV2Block) 
+		badBlock.txs = Object.assign([], v1BigV2Block.txs)
+
+		// add an extra tx to mess up the tx_root computation
+		badBlock.txs.push(v1BigV2Block.txs[0]) 
 		let bad = await block_verifyTxRoot(badBlock)
 
-		expect(good).toEqual(true) 
 		expect(bad).toEqual(false) 
 	})
 
@@ -89,9 +99,11 @@ describe('Wallet_List tests', () => {
 	it('WalletList. Validates that valid transactions result in valid wallet list', async () => {
 		expect.assertions(3)
 
-		expect(prevWalletList.length).toBeGreaterThan(19000)
+		expect(Object.keys(prevWallets).length).toBeGreaterThan(19000) // check we have wallets
 
-		let { updatedWallets } = await nodeUtils_updateWallets(blockKnownHash, prevWalletList, prevBlockKnownHash.reward_pool, prevBlockKnownHash.height)
+		let walletsClone = deserialize(serialize(prevWallets)) // clone
+
+		let { updatedWallets } = await nodeUtils_updateWallets(blockKnownHash, walletsClone, prevBlockKnownHash.reward_pool, prevBlockKnownHash.height)
 
 		expect(updatedWallets).toBeDefined()
 
@@ -112,26 +124,21 @@ describe('Wallet_List tests', () => {
 	it('WalletList. Validates that invalid transactions result in invalid wallet list', async () => {
 		expect.assertions(3)
 
-		expect(prevWalletList.length).toBeGreaterThan(19000) // make sure we have walletList data
+		expect(Object.keys(prevWallets).length).toBeGreaterThan(19000) // make sure we have walletList data
 
-		let { updatedWallets } = await nodeUtils_updateWallets(blockKnownHash, prevWalletList, prevBlockKnownHash.reward_pool, prevBlockKnownHash.height)
+		let clone = deserialize(serialize(prevWallets)) 
+
+		let { updatedWallets } = await nodeUtils_updateWallets(blockKnownHash, clone, prevBlockKnownHash.reward_pool, prevBlockKnownHash.height)
 
 		expect(updatedWallets).toBeDefined()
 
 		let result = true // result should be false for invalid wallet list
-		let txs = blockKnownHash.txs
 
-		// let's invalidate the wallet list by interfering with the first tx
-		let sender = await wallet_ownerToAddressString(txs[0].owner)
-		for (let i = 0; i < updatedWallets.length; i++) {
-			const entry = updatedWallets[i];
-			if(entry.address === sender){
-				entry.balance = "-100"
-				break;
-			}
-		}
-		// 
-		if(await nodeUtils_IsWalletInvalid(txs[0], updatedWallets)){
+		// invalidate updatedWallets by interfering with sender balance of tx[0] 
+		let sender = await wallet_ownerToAddressString(blockKnownHash.txs[0].owner)
+		updatedWallets[sender].balance = -100n
+
+		if(await nodeUtils_IsWalletInvalid(blockKnownHash.txs[0], updatedWallets)){
 			result = false
 		}
 	

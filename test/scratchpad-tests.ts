@@ -1,10 +1,10 @@
 import axios from 'axios'
 import { HOST_SERVER, BLOCK_TX_COUNT_LIMIT, BLOCK_TX_DATA_SIZE_LIMIT } from '../src/constants';
-import { Block } from '../src/Block';
-import { Wallet_List, BlockDTO, BlockIndexTuple, BlockTxsPairs } from '../src/types';
+import { Block } from '../src/classes/Block';
+import { BlockDTO, BlockIndexTuple, BlockTxsPairs } from '../src/types';
 import { ar_tx_replay_pool__verify_block_txs } from '../src/tx-replay-pool';
-import { Tx } from 'src/Tx';
-import { wallet_jwkToAddressString } from 'src/wallet';
+import { Tx } from '../src/classes/Tx';
+import { WalletsObject, createWalletsFromDTO } from '../src/classes/WalletsObject';
 
 const PASS = "\x1b[32mPASS\x1b[0m"
 const FAIL = "\x1b[31mFAIL\x1b[0m"
@@ -25,7 +25,7 @@ const main = async () => {
 	let block: Block
 	let prevBlock: Block
 	let blockIndex: BlockIndexTuple[]  //for PoA and full test
-	let prevBlockWalletList: Wallet_List[]
+	let prevBlockWallets: WalletsObject
 	let blockTxsPairs: BlockTxsPairs
 
 	let V1DATA_IDSTRING = 'eIcAGwqFCHek3EvpiRXdsESZAPKLXJMzco-7lWm4yO4'
@@ -41,10 +41,10 @@ const main = async () => {
 		let height = 520919 // 89 txs including large v1 data tx: eIcAGwqFCHek3EvpiRXdsESZAPKLXJMzco-7lWm4yO4
 
 		// block index
-		promises.push( axios.get(
-			HOST_SERVER+'/block/height/'+(height-1).toString()+'/hash_list', 
-			{ headers: { "X-Block-Format": "3" } }) //unavailable on arweave.net
-		)
+		// promises.push( axios.get(
+		// 	HOST_SERVER+'/block/height/'+(height-1).toString()+'/hash_list', 
+		// 	{ headers: { "X-Block-Format": "3" } }) //unavailable on arweave.net
+		// )
 
 		// wallet List
 		promises.push( axios.get(HOST_SERVER+'/block/height/'+(height-1).toString()+'/wallet_list') ) 
@@ -57,12 +57,13 @@ const main = async () => {
 
 		/* Retrieve the data */
 
-		const [bIndex, wallets , ...responses] = await Promise.all( promises )  // *** this an expensive line!!! ***
+		const [/*bIndex,*/ walletList , ...responses] = await Promise.all( promises )  // *** this an expensive line!!! ***
 
 		/* Process fetched data */
 
-		blockIndex = bIndex.data // *********** NOT FOR HERE!! ********************
-		prevBlockWalletList = wallets.data
+		// blockIndex = bIndex.data // *********** NOT FOR HERE!! ********************
+		prevBlockWallets = createWalletsFromDTO(walletList.data)
+		Object.freeze(prevBlockWallets) 
 		blockDtos = responses.map(res=>res.data)
 		block = await Block.createFromDTO(blockDtos[0]) // This fetches txs also
 		prevBlock = await Block.createFromDTO(blockDtos[1])
@@ -75,15 +76,13 @@ const main = async () => {
 		}
 	
 	}catch(e){
-		console.debug('Error! Could not retrieve test data!', e.code)
+		console.log(FAIL, 'Error! Could not retrieve test data!', e.code)
 	}
 
 	console.log("Test data ready!")
-	console.log("prevBlockWalletList.length", prevBlockWalletList.length )
-	console.log("blockIndex.length (unused here)", blockIndex.length )
+	console.log("prevBlockWallets numkeys", Object.keys(prevBlockWallets).length )
 	console.log("prevBlock.height", prevBlock.height )
 
-	// !!!!!!!!!!!!! update the wallet_list from array to object, its a pain in the arse !!!!!!!!!!!!!!!
 	// "overspend in tx UmE3zdrZIykfY_iY-fUU90Hcrf8XaKy3mtnk6mCLsH4"
 	// this tx cleans out the particular wallet leaving 0 AR, so our calc'd txCost must be over the actual price
 
@@ -96,7 +95,7 @@ const main = async () => {
 		block.diff, 
 		prevBlock.height, 
 		block.timestamp, 
-		prevBlockWalletList, 
+		prevBlockWallets, 
 		blockTxsPairs // this does not get height checked. assumed to be correct 50 blocks input data
 	)
 	if(result === true){
@@ -116,7 +115,7 @@ const main = async () => {
 		block.diff, 
 		prevBlock.height, 
 		block.timestamp, 
-		prevBlockWalletList, 
+		prevBlockWallets, 
 		blockTxsPairs 
 	)
 	printTest(badTxsCount === false)
@@ -142,7 +141,7 @@ const main = async () => {
 		block.diff, 
 		prevBlock.height, 
 		block.timestamp, 
-		prevBlockWalletList, 
+		prevBlockWallets, 
 		blockTxsPairs 
 	)
 	printTest(badTxSizeReturn === false)

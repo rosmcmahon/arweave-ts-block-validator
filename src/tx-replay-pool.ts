@@ -1,10 +1,12 @@
-import { Tx } from "./Tx";
-import { Wallet_List, BlockTxsPairs, Tag } from "./types";
-import { FORK_HEIGHT_1_8, BLOCK_TX_COUNT_LIMIT, BLOCK_TX_DATA_SIZE_LIMIT, WALLET_GEN_FEE, TX_DATA_SIZE_LIMIT } from "./constants";
+import { Tx } from "./classes/Tx";
+import { BlockTxsPairs, Tag } from "./types";
+import { FORK_HEIGHT_1_8, BLOCK_TX_COUNT_LIMIT, BLOCK_TX_DATA_SIZE_LIMIT, WALLET_GEN_FEE, TX_DATA_SIZE_LIMIT, WALLET_NEVER_SPENT } from "./constants";
 import { wallet_ownerToAddressString } from "./wallet";
 import Arweave from "arweave";
 import { nodeUtils_ApplyTx } from "./node-utils";
 import { txPerpetualStorage_calculateTxFee } from "./tx-perpetual-storage";
+import { WalletsObject } from "./classes/WalletsObject";
+import { serialize, deserialize } from "v8";
 
 
 
@@ -13,9 +15,10 @@ export const ar_tx_replay_pool__verify_block_txs = async (
 	diff: bigint,
 	height: number,
 	timestamp: bigint,
-	walletList: Wallet_List[],
+	prevBlockWallets: WalletsObject,
 	blockTxsPairs: BlockTxsPairs
 ) => {
+
 	if(height<FORK_HEIGHT_1_8) throw new Error("ar_tx_replay_pool__verify_block_txs invalid before FORK_HEIGHT_1_8")
 
 	if(txs === []){
@@ -27,7 +30,9 @@ export const ar_tx_replay_pool__verify_block_txs = async (
 		return false
 	}
 
-	let updatedWalletList: Wallet_List[] = Object.assign([], walletList)
+	let updatedWallets = deserialize(serialize(prevBlockWallets)) // clone
+
+
 	let verifiedTxs: string[] = [] //just txids of verified txs. plays the role of memPool here
 	let size = 0n
 
@@ -42,13 +47,13 @@ export const ar_tx_replay_pool__verify_block_txs = async (
 			return false
 		}
 
-		let verifyTxResult = await validateTx(tx, diff, height, timestamp, updatedWalletList, blockTxsPairs, verifiedTxs)
+		let verifyTxResult = await validateTx(tx, diff, height, timestamp, updatedWallets, blockTxsPairs, verifiedTxs)
 
-		if(!verifyTxResult){
+		if(verifyTxResult === false){
 			return false
 		}
 		let { wallets: modifiedWallets, verifiedTxs: modifiedVerifiedTxs} = verifyTxResult
-		updatedWalletList = modifiedWallets
+		updatedWallets = modifiedWallets
 		verifiedTxs = modifiedVerifiedTxs
 	}
 
@@ -56,7 +61,7 @@ export const ar_tx_replay_pool__verify_block_txs = async (
 }
 
 /* based on ar_tx_replay_pool:verify_tx */
-const validateTx = async (tx: Tx, diff: bigint, height: number, timestamp: bigint, wallets: Wallet_List[], blockTxsPairs: BlockTxsPairs, verifiedTxs: string[]) => {
+const validateTx = async (tx: Tx, diff: bigint, height: number, timestamp: bigint, wallets: WalletsObject, blockTxsPairs: BlockTxsPairs, verifiedTxs: string[]) => {
 	if(height<FORK_HEIGHT_1_8) throw new Error("tx-replay_verify_txs unsupported before FORK_HEIGHT_1_8")
 
 	let lastTxString = Arweave.utils.bufferTob64Url(tx.last_tx)
@@ -86,7 +91,7 @@ const validateTx = async (tx: Tx, diff: bigint, height: number, timestamp: bigin
 		//put tx in verifiedTxs
 		verifiedTxs.push(tx.idString)
 		//apply tx to modified wallets
-		wallets = await nodeUtils_ApplyTx(wallets, tx, null)
+		await nodeUtils_ApplyTx(wallets, tx)
 		return {wallets, verifiedTxs}
 	}
 
@@ -123,7 +128,7 @@ const validateTx = async (tx: Tx, diff: bigint, height: number, timestamp: bigin
 	// {valid, NewFW, NewMempool}
 	// return true
 	verifiedTxs.push(tx.idString)
-	wallets = await nodeUtils_ApplyTx(wallets, tx, null)
+	await nodeUtils_ApplyTx(wallets, tx)
 	
 	return {wallets, verifiedTxs}
 }
@@ -137,21 +142,20 @@ const weave_map_contains_tx = (txid: string, blockTxsPairs: BlockTxsPairs) => {
 	return false
 }
 
-const ar_tx__check_last_tx = async (wallets: Wallet_List[], tx: Tx) => {
+const ar_tx__check_last_tx = async (wallets: WalletsObject, tx: Tx) => {
 	let address = await wallet_ownerToAddressString(tx.owner)
 	let last_tx = Arweave.utils.bufferTob64Url(tx.last_tx)
-	for (let i = 0; i < wallets.length; i++) {
-		const entry = wallets[i];
-		if(entry.address === address && entry.last_tx === last_tx){
-			return true
-		}
+
+	if(wallets[address] && (wallets[address].last_tx === last_tx)){
+		return true
 	}
+
 	return false
 }
 
 //#region ar_tx__verifyAllChecks
 /* based on ar_tx:verify */
-export const verifyTx = async (tx: Tx, diff: bigint, height: number, timestamp: bigint, wallets: Wallet_List[]) => {
+export const verifyTx = async (tx: Tx, diff: bigint, height: number, timestamp: bigint, wallets: WalletsObject) => {
 	if(tx.quantity < 0n){
 		console.log("quantity_negative")
 		return false
@@ -179,7 +183,8 @@ export const verifyTx = async (tx: Tx, diff: bigint, height: number, timestamp: 
 		return false
 	}
 
-	if( ! await validate_overspend(tx, await nodeUtils_ApplyTx(wallets, tx, null)) ){
+	let walletsClone = deserialize(serialize(wallets))
+	if( ! await validate_overspend(tx, await nodeUtils_ApplyTx(walletsClone, tx)) ){
 		console.log("overspend in tx", tx.idString)
 		return false
 	}
@@ -209,17 +214,14 @@ export const verifyTx = async (tx: Tx, diff: bigint, height: number, timestamp: 
 	return true
 }
 
-const calculate_min_tx_cost = (size: bigint, diff: bigint, height: number, wallets: Wallet_List[], target: string, timestamp: bigint,) => {
+const calculate_min_tx_cost = (size: bigint, diff: bigint, height: number, wallets: WalletsObject, target: string, timestamp: bigint,) => {
 	if(height<FORK_HEIGHT_1_8) throw new Error("calculate_min_tx_cost unsupported before FORK_HEIGHT_1_8")
 
+	let fee = 0n
+
 	// check for first time wallet fee
-	let fee = WALLET_GEN_FEE
-	for (let i = 0; i < wallets.length; i++) { //replace this for-loop during Wallet_List upgrade
-		const entry = wallets[i];
-		if(entry.address === target){
-			fee = 0n
-			break;
-		}
+	if(!wallets[target]){
+		fee = WALLET_GEN_FEE
 	}
 
 	fee += txPerpetualStorage_calculateTxFee(size, diff, height, timestamp);
@@ -242,7 +244,7 @@ const tag_field_legal = (tx: Tx) => {
 	return true
 }
 
-const validate_overspend = async (tx: Tx, wallets: Wallet_List[]) => {
+const validate_overspend = async (tx: Tx, wallets: WalletsObject) => {
 	// validate_overspend(TX, Wallets) ->
 	// 	From = ar_wallet:to_address(TX#tx.owner),
 	// 	Addresses = case TX#tx.target of
@@ -267,44 +269,32 @@ const validate_overspend = async (tx: Tx, wallets: Wallet_List[]) => {
 	// 		Addresses
 	// 	).
 
-	/***** ALL OF THIS FUNCTION TO BE REWRITTEN ******/
-	/***** ALL OF THIS FUNCTION TO BE REWRITTEN ******/
-	/***** ALL OF THIS FUNCTION TO BE REWRITTEN ******/
-
 	let from = await wallet_ownerToAddressString(tx.owner)
 	
-	for (let i = 0; i < wallets.length; i++) { // remove these loops during Wallet_List upgrade
-		const entry = wallets[i];
-		if( entry.address === from ){
-			if(entry.balance === "0" && entry.last_tx.length === 0){
-				return false
-			}
-			if( Number(entry.balance) < 0 ){
-				return false
-			}
-			from = 'DONE'
+	if(wallets[from]){
+		let wallet = wallets[from]
+		if(wallet.balance === 0n && wallet.last_tx === WALLET_NEVER_SPENT){
+			return false
 		}
-	}
-	if(from !== 'DONE'){ //horrible
+		if(wallet.balance < 0n){
+			return false
+		}
+	}else{ // if wallet[from] not found
 		return false
 	}
 	
 	if(tx.target !== ''){
 		let to = tx.target
 		
-		for (let i = 0; i < wallets.length; i++) { // remove these loops during Wallet_List upgrade
-			const entry = wallets[i];
-			if( entry.address === to ){
-				if(entry.balance === "0" && entry.last_tx.length === 0){
-					return false
-				}
-				if( Number(entry.balance) < 0 ){
-					return false
-				}
-				to = 'DONE'
+		if(wallets[to]){
+			let wallet = wallets[to]
+			if(wallet.balance === 0n && wallet.last_tx === WALLET_NEVER_SPENT){
+				return false
 			}
-		}
-		if(to !== 'DONE'){ 
+			if(wallet.balance < 0n){
+				return false
+			}
+		}else{ // if wallet[to] not found
 			return false
 		}
 	}

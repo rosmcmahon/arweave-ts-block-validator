@@ -1,14 +1,19 @@
 
-import { ReturnCode, BlockIndexTuple, Wallet_List } from  './types'
-import { Block, getIndepHash, generateBlockDataSegment, verifyBlockDepHash, blockFieldSizeLimit, block_verifyWeaveSize, block_verifyBlockHashListMerkle, block_verifyTxRoot } from './Block'
-import { validatePoa, poa_modifyDiff } from './Poa'
+import { ReturnCode, BlockIndexTuple } from  './types'
+import { Block, getIndepHash, generateBlockDataSegment, verifyBlockDepHash, blockFieldSizeLimit, block_verifyWeaveSize, block_verifyBlockHashListMerkle, block_verifyTxRoot } from './classes/Block'
+import { validatePoa, poa_modifyDiff } from './classes/Poa'
 import { retarget_validateDiff } from './difficulty-retarget'
 import { weave_hash } from './weave-hash'
 import { validateMiningDifficulty } from './mine'
 import { nodeUtils_updateWallets, nodeUtils_IsWalletInvalid } from './node-utils'
+import { WalletsObject } from './classes/WalletsObject'
+import { serialize, deserialize } from 'v8'
 
 
-export const validateBlockSlow = async (block: Block, prevBlock: Block, blockIndex: BlockIndexTuple[], walletList: Wallet_List[]): Promise<ReturnCode> => {
+export const validateBlockSlow = async (block: Block, prevBlock: Block, blockIndex: BlockIndexTuple[], prevBlockWallets: WalletsObject): Promise<ReturnCode> => {
+
+	Object.freeze(prevBlockWallets) //this is the wallet state of the previous block, let's leave it that way
+
 	/* 12 steps for slow validation (ref: validate in ar_node_utils.erl) */
 
 	// 1. Verify the height of the new block is the one higher than the current height.
@@ -43,11 +48,12 @@ export const validateBlockSlow = async (block: Block, prevBlock: Block, blockInd
 	// 6. wallet_list: 
 	// UpdatedWallets = update_wallets(NewB, Wallets, RewardPool, Height)
 	// if(any wallets are invalid <is_wallet_invalid> ) return "Invalid updated wallet list"
-	let { updatedWallets } = await nodeUtils_updateWallets(block, walletList, prevBlock.reward_pool, prevBlock.height)
+	let wallets1 = deserialize(serialize(prevBlockWallets)) // clone
+	let { updatedWallets: updatedWallets1 } = await nodeUtils_updateWallets(block, wallets1, prevBlock.reward_pool, prevBlock.height)
 	// check the updatedWallets
 	for (let index = 0; index < block.txs.length; index++) {
 		const tx = block.txs[index];
-		if( await nodeUtils_IsWalletInvalid(tx, updatedWallets) ){
+		if( await nodeUtils_IsWalletInvalid(tx, updatedWallets1) ){
 			return {code: 400, message: "Invalid wallet list. txid:"+tx.idString, height: block.height}
 		}
 	}

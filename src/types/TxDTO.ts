@@ -1,7 +1,6 @@
 
 /**
- * A Transacion (Tx)
- * A transaction, as stored in a block DTO.
+ * A Transacion (Tx) Data Transfer Object (DTO)
  */
 export class TxDTO {
 	format:number = 2				// 1 or 2.

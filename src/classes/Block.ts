@@ -1,13 +1,13 @@
-import { HOST_SERVER, FORK_HEIGHT_1_8, DATA_CHUNK_SIZE, MAX_PATH_SIZE, FORK_HEIGHT_2_0 } from './constants'
-import { BlockDTO, Tag, BlockIndexTuple } from './types'
+import { HOST_SERVER, FORK_HEIGHT_1_8, DATA_CHUNK_SIZE, MAX_PATH_SIZE, FORK_HEIGHT_2_0 } from '../constants'
+import { BlockDTO, Tag, BlockIndexTuple } from '../types'
 import Arweave from 'arweave'
 import Axios from 'axios'
-import deepHash from './utils/deepHash'
+import deepHash from '../utils/deepHash'
 import { Poa } from './Poa'
-import { arrayCompare, bufferToInt } from './utils/buffer-utilities'
+import { arrayCompare, bufferToInt } from '../utils/buffer-utilities'
 import { Tx } from './Tx'
-import { MerkleElement, computeRootHash } from './utils/merkle'
-import { unbalancedMerkle_root, unbalancedMerkle_hashBlockIndexEntry } from './utils/unbalanced-merkle'
+import { MerkleElement, computeRootHash } from '../utils/merkle'
+import { unbalancedMerkle_root, unbalancedMerkle_hashBlockIndexEntry } from '../utils/unbalanced-merkle'
 
 
 /* Binary data for a Block. Usually translated from a Block JSON Data Transfer Object (BlockDTO) */

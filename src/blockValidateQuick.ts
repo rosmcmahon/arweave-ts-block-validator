@@ -1,6 +1,6 @@
 import { ReturnCode, BlockDTO, } from  './types'
 import { STORE_BLOCKS_AROUND_CURRENT, MIN_DIFF_FORK_1_8 } from './constants'
-import { Block } from './Block'
+import { Block } from './classes/Block'
 
 
 

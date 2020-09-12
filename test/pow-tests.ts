@@ -1,18 +1,17 @@
 import axios from "axios"
-import { Block, generateBlockDataSegment } from "../src/Block"
-import { Wallet_List } from "../src/types"
+import { Block, generateBlockDataSegment } from "../src/classes/Block"
 import { HOST_SERVER, MAX_DIFF } from "../src/constants"
 import { weave_hash } from "../src/weave-hash"
 import { validateMiningDifficulty } from "../src/mine"
-import { poa_modifyDiff } from "../src/Poa"
+import { poa_modifyDiff } from "../src/classes/Poa"
 import { arrayCompare } from "../src/utils/buffer-utilities"
+import { WalletsObject, createWalletsFromDTO } from "src/classes/WalletsObject"
 
 
 const main = async () => {
 
 	let block1: Block
 	let block2: Block
-	let block2WalletList: Wallet_List[]
 
 	const PASS = "\x1b[32mPASS:\x1b[0m"
 	const FAIL = "\x1b[31mFAIL:\x1b[0m"
@@ -24,16 +23,13 @@ const main = async () => {
 		const [
 			bjKnownHash, 
 			bjPrevKnownHash, 
-			bjPrevWalletList, 
 		] = await Promise.all([
 			axios.get(HOST_SERVER+'/block/height/509850'), //known, poa option 1, 
 			axios.get(HOST_SERVER+'/block/height/509849'), //known, poa option 2
-			axios.get('https://arweave.net/block/height/509849/wallet_list'), //arweave.net keeps old wallet_list
 		])
 
 		block1 = await Block.createFromDTO(bjKnownHash.data)
 		block2 = await Block.createFromDTO(bjPrevKnownHash.data)
-		block2WalletList = bjPrevWalletList.data
 		
 	}catch(e){
 		console.debug('Network error! Could not retrieve tests data!', e.code)

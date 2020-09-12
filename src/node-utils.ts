@@ -1,15 +1,15 @@
-import { FORK_HEIGHT_1_8, FORK_HEIGHT_2_0, MINING_REWARD_DIVIDER_MODIFIED, ADD_ERLANG_ROUNDING_ERROR, MINING_REWARD_MULTIPLIER } from './constants'
-import { Block } from './Block'
-import { Tx } from './Tx'
-import { Wallet_List } from './types'
-import { calculateInflation } from './utils/inflation'
+import { FORK_HEIGHT_1_8, FORK_HEIGHT_2_0, MINING_REWARD_DIVIDER_MODIFIED, ADD_ERLANG_ROUNDING_ERROR, MINING_REWARD_MULTIPLIER, WALLET_NEVER_SPENT } from './constants'
+import { Block } from './classes/Block'
+import { Tx } from './classes/Tx'
+import { WalletsObject } from './classes/WalletsObject'
+import { calculateInflation } from './inflation'
 import { txPerpetualStorage_usdToAr, txPerpetualStorage_getCostPerBlockAtTimestamp } from './tx-perpetual-storage'
 import Arweave from 'arweave'
 import { wallet_ownerToAddressString } from './wallet'
 import Decimal from 'decimal.js'
 
-
-export const nodeUtils_IsWalletInvalid = async (tx: Tx, walletList: Wallet_List[]) => {
+/* From ar_node_utile:is_wallet_invalid */
+export const nodeUtils_IsWalletInvalid = async (tx: Tx, wallets: WalletsObject) => {
 	// is_wallet_invalid(#tx{ owner = Owner }, Wallets) ->
 	// 	Address = ar_wallet:to_address(Owner),
 	// 	case maps:get(Address, Wallets, not_found) of
@@ -24,23 +24,24 @@ export const nodeUtils_IsWalletInvalid = async (tx: Tx, walletList: Wallet_List[
 	// 			true
 	// 	end.
 	let sender = await wallet_ownerToAddressString(tx.owner)
-	for (let i = 0; i < walletList.length; i++) {
-		const entry = walletList[i];
-		if(entry.address === sender){
-			let balance = Number(entry.balance)
-			if( balance >= 0 ){
-				if(balance === 0){
-					return entry.last_tx.length === 0 
-				}
-				return false // good to go
+
+	if(wallets[sender]){
+		let wallet = wallets[sender]
+
+		if( wallet.balance >= 0n ){
+			if(wallet.balance === 0n){
+				return wallet.last_tx === WALLET_NEVER_SPENT
 			}
-			return true // wallet has negative balance
+			return false // good to go
 		}
+		return true // wallet has negative balance
 	}
-	return true // wallet or walletList not found
+
+	return true // wallet not found
 }
 
-export const nodeUtils_updateWallets = async (block: Block, walletList: Wallet_List[], rewardPool: bigint, height: number) => {
+/* From ar_node_utile:update_wallets */
+export const nodeUtils_updateWallets = async (block: Block, wallets: WalletsObject, rewardPool: bigint, height: number) => {
 	/*
 		%% @doc Update the wallets by applying the new transactions and the mining reward.
 		%% Return the new reward pool and wallets. It is sufficient to provide the source
@@ -82,7 +83,7 @@ export const nodeUtils_updateWallets = async (block: Block, walletList: Wallet_L
 		block.timestamp,
 	)
 	let updatedWallets = await nodeUtils_applyMiningReward(
-		await nodeUtils_ApplyTxs(walletList, block.txs, height),
+		await nodeUtils_ApplyTxs(wallets, block.txs, height),
 		block.reward_addr,
 		finderReward,
 		block.height
@@ -90,6 +91,7 @@ export const nodeUtils_updateWallets = async (block: Block, walletList: Wallet_L
 	return { newRewardPool, updatedWallets }
 }
 
+/* From ar_node_utile:calculate_reward_pool_perpetual */
 export const nodeUtils_calculateRewardPoolPerpetual = (
 	oldPool: bigint, 
 	txs: Tx[], 
@@ -137,22 +139,26 @@ export const nodeUtils_calculateRewardPoolPerpetual = (
 					{BaseReward + Take, NewPool - Take}
 			end.
 	*/
-	let inflation = BigInt(calculateInflation(height).floor())
+	let inflation = BigInt(Math.floor( calculateInflation(height) ))
 	let txsCost = 0n
 	let txsReward = 0n
+
 	txs.forEach(tx => {
 		let txFee = tx.reward
 		let txReward: bigint
 		if(ADD_ERLANG_ROUNDING_ERROR){
 			txReward = BigInt(
-				( new Decimal(MINING_REWARD_MULTIPLIER).mul(txFee.toString()) ).div(MINING_REWARD_MULTIPLIER + 1).floor()
+				Math.floor(Number(
+					( new Decimal(MINING_REWARD_MULTIPLIER).mul(txFee.toString()) ).div(MINING_REWARD_MULTIPLIER + 1)
+				))
 			)
 		} else{
-			txReward = txFee / MINING_REWARD_DIVIDER_MODIFIED
+			txReward = txFee / MINING_REWARD_DIVIDER_MODIFIED //see comments above for derivation
 		}
 		txsCost += (txFee - txReward)
 		txsReward += txReward
 	})
+
 	let baseReward = inflation + txsReward
 	let costPerGBPerBlock = txPerpetualStorage_usdToAr(
 		txPerpetualStorage_getCostPerBlockAtTimestamp(timestamp),
@@ -170,7 +176,7 @@ export const nodeUtils_calculateRewardPoolPerpetual = (
 	return { baseReward, newPool }
 }
 
-export const nodeUtils_applyMiningReward = async (walletList: Wallet_List[], rewardAddr: Uint8Array, quantity: bigint, height: number) => {
+export const nodeUtils_applyMiningReward = async (wallets: WalletsObject, rewardAddr: Uint8Array, quantity: bigint, height: number) => {
 
 	if(height < FORK_HEIGHT_1_8){
 		throw new Error("nodeUtils_applyMiningReward unimplemented below FORK_HEIGHT_1_8")
@@ -191,19 +197,17 @@ export const nodeUtils_applyMiningReward = async (walletList: Wallet_List[], rew
 	// 			maps:put(Target, {Balance + Adjustment, LastTX}, Wallets)
 	// 	end.
 	let target = Arweave.utils.bufferTob64Url(rewardAddr)
-	for (let i = 0; i < walletList.length; i++) {
-		const entry = walletList[i];
-		if(entry.address === target){
-			entry.balance = ( BigInt(entry.balance) + quantity ).toString()
-			return walletList
-		}
+
+	if( wallets[target] ){
+		wallets[target].balance += quantity
+		return wallets
+	} else {
+		wallets[target] = {balance: quantity, last_tx: WALLET_NEVER_SPENT}
+		return wallets
 	}
-	walletList.push({address: target, balance: quantity.toString(), last_tx: ''})
-	
-	return walletList
 }
 
-export const nodeUtils_ApplyTxs = async (walletList: Wallet_List[], txs: Tx[], height: number ) => {
+export const nodeUtils_ApplyTxs = async (wallets: WalletsObject, txs: Tx[], height: number ) => {
 	// %% @doc Update a wallet list with a set of new transactions.
 	// apply_txs(WalletList, TXs, Height) ->
 	// 	lists:foldl(
@@ -220,49 +224,26 @@ export const nodeUtils_ApplyTxs = async (walletList: Wallet_List[], txs: Tx[], h
 	// apply_tx(WalletList, TX, Height) ->
 	// 	do_apply_tx(WalletList, TX, Height).
 
-	txs.forEach( async tx => {
-		walletList = await nodeUtils_ApplyTx(walletList, tx, height) 
-	})
-	return walletList
-}
-
-export const nodeUtils_ApplyTx = async (walletList: Wallet_List[], tx: Tx, UNUSED_height: number ) => {
-
-	// do_apply_tx(
-	// 	Wallets,
-	// 	TX = #tx {
-	// 		last_tx = Last,
-	// 		owner = From
-	// 	},
-	// 	Height) ->
-	// Addr = ar_wallet:to_address(From),
-	// case {Height, maps:get(Addr, Wallets, not_found)} of
-	// 	{H, {_Balance, _LastTX}} when H >= ar_fork:height_1_8() ->
-	// 		do_apply_tx(Wallets, TX);
-	// 	{_, {_Balance, Last}} ->
-	// 		do_apply_tx(Wallets, TX);
-	// 	_ ->
-	// 		Wallets
-	// end.
-	// do_apply_tx(WalletList, TX) ->
-	// update_recipient_balance(
-	// 	update_sender_balance(WalletList, TX),
-	// 	TX
-	// ).
-
-	let address = await wallet_ownerToAddressString(tx.owner)
-	for (let i = 0; i < walletList.length; i++) {
-		const entry = walletList[i];
-		if(entry.address === address){
-			walletList = await nodeUtils_updateRecipientBalance(await nodeUtils_UpdateSenderBalance(walletList, tx), tx)
-			return walletList
-		}
+	for (let i = 0; i < txs.length; i++) {
+		wallets = await nodeUtils_ApplyTx(wallets, txs[i]) 
 	}
 
-	return walletList
+	return wallets
 }
 
-const nodeUtils_updateRecipientBalance = async (walletList: Wallet_List[], tx: Tx) => {
+export const nodeUtils_ApplyTx = async (wallets: WalletsObject, tx: Tx) => {
+
+	let address = await wallet_ownerToAddressString(tx.owner)
+
+	if(wallets[address]){
+		wallets = await nodeUtils_updateRecipientBalance(await nodeUtils_UpdateSenderBalance(wallets, tx), tx)
+		return wallets
+	} 
+	
+	return wallets
+}
+
+const nodeUtils_updateRecipientBalance = async (wallets: WalletsObject, tx: Tx) => {
 	// update_recipient_balance(
 	// 	Wallets,
 	// 	#tx {
@@ -276,22 +257,19 @@ const nodeUtils_updateRecipientBalance = async (walletList: Wallet_List[], tx: T
 	// 		maps:put(To, {OldBalance + Qty, LastTX}, Wallets)
 	// end.
 	if(tx.quantity === 0n){
-		return walletList
+		return wallets
 	}
 
-	for (let i = 0; i < walletList.length; i++) {
-		const entry = walletList[i];
-		if(entry.address === tx.target){
-			entry.balance = ( BigInt(entry.balance) + tx.quantity ).toString()
-			return walletList
-		}	
+	if( wallets[tx.target] ){
+		wallets[tx.target].balance += tx.quantity
+	}else{
+		wallets[tx.target] = {balance: tx.quantity, last_tx: WALLET_NEVER_SPENT}
 	}
 
-	walletList.push({address: tx.target, balance: tx.quantity.toString(), last_tx: ''})  //last_tx is blank??
-	return walletList
+	return wallets
 }
 
-const nodeUtils_UpdateSenderBalance = async (walletList: Wallet_List[], tx: Tx) => {
+const nodeUtils_UpdateSenderBalance = async (wallets: WalletsObject, tx: Tx) => {
 	// update_sender_balance(
 	// 	Wallets,
 	// 	#tx {
@@ -308,17 +286,15 @@ const nodeUtils_UpdateSenderBalance = async (walletList: Wallet_List[], tx: Tx) 
 	// 		Wallets
 	// end.
 	let from = await wallet_ownerToAddressString(tx.owner)
-	for (let i = 0; i < walletList.length; i++) {
-		const entry = walletList[i];
-		if(entry.address === from){
-			entry.balance = (BigInt(entry.balance) - (tx.quantity + tx.reward)).toString()
-			entry.last_tx = tx.idString
 
-			return walletList
-		}
+	if( wallets[from] ){
+		wallets[from].balance -= tx.quantity
+		wallets[from].last_tx = tx.idString
+
+		return wallets
 	}
 
-	return walletList
+	return wallets // checks happen later for this particular case
 }
 
 

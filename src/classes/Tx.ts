@@ -1,10 +1,10 @@
-import { TxDTO } from "./types"
+import { TxDTO } from "../types"
 import Arweave from "arweave"
 import Axios from "axios"
-import { HOST_SERVER, DATA_CHUNK_SIZE } from "./constants"
-import { MerkleElement, computeRootHash } from "./utils/merkle"
-import deepHash from "./utils/deepHash"
-import { arrayCompare } from "./utils/buffer-utilities"
+import { HOST_SERVER, DATA_CHUNK_SIZE } from "../constants"
+import { MerkleElement, computeRootHash } from "../utils/merkle"
+import deepHash from "../utils/deepHash"
+import { arrayCompare } from "../utils/buffer-utilities"
 
 interface Tag {
 	name: string //these are left as base64url
@@ -15,7 +15,7 @@ interface Tag {
  * A Transacion (Tx)
  */
 export class Tx {
-	format:number						// 1 or 2.
+	format: number					// 1 or 2.
 	idString: string				// txid as a b64url encoded string
 	id: Uint8Array					// txid
 	last_tx: Uint8Array			// Either id of last tx from same wallet, or block id from last 50 blocks

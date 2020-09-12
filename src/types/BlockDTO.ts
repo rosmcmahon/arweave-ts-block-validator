@@ -3,8 +3,6 @@ import { Tag } from './Tag'
 /**
  * Template for a Block "Data Transfer Object" JSON in http transfers. 
  * 
- * We use a class as this is concrete in the underlying EMCAScript, as opposed to a notional TypeScript
- * interface. The idea being that this can be checked at run-time as opposed to compile time.
  */
 
 export class BlockDTO {

@@ -1,5 +1,5 @@
 import { RANDOMX_KEY_SWAP_FREQ } from "./constants"
-import { Block } from "./Block"
+import { Block } from "./classes/Block"
 import Arweave from "arweave"
 let Randomx = require('../node-randomx/build/Release/addon')
 

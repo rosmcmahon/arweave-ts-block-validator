@@ -3,6 +3,9 @@ export const HOST_SERVER = 'http://eu-west-1.arweave.net:1984'
 
 export const ADD_ERLANG_ROUNDING_ERROR = true // need to add rounding error to match erlang
 
+// The value of last_tx if the wallet never spent AR before
+export const WALLET_NEVER_SPENT = ''
+
 export const STORE_BLOCKS_AROUND_CURRENT = 50
 
 // The maximum size of a single POST body.

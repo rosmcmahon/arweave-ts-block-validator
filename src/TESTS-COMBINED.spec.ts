@@ -1,12 +1,13 @@
 import axios from 'axios'
-import { BlockDTO, ReturnCode, BlockIndexTuple, Wallet_List } from './types'
+import { BlockDTO, ReturnCode, BlockIndexTuple } from './types'
 import { STORE_BLOCKS_AROUND_CURRENT, HOST_SERVER, RETARGET_BLOCKS, MIN_DIFF_FORK_1_8 } from './constants'
 import { validateBlockQuick } from './blockValidateQuick'
-import { Block, blockFieldSizeLimit, block_verifyWeaveSize, block_verifyBlockHashListMerkle } from './Block'
-import { validatePoa, findPoaChallengeBlock } from './Poa'
+import { Block, blockFieldSizeLimit, block_verifyWeaveSize, block_verifyBlockHashListMerkle } from './classes/Block'
+import { validatePoa, findPoaChallengeBlock } from './classes/Poa'
 import { retarget_validateDiff } from './difficulty-retarget'
-import { Tx } from './Tx'
+import { Tx } from './classes/Tx'
 import { validateBlockSlow } from './blockValidateSlow'
+import { WalletsObject, createWalletsFromDTO } from './classes/WalletsObject'
 
 /* *** Initialise all test data, and use in one big test file *** */
 
@@ -19,7 +20,7 @@ let block: Block
 let prevBlock: Block
 let prevPrevBlock: Block
 let blockIndex: BlockIndexTuple[]  //for PoA and full test
-let prevBlockWalletList: Wallet_List[]
+let prevBlockWallets: WalletsObject
 
 beforeAll(async () => {
 	try{
@@ -47,7 +48,7 @@ beforeAll(async () => {
 		blockJson = bj1.data
 		block = await Block.createFromDTO(blockJson)
 		prevBlock = await Block.createFromDTO(bj2.data)
-		prevBlockWalletList = (bj2WalletList.data)
+		prevBlockWallets = createWalletsFromDTO(bj2WalletList.data)
 		prevPrevBlock = await Block.createFromDTO(bj3.data)
 
 	}catch(e){
@@ -91,14 +92,14 @@ describe('BlockValidateSlow tests, general validation tests', () => {
 		//create bad height
 		badPrevBlock = Object.assign({}, prevBlock)
 		badPrevBlock.height--
-		let badHeightResult = await validateBlockSlow(block, badPrevBlock, blockIndex, prevBlockWalletList)
+		let badHeightResult = await validateBlockSlow(block, badPrevBlock, blockIndex, prevBlockWallets)
 
 		expect(badHeightResult).toEqual({code: 400, message: "Invalid previous height"})
 
 		//create bad hash
 		badPrevBlock = Object.assign({}, prevBlock)
 		badPrevBlock.indep_hash = prevBlock.indep_hash.map(byte => byte ^ 0xff) //flip all the bits (╯°□°）╯︵ ┻━┻
-		let badHashResult = await validateBlockSlow(block, badPrevBlock, blockIndex, prevBlockWalletList)
+		let badHashResult = await validateBlockSlow(block, badPrevBlock, blockIndex, prevBlockWallets)
 
 		expect(badHashResult).toEqual({code: 400, message: "Invalid previous block hash"})
 	})

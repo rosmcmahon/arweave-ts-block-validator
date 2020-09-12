@@ -1,5 +1,5 @@
 import { Decimal } from 'decimal.js'
-import { BLOCKS_PER_YEAR, GENESIS_TOKENS, WINSTON_PER_AR } from '../constants'
+import { BLOCKS_PER_YEAR, GENESIS_TOKENS, WINSTON_PER_AR, ADD_ERLANG_ROUNDING_ERROR } from './constants'
 
 export const calculateInflation = (height: number) => {
 	/*
@@ -12,11 +12,16 @@ export const calculateInflation = (height: number) => {
 	 * This calculation will involve floating point numbers and large integers.
 	 * Rough maths says the return int value need to be correct to about 19 decimal places (decreasing as the years pass) 
 	 */
-	Decimal.config({precision: 25, rounding: Decimal.ROUND_FLOOR}) // more than enough precision
+	Decimal.config({precision: 25}) // more than enough precision
 	let log2 = Decimal.ln(2) //a float constant
 	let years = new Decimal(height).dividedBy(BLOCKS_PER_YEAR)
 	let powerExp = Decimal.pow(2,-(years)) //2^years_since_genesis
 	let bigFloat = Decimal.mul(0.2, GENESIS_TOKENS).mul(powerExp).mul(log2)
 	
-	return bigFloat.mul(WINSTON_PER_AR)
+	if(ADD_ERLANG_ROUNDING_ERROR){
+		return Number(
+			bigFloat.mul(WINSTON_PER_AR)
+		)
+	}
+	// return bigFloat.mul(WINSTON_PER_AR) // without rounding error
 }
