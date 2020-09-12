@@ -3,7 +3,7 @@ import { BlockIndexTuple } from "../types"
 import * as Merkle from '../utils/merkle'
 import { bufferToBigInt } from '../utils/buffer-utilities'
 import { POA_MIN_MAX_OPTION_DEPTH, ALTERNATIVE_POA_DIFF_MULTIPLIER } from '../constants'
-import { multiplyDifficulty } from "../difficulty"
+import { multiplyDifficulty } from "../hashing/difficulty"
 
 export interface Poa {
 	// A succinct proof of access to a recall byte found in a TX.

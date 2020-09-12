@@ -1,10 +1,10 @@
 import { Tx } from "./classes/Tx";
 import { BlockTxsPairs, Tag } from "./types";
 import { FORK_HEIGHT_1_8, BLOCK_TX_COUNT_LIMIT, BLOCK_TX_DATA_SIZE_LIMIT, WALLET_GEN_FEE, TX_DATA_SIZE_LIMIT, WALLET_NEVER_SPENT } from "./constants";
-import { wallet_ownerToAddressString } from "./wallet";
+import { wallet_ownerToAddressString } from "./utils/wallet";
 import Arweave from "arweave";
 import { nodeUtils_ApplyTx } from "./node-utils";
-import { txPerpetualStorage_calculateTxFee } from "./tx-perpetual-storage";
+import { txPerpetualStorage_calculateTxFee } from "./fees/tx-perpetual-storage";
 import { WalletsObject } from "./classes/WalletsObject";
 import { serialize, deserialize } from "v8";
 
@@ -184,7 +184,8 @@ export const verifyTx = async (tx: Tx, diff: bigint, height: number, timestamp: 
 	}
 
 	let walletsClone = deserialize(serialize(wallets))
-	if( ! await validate_overspend(tx, await nodeUtils_ApplyTx(walletsClone, tx)) ){
+	await nodeUtils_ApplyTx(walletsClone, tx)
+	if( ! await validate_overspend(tx, walletsClone) ){
 		console.log("overspend in tx", tx.idString)
 		return false
 	}

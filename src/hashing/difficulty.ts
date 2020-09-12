@@ -1,4 +1,4 @@
-import { MAX_DIFF } from "./constants"
+import { MAX_DIFF } from "../constants"
 
 export const multiplyDifficulty = (diff: bigint, multiplier: number) => {
 	let mult = BigInt(multiplier)

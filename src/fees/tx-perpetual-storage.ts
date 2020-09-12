@@ -1,6 +1,6 @@
-import { BLOCKS_PER_YEAR, N_REPLICATIONS, USD_PER_GBY_2019, USD_PER_GBY_2018, USD_PER_GBY_DECAY_ANNUAL, FORK_HEIGHT_1_9, MAX_DIFF, INITIAL_USD_PER_AR_HEIGHT, WINSTON_PER_AR, ADD_ERLANG_ROUNDING_ERROR, INITIAL_USD_PER_AR_DIFF, TX_SIZE_BASE, MINING_REWARD_DIVIDER } from "./constants"
+import { BLOCKS_PER_YEAR, N_REPLICATIONS, USD_PER_GBY_2019, USD_PER_GBY_2018, USD_PER_GBY_DECAY_ANNUAL, FORK_HEIGHT_1_9, MAX_DIFF, INITIAL_USD_PER_AR_HEIGHT, WINSTON_PER_AR, ADD_ERLANG_ROUNDING_ERROR, INITIAL_USD_PER_AR_DIFF, TX_SIZE_BASE, MINING_REWARD_DIVIDER } from "../constants"
 import { Decimal } from 'decimal.js'
-import { retarget_switchToLinearDiff } from './difficulty-retarget'
+import { retarget_switchToLinearDiff } from '../hashing/difficulty-retarget'
 import { calculateInflation } from "./inflation"
 
 export const txPerpetualStorage_usdToAr = (usd: number, diff: bigint, height: number): bigint => {

@@ -1,4 +1,4 @@
-import { Tag } from './Tag'
+import { Tag } from '../Tag'
 
 /**
  * Template for a Block "Data Transfer Object" JSON in http transfers. 

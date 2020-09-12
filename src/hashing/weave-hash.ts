@@ -1,4 +1,4 @@
-import { FORK_HEIGHT_1_7 } from './constants'
+import { FORK_HEIGHT_1_7 } from '../constants'
 import Arweave from 'arweave'
 import { randomxHash } from './randomx'
 

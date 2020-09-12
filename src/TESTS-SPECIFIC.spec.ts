@@ -3,7 +3,7 @@ import Arweave from "arweave"
 import { HOST_SERVER } from './constants'
 import { Block,	generateBlockDataSegmentBase, generateBlockDataSegment, getIndepHash, block_verifyTxRoot } from './classes/Block'
 import { nodeUtils_updateWallets, nodeUtils_IsWalletInvalid } from './node-utils'
-import { wallet_ownerToAddressString } from './wallet'
+import { wallet_ownerToAddressString } from './utils/wallet'
 import { WalletsObject, createWalletsFromDTO } from './classes/WalletsObject'
 import { serialize, deserialize } from 'v8'
 
@@ -97,15 +97,13 @@ describe('Block tests, with known hash data outputs', () => {
 describe('Wallet_List tests', () => {
 
 	it('WalletList. Validates that valid transactions result in valid wallet list', async () => {
-		expect.assertions(3)
+		expect.assertions(2)
 
 		expect(Object.keys(prevWallets).length).toBeGreaterThan(19000) // check we have wallets
 
-		let walletsClone = deserialize(serialize(prevWallets)) // clone
+		let updatedWallets = deserialize(serialize(prevWallets)) // clone
 
-		let { updatedWallets } = await nodeUtils_updateWallets(blockKnownHash, walletsClone, prevBlockKnownHash.reward_pool, prevBlockKnownHash.height)
-
-		expect(updatedWallets).toBeDefined()
+		await nodeUtils_updateWallets(blockKnownHash, updatedWallets, prevBlockKnownHash.reward_pool, prevBlockKnownHash.height)
 
 		let result = true // result should be true for valid wallet list
 		let txs = blockKnownHash.txs
@@ -122,15 +120,13 @@ describe('Wallet_List tests', () => {
 	}, 20000)
 
 	it('WalletList. Validates that invalid transactions result in invalid wallet list', async () => {
-		expect.assertions(3)
+		expect.assertions(2)
 
 		expect(Object.keys(prevWallets).length).toBeGreaterThan(19000) // make sure we have walletList data
 
-		let clone = deserialize(serialize(prevWallets)) 
+		let updatedWallets = deserialize(serialize(prevWallets)) 
 
-		let { updatedWallets } = await nodeUtils_updateWallets(blockKnownHash, clone, prevBlockKnownHash.reward_pool, prevBlockKnownHash.height)
-
-		expect(updatedWallets).toBeDefined()
+		await nodeUtils_updateWallets(blockKnownHash, updatedWallets, prevBlockKnownHash.reward_pool, prevBlockKnownHash.height)
 
 		let result = true // result should be false for invalid wallet list
 

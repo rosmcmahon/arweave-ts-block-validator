@@ -1,7 +1,7 @@
-import { RANDOMX_KEY_SWAP_FREQ } from "./constants"
-import { Block } from "./classes/Block"
+import { RANDOMX_KEY_SWAP_FREQ } from "../constants"
+import { Block } from "../classes/Block"
 import Arweave from "arweave"
-let Randomx = require('../node-randomx/build/Release/addon')
+let Randomx = require('../../node-randomx/build/Release/addon')
 
 /* Use the RandomX node-addon to set up a "VM" and do the hashing */
 

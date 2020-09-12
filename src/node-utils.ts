@@ -2,10 +2,10 @@ import { FORK_HEIGHT_1_8, FORK_HEIGHT_2_0, MINING_REWARD_DIVIDER_MODIFIED, ADD_E
 import { Block } from './classes/Block'
 import { Tx } from './classes/Tx'
 import { WalletsObject } from './classes/WalletsObject'
-import { calculateInflation } from './inflation'
-import { txPerpetualStorage_usdToAr, txPerpetualStorage_getCostPerBlockAtTimestamp } from './tx-perpetual-storage'
+import { calculateInflation } from './fees/inflation'
+import { txPerpetualStorage_usdToAr, txPerpetualStorage_getCostPerBlockAtTimestamp } from './fees/tx-perpetual-storage'
 import Arweave from 'arweave'
-import { wallet_ownerToAddressString } from './wallet'
+import { wallet_ownerToAddressString } from './utils/wallet'
 import Decimal from 'decimal.js'
 
 /* From ar_node_utile:is_wallet_invalid */
@@ -82,13 +82,11 @@ export const nodeUtils_updateWallets = async (block: Block, wallets: WalletsObje
 		block.diff,
 		block.timestamp,
 	)
-	let updatedWallets = await nodeUtils_applyMiningReward(
-		await nodeUtils_ApplyTxs(wallets, block.txs, height),
-		block.reward_addr,
-		finderReward,
-		block.height
-	)
-	return { newRewardPool, updatedWallets }
+	// update wallets
+	await nodeUtils_ApplyTxs(wallets, block.txs)
+	await nodeUtils_applyMiningReward(wallets, block.reward_addr, finderReward, block.height)
+
+	return { newRewardPool, wallets}
 }
 
 /* From ar_node_utile:calculate_reward_pool_perpetual */
@@ -176,7 +174,7 @@ export const nodeUtils_calculateRewardPoolPerpetual = (
 	return { baseReward, newPool }
 }
 
-export const nodeUtils_applyMiningReward = async (wallets: WalletsObject, rewardAddr: Uint8Array, quantity: bigint, height: number) => {
+export const nodeUtils_applyMiningReward = (wallets: WalletsObject, rewardAddr: Uint8Array, quantity: bigint, height: number) => {
 
 	if(height < FORK_HEIGHT_1_8){
 		throw new Error("nodeUtils_applyMiningReward unimplemented below FORK_HEIGHT_1_8")
@@ -200,14 +198,14 @@ export const nodeUtils_applyMiningReward = async (wallets: WalletsObject, reward
 
 	if( wallets[target] ){
 		wallets[target].balance += quantity
-		return wallets
+		return 
 	} else {
 		wallets[target] = {balance: quantity, last_tx: WALLET_NEVER_SPENT}
-		return wallets
+		return 
 	}
 }
 
-export const nodeUtils_ApplyTxs = async (wallets: WalletsObject, txs: Tx[], height: number ) => {
+const nodeUtils_ApplyTxs = async (wallets: WalletsObject, txs: Tx[]) => {
 	// %% @doc Update a wallet list with a set of new transactions.
 	// apply_txs(WalletList, TXs, Height) ->
 	// 	lists:foldl(
@@ -225,10 +223,10 @@ export const nodeUtils_ApplyTxs = async (wallets: WalletsObject, txs: Tx[], heig
 	// 	do_apply_tx(WalletList, TX, Height).
 
 	for (let i = 0; i < txs.length; i++) {
-		wallets = await nodeUtils_ApplyTx(wallets, txs[i]) 
+		await nodeUtils_ApplyTx(wallets, txs[i]) 
 	}
 
-	return wallets
+	return // wallets is updated directly
 }
 
 export const nodeUtils_ApplyTx = async (wallets: WalletsObject, tx: Tx) => {
@@ -236,14 +234,15 @@ export const nodeUtils_ApplyTx = async (wallets: WalletsObject, tx: Tx) => {
 	let address = await wallet_ownerToAddressString(tx.owner)
 
 	if(wallets[address]){
-		wallets = await nodeUtils_updateRecipientBalance(await nodeUtils_UpdateSenderBalance(wallets, tx), tx)
-		return wallets
+		await nodeUtils_UpdateSenderBalance(wallets, tx)
+		await nodeUtils_updateRecipientBalance(wallets, tx)
+		return 
 	} 
 	
-	return wallets
+	return 
 }
 
-const nodeUtils_updateRecipientBalance = async (wallets: WalletsObject, tx: Tx) => {
+const nodeUtils_updateRecipientBalance = (wallets: WalletsObject, tx: Tx) => {
 	// update_recipient_balance(
 	// 	Wallets,
 	// 	#tx {
@@ -257,7 +256,7 @@ const nodeUtils_updateRecipientBalance = async (wallets: WalletsObject, tx: Tx) 
 	// 		maps:put(To, {OldBalance + Qty, LastTX}, Wallets)
 	// end.
 	if(tx.quantity === 0n){
-		return wallets
+		return 
 	}
 
 	if( wallets[tx.target] ){
@@ -266,7 +265,7 @@ const nodeUtils_updateRecipientBalance = async (wallets: WalletsObject, tx: Tx) 
 		wallets[tx.target] = {balance: tx.quantity, last_tx: WALLET_NEVER_SPENT}
 	}
 
-	return wallets
+	return // wallets is updated directly
 }
 
 const nodeUtils_UpdateSenderBalance = async (wallets: WalletsObject, tx: Tx) => {
@@ -291,10 +290,10 @@ const nodeUtils_UpdateSenderBalance = async (wallets: WalletsObject, tx: Tx) => 
 		wallets[from].balance -= tx.quantity
 		wallets[from].last_tx = tx.idString
 
-		return wallets
+		return // wallets is updated directly
 	}
 
-	return wallets // checks happen later for this particular case
+	return // checks happen later for this particular case
 }
 
 

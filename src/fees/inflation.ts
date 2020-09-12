@@ -1,5 +1,5 @@
 import { Decimal } from 'decimal.js'
-import { BLOCKS_PER_YEAR, GENESIS_TOKENS, WINSTON_PER_AR, ADD_ERLANG_ROUNDING_ERROR } from './constants'
+import { BLOCKS_PER_YEAR, GENESIS_TOKENS, WINSTON_PER_AR, ADD_ERLANG_ROUNDING_ERROR } from '../constants'
 
 export const calculateInflation = (height: number) => {
 	/*

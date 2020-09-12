@@ -2,9 +2,9 @@
 import { ReturnCode, BlockIndexTuple } from  './types'
 import { Block, getIndepHash, generateBlockDataSegment, verifyBlockDepHash, blockFieldSizeLimit, block_verifyWeaveSize, block_verifyBlockHashListMerkle, block_verifyTxRoot } from './classes/Block'
 import { validatePoa, poa_modifyDiff } from './classes/Poa'
-import { retarget_validateDiff } from './difficulty-retarget'
-import { weave_hash } from './weave-hash'
-import { validateMiningDifficulty } from './mine'
+import { retarget_validateDiff } from './hashing/difficulty-retarget'
+import { weave_hash } from './hashing/weave-hash'
+import { validateMiningDifficulty } from './hashing/mine'
 import { nodeUtils_updateWallets, nodeUtils_IsWalletInvalid } from './node-utils'
 import { WalletsObject } from './classes/WalletsObject'
 import { serialize, deserialize } from 'v8'
@@ -68,8 +68,8 @@ export const validateBlockSlow = async (block: Block, prevBlock: Block, blockInd
 	// 6. wallet_list: 
 	// UpdatedWallets = update_wallets(NewB, Wallets, RewardPool, Height)
 	// if(any wallets are invalid <is_wallet_invalid> ) return "Invalid updated wallet list"
-	let wallets1 = deserialize(serialize(prevBlockWallets)) // clone
-	let { updatedWallets: updatedWallets1 } = await nodeUtils_updateWallets(block, wallets1, prevBlock.reward_pool, prevBlock.height)
+	let updatedWallets1 = deserialize(serialize(prevBlockWallets)) // clone
+	await nodeUtils_updateWallets(block, updatedWallets1, prevBlock.reward_pool, prevBlock.height)
 	// check the updatedWallets
 	for (let index = 0; index < block.txs.length; index++) {
 		const tx = block.txs[index];
