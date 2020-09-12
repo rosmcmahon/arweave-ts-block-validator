@@ -30,9 +30,7 @@ export const ar_tx_replay_pool__verify_block_txs = async (
 		return false
 	}
 
-	let updatedWallets = deserialize(serialize(prevBlockWallets)) // clone
-
-
+	let updatedWallets: WalletsObject = deserialize(serialize(prevBlockWallets)) // clone as this function is for validation
 	let verifiedTxs: string[] = [] //just txids of verified txs. plays the role of memPool here
 	let size = 0n
 
@@ -47,14 +45,16 @@ export const ar_tx_replay_pool__verify_block_txs = async (
 			return false
 		}
 
+		// updatedWallets and verifiedTxs get updated directly
 		let verifyTxResult = await validateTx(tx, diff, height, timestamp, updatedWallets, blockTxsPairs, verifiedTxs)
 
+
 		if(verifyTxResult === false){
+			console.debug(`validateTx failed for txs[${i}]: ${tx.idString}`)
+			console.debug('balance:'+updatedWallets[tx.idString].balance)
+			console.debug('last_tx:'+updatedWallets[tx.idString].last_tx)
 			return false
 		}
-		let { wallets: modifiedWallets, verifiedTxs: modifiedVerifiedTxs} = verifyTxResult
-		updatedWallets = modifiedWallets
-		verifiedTxs = modifiedVerifiedTxs
 	}
 
 	return true
@@ -68,7 +68,7 @@ const validateTx = async (tx: Tx, diff: bigint, height: number, timestamp: bigin
 
 	// if( ! ar_tx:verify(TX, Diff, Height, FloatingWallets, Timestamp, VerifySignature) ) 
 	// 	return false
-	if( ! verifyTx(tx, diff, height, timestamp, wallets) ){
+	if( ! await verifyTx(tx, diff, height, timestamp, wallets) ){
 		return false
 	}
 	
@@ -92,7 +92,7 @@ const validateTx = async (tx: Tx, diff: bigint, height: number, timestamp: bigin
 		verifiedTxs.push(tx.idString)
 		//apply tx to modified wallets
 		await nodeUtils_ApplyTx(wallets, tx)
-		return {wallets, verifiedTxs}
+		return true // {wallets, verifiedTxs}
 	}
 
 	//// anchor_check
@@ -130,7 +130,7 @@ const validateTx = async (tx: Tx, diff: bigint, height: number, timestamp: bigin
 	verifiedTxs.push(tx.idString)
 	await nodeUtils_ApplyTx(wallets, tx)
 	
-	return {wallets, verifiedTxs}
+	return true //{wallets, verifiedTxs}
 }
 
 const weave_map_contains_tx = (txid: string, blockTxsPairs: BlockTxsPairs) => {
