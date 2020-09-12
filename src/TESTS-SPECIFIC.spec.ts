@@ -2,7 +2,7 @@ import axios from 'axios'
 import Arweave from "arweave"
 import { HOST_SERVER } from './constants'
 import { Block,	generateBlockDataSegmentBase, generateBlockDataSegment, getIndepHash, block_verifyTxRoot } from './classes/Block'
-import { nodeUtils_updateWallets, nodeUtils_IsWalletInvalid } from './node-utils'
+import { updateWalletsWithBlockTxs, nodeUtils_IsWalletInvalid } from './wallets-utils'
 import { wallet_ownerToAddressString } from './utils/wallet'
 import { WalletsObject, createWalletsFromDTO } from './classes/WalletsObject'
 import { serialize, deserialize } from 'v8'
@@ -103,7 +103,7 @@ describe('Wallet_List tests', () => {
 
 		let updatedWallets = deserialize(serialize(prevWallets)) // clone
 
-		await nodeUtils_updateWallets(blockKnownHash, updatedWallets, prevBlockKnownHash.reward_pool, prevBlockKnownHash.height)
+		await updateWalletsWithBlockTxs(blockKnownHash, updatedWallets, prevBlockKnownHash.reward_pool, prevBlockKnownHash.height)
 
 		let result = true // result should be true for valid wallet list
 		let txs = blockKnownHash.txs
@@ -126,7 +126,7 @@ describe('Wallet_List tests', () => {
 
 		let updatedWallets = deserialize(serialize(prevWallets)) 
 
-		await nodeUtils_updateWallets(blockKnownHash, updatedWallets, prevBlockKnownHash.reward_pool, prevBlockKnownHash.height)
+		await updateWalletsWithBlockTxs(blockKnownHash, updatedWallets, prevBlockKnownHash.reward_pool, prevBlockKnownHash.height)
 
 		let result = true // result should be false for invalid wallet list
 

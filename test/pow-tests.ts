@@ -100,6 +100,8 @@ const main = async () => {
 	} else {
 		console.log(PASS, "validateMiningDifficulty returned false for bad Difficulty")
 	}
-
+	
+	console.log()
+	console.log('Pow testing complete')
 }
 main();

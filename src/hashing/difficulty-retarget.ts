@@ -2,13 +2,15 @@ import { RETARGET_BLOCKS, FORK_HEIGHT_1_8, FORK_HEIGHT_1_9, DIFF_ADJUSTMENT_DOWN
 import { Block } from '../classes/Block'
 import { Decimal } from 'decimal.js'
 
+/**
+ * This file is based on ar_retarget_difficulty.erl, unless otherwise stated.
+ */
 
-
-export const retarget_switchToLinearDiff = (diff: bigint) => {
+export const switchToLinearDiff = (diff: bigint) => {
 	return ( (2n ** 256n) - (2n ** (256n - diff)) ) 
 }
 
-export const retarget_validateDiff = (block: Block, prevBlock: Block) => {
+export const validateDifficulty = (block: Block, prevBlock: Block) => {
 
 	if( (block.height % RETARGET_BLOCKS === 0) && (block.height !== 0) ){
 		let calculated = calculateDifficulty(
@@ -269,4 +271,11 @@ const betweenDecimals = (num: Decimal, min: Decimal, max: Decimal) =>{
 	if(num.lessThan(min)) return min 
 	if(num.greaterThan(max)) return max
 	return num
+}
+
+/* based on ar_difficulty:multiply_difficulty */
+export const multiplyDifficulty = (diff: bigint, multiplier: number) => {
+	let mult = BigInt(multiplier)
+	let modifier = ((1n / mult) * (MAX_DIFF - diff))
+	return MAX_DIFF - modifier
 }

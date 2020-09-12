@@ -3,9 +3,9 @@ import { BlockDTO, ReturnCode, BlockIndexTuple } from './types'
 import { STORE_BLOCKS_AROUND_CURRENT, HOST_SERVER, RETARGET_BLOCKS, MIN_DIFF_FORK_1_8 } from './constants'
 import { Block, blockFieldSizeLimit, block_verifyWeaveSize, block_verifyBlockHashListMerkle } from './classes/Block'
 import { validatePoa, findPoaChallengeBlock } from './classes/Poa'
-import { retarget_validateDiff } from './hashing/difficulty-retarget'
+import { validateDifficulty } from './hashing/difficulty-retarget'
 import { Tx } from './classes/Tx'
-import { validateBlockSlow } from './blockValidation'
+import { validateBlock } from './blockValidation'
 import { WalletsObject, createWalletsFromDTO } from './classes/WalletsObject'
 import { deserialize, serialize } from 'v8'
 
@@ -68,12 +68,12 @@ describe('BlockValidate Quick Tests', () => {
 		let badHeight = deserialize(serialize(block)) 
 		badHeight.height = prevBlock.height + (STORE_BLOCKS_AROUND_CURRENT + 1)
 
-    let ahead = await validateBlockSlow(badHeight, prevBlock, null, null)
+    let ahead = await validateBlock(badHeight, prevBlock, null, null)
 		expect(ahead).toEqual({code: 400, message: "Height is too far ahead"})
 		
 		badHeight.height = prevBlock.height - (STORE_BLOCKS_AROUND_CURRENT + 1)
 
-    let behind = await validateBlockSlow(badHeight, prevBlock, null, null)
+    let behind = await validateBlock(badHeight, prevBlock, null, null)
     expect(behind).toEqual({code: 400, message: "Height is too far behind"})
 	})
 	
@@ -83,7 +83,7 @@ describe('BlockValidate Quick Tests', () => {
 		// set bad difficulty integer 1 below min diff
 		test.diff = MIN_DIFF_FORK_1_8 - 1n 
 
-    res = await validateBlockSlow(test, prevBlock, null, null )
+    res = await validateBlock(test, prevBlock, null, null )
     expect(res).toEqual({code: 400, message: "Difficulty too low"})
 	})
 
@@ -97,14 +97,14 @@ describe('BlockValidateSlow tests, general validation tests', () => {
 		//create bad height
 		badPrevBlock = Object.assign({}, prevBlock)
 		badPrevBlock.height--
-		let badHeightResult = await validateBlockSlow(block, badPrevBlock, blockIndex, prevBlockWallets)
+		let badHeightResult = await validateBlock(block, badPrevBlock, blockIndex, prevBlockWallets)
 
 		expect(badHeightResult).toEqual({code: 400, message: "Invalid previous height"})
 
 		//create bad hash
 		badPrevBlock = Object.assign({}, prevBlock)
 		badPrevBlock.indep_hash = prevBlock.indep_hash.map(byte => byte ^ 0xff) //flip all the bits (╯°□°）╯︵ ┻━┻
-		let badHashResult = await validateBlockSlow(block, badPrevBlock, blockIndex, prevBlockWallets)
+		let badHashResult = await validateBlock(block, badPrevBlock, blockIndex, prevBlockWallets)
 
 		expect(badHashResult).toEqual({code: 400, message: "Invalid previous block hash"})
 	})
@@ -175,8 +175,8 @@ describe('Difficulty tests', () => {
 
 	it('Difficulty. retarget_ValidateDiff Validate that a new block has an appropriate Difficulty.', async () =>{
 		expect.assertions(2)
-		let retarget = retarget_validateDiff(block, prevBlock)
-		let noRetarget = retarget_validateDiff(prevBlock, prevPrevBlock)
+		let retarget = validateDifficulty(block, prevBlock)
+		let noRetarget = validateDifficulty(prevBlock, prevPrevBlock)
 
 		expect(retarget).toEqual(true)
 		expect(noRetarget).toEqual(true)
@@ -188,7 +188,7 @@ describe('Difficulty tests', () => {
 		let badTimeBlock = Object.assign({}, block)
 		badTimeBlock.timestamp = prevBlock.last_retarget + 1n // this makes timedelta too short
 
-		let retarget = retarget_validateDiff(badTimeBlock, prevBlock)
+		let retarget = validateDifficulty(badTimeBlock, prevBlock)
 
 		expect(retarget).toEqual(false)
 

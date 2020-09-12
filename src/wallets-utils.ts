@@ -10,19 +10,7 @@ import Decimal from 'decimal.js'
 
 /* From ar_node_utile:is_wallet_invalid */
 export const nodeUtils_IsWalletInvalid = async (tx: Tx, wallets: WalletsObject) => {
-	// is_wallet_invalid(#tx{ owner = Owner }, Wallets) ->
-	// 	Address = ar_wallet:to_address(Owner),
-	// 	case maps:get(Address, Wallets, not_found) of
-	// 		{Balance, LastTX} when Balance >= 0 ->
-	// 			case Balance of
-	// 				0 ->
-	// 					byte_size(LastTX) == 0;
-	// 				_ ->
-	// 					false
-	// 			end;
-	// 		_ ->
-	// 			true
-	// 	end.
+
 	let sender = await wallet_ownerToAddressString(tx.owner)
 
 	if(wallets[sender]){
@@ -41,60 +29,31 @@ export const nodeUtils_IsWalletInvalid = async (tx: Tx, wallets: WalletsObject) 
 }
 
 /* From ar_node_utile:update_wallets */
-export const nodeUtils_updateWallets = async (block: Block, wallets: WalletsObject, rewardPool: bigint, height: number) => {
-	/*
-		%% @doc Update the wallets by applying the new transactions and the mining reward.
-		%% Return the new reward pool and wallets. It is sufficient to provide the source
-		%% and the destination wallets of the transactions and the reward wallet.
-		update_wallets(NewB, Wallets, RewardPool, Height) ->
-			TXs = NewB#block.txs,
-			{FinderReward, NewRewardPool} =
-				ar_node_utils:calculate_reward_pool(	% NOTE: the exported function is used here 
-					RewardPool,						 							% because it is mocked in
-					TXs,																% ar_tx_perpetual_storage_tests
-					NewB#block.reward_addr,
-					no_recall,
-					NewB#block.weave_size,
-					NewB#block.height,
-					NewB#block.diff,
-					NewB#block.timestamp
-				),
-			UpdatedWallets =
-				ar_node_utils:apply_mining_reward(
-					ar_node_utils:apply_txs(Wallets, TXs, Height),
-					NewB#block.reward_addr,
-					FinderReward,
-					NewB#block.height
-				),
-			{NewRewardPool, UpdatedWallets}.
-	*/
+export const updateWalletsWithBlockTxs = async (block: Block, wallets: WalletsObject, rewardPool: bigint, height: number) => {
+
 	if(height < FORK_HEIGHT_1_8){
 		throw new Error("nodeUtilsUpdateWallets unimplemented below FORK_HEIGHT_1_8")
 	}
 
-	let { baseReward: finderReward, newPool: newRewardPool } = nodeUtils_calculateRewardPoolPerpetual(
+	let { baseReward: finderReward, newPool: newRewardPool } = calculateRewardPoolPerpetual(
 		rewardPool,
 		block.txs,
-		null,
-		null,
 		block.weave_size,
 		block.height,
 		block.diff,
 		block.timestamp,
 	)
 	// update wallets
-	await nodeUtils_ApplyTxs(wallets, block.txs)
-	await nodeUtils_applyMiningReward(wallets, block.reward_addr, finderReward, block.height)
+	await applyTxs(wallets, block.txs)
+	await applyMiningReward(wallets, block.reward_addr, finderReward, block.height)
 
 	return { newRewardPool, wallets}
 }
 
-/* From ar_node_utile:calculate_reward_pool_perpetual */
-export const nodeUtils_calculateRewardPoolPerpetual = (
+/* From ar_node_utils:calculate_reward_pool_perpetual */
+const calculateRewardPoolPerpetual = (
 	oldPool: bigint, 
 	txs: Tx[], 
-	UNUSED_rewardAddr, 
-	UNUSED_poa, 
 	weaveSize: bigint, 
 	height: number, // this is just here for fork error message
 	diff: bigint, 
@@ -105,6 +64,9 @@ export const nodeUtils_calculateRewardPoolPerpetual = (
 		throw new Error("nodeUtilsCalculateRewardPoolPerpetual unimplemented below FORK_HEIGHT_2_0")
 	}
 	/*
+
+		** N.B. See the below inlined algebra for removing fractional calculations **
+
 		calculate_reward_pool_perpetual(OldPool, TXs, _, POA, WeaveSize, Height, Diff, Timestamp) ->
 			Inflation = erlang:trunc(ar_inflation:calculate(Height)),
 			{TXsCost, TXsReward} = lists:foldl(
@@ -174,26 +136,12 @@ export const nodeUtils_calculateRewardPoolPerpetual = (
 	return { baseReward, newPool }
 }
 
-export const nodeUtils_applyMiningReward = (wallets: WalletsObject, rewardAddr: Uint8Array, quantity: bigint, height: number) => {
+const applyMiningReward = (wallets: WalletsObject, rewardAddr: Uint8Array, quantity: bigint, height: number) => {
 
 	if(height < FORK_HEIGHT_1_8){
-		throw new Error("nodeUtils_applyMiningReward unimplemented below FORK_HEIGHT_1_8")
+		throw new Error("applyMiningReward unimplemented below FORK_HEIGHT_1_8")
 	}
-	// %% @doc Calculate and apply mining reward quantities to a wallet list.
-	// apply_mining_reward(WalletList, unclaimed, _Quantity, _Height) ->
-	// 	WalletList;
-	// apply_mining_reward(WalletList, RewardAddr, Quantity, Height) ->
-	// 	alter_wallet(WalletList, RewardAddr, Quantity).
-	//
 
-	// %% @doc Alter a wallet in a wallet list.
-	// alter_wallet(Wallets, Target, Adjustment) ->
-	// 	case maps:get(Target, Wallets, not_found) of
-	// 		not_found ->
-	// 			maps:put(Target, {Adjustment, <<>>}, Wallets);
-	// 		{Balance, LastTX} ->
-	// 			maps:put(Target, {Balance + Adjustment, LastTX}, Wallets)
-	// 	end.
 	let target = Arweave.utils.bufferTob64Url(rewardAddr)
 
 	if( wallets[target] ){
@@ -205,56 +153,30 @@ export const nodeUtils_applyMiningReward = (wallets: WalletsObject, rewardAddr: 
 	}
 }
 
-const nodeUtils_ApplyTxs = async (wallets: WalletsObject, txs: Tx[]) => {
-	// %% @doc Update a wallet list with a set of new transactions.
-	// apply_txs(WalletList, TXs, Height) ->
-	// 	lists:foldl(
-	// 		fun(TX, Acc) ->
-	// 			apply_tx(Acc, TX, Height)
-	// 		end,
-	// 		WalletList,
-	// 		TXs
-	// 	).
-
-	// %% @doc Apply a transaction to a wallet list, updating it.
-	// apply_tx(WalletList, unavailable, _) ->
-	// 	WalletList;
-	// apply_tx(WalletList, TX, Height) ->
-	// 	do_apply_tx(WalletList, TX, Height).
+const applyTxs = async (wallets: WalletsObject, txs: Tx[]) => {
 
 	for (let i = 0; i < txs.length; i++) {
-		await nodeUtils_ApplyTx(wallets, txs[i]) 
+		await applyTxToWalletsObject(wallets, txs[i]) 
 	}
 
 	return // wallets is updated directly
 }
 
-export const nodeUtils_ApplyTx = async (wallets: WalletsObject, tx: Tx) => {
+export const applyTxToWalletsObject = async (wallets: WalletsObject, tx: Tx) => {
 
 	let address = await wallet_ownerToAddressString(tx.owner)
 
 	if(wallets[address]){
-		await nodeUtils_UpdateSenderBalance(wallets, tx)
-		await nodeUtils_updateRecipientBalance(wallets, tx)
+		await updateSenderBalance(wallets, tx)
+		await updateRecipientBalance(wallets, tx)
 		return 
 	} 
 	
 	return 
 }
 
-const nodeUtils_updateRecipientBalance = (wallets: WalletsObject, tx: Tx) => {
-	// update_recipient_balance(
-	// 	Wallets,
-	// 	#tx {
-	// 		target = To,
-	// 		quantity = Qty
-	// 	}) ->
-	// case maps:get(To, Wallets, not_found) of
-	// 	not_found ->
-	// 		maps:put(To, {Qty, <<>>}, Wallets);
-	// 	{OldBalance, LastTX} ->
-	// 		maps:put(To, {OldBalance + Qty, LastTX}, Wallets)
-	// end.
+const updateRecipientBalance = (wallets: WalletsObject, tx: Tx) => {
+
 	if(tx.quantity === 0n){
 		return 
 	}
@@ -268,22 +190,8 @@ const nodeUtils_updateRecipientBalance = (wallets: WalletsObject, tx: Tx) => {
 	return // wallets is updated directly
 }
 
-const nodeUtils_UpdateSenderBalance = async (wallets: WalletsObject, tx: Tx) => {
-	// update_sender_balance(
-	// 	Wallets,
-	// 	#tx {
-	// 		id = ID,
-	// 		owner = From,
-	// 		quantity = Qty,
-	// 		reward = Reward
-	// 	}) ->
-	// Addr = ar_wallet:to_address(From),
-	// case maps:get(Addr, Wallets, not_found) of
-	// 	{Balance, _LastTX} ->
-	// 		maps:put(Addr, {Balance - (Qty + Reward), ID}, Wallets);
-	// 	_ ->
-	// 		Wallets
-	// end.
+const updateSenderBalance = async (wallets: WalletsObject, tx: Tx) => {
+
 	let from = await wallet_ownerToAddressString(tx.owner)
 
 	if( wallets[from] ){

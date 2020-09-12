@@ -3,7 +3,7 @@ import { BlockIndexTuple } from "../types"
 import * as Merkle from '../utils/merkle'
 import { bufferToBigInt } from '../utils/buffer-utilities'
 import { POA_MIN_MAX_OPTION_DEPTH, ALTERNATIVE_POA_DIFF_MULTIPLIER } from '../constants'
-import { multiplyDifficulty } from "../hashing/difficulty"
+import { multiplyDifficulty } from "../hashing/difficulty-retarget"
 
 export interface Poa {
 	// A succinct proof of access to a recall byte found in a TX.
@@ -15,12 +15,9 @@ export interface Poa {
 
 /* Validate a complete proof of access object */
 export const validatePoa = async (prevIndepHash: Uint8Array, prevWeaveSize: bigint, blockIndex: BlockIndexTuple[], poa: Poa): Promise<Boolean> => {
-	
-	/* some quick returns */
-	
-	// The weave does not have data yet.
-	if(prevWeaveSize === 0n) return true
-
+	if(prevWeaveSize === 0n){
+		return true // The weave does not have data yet.
+	}
 	if( (poa.option > blockIndex.length) && (poa.option > POA_MIN_MAX_OPTION_DEPTH) ){ 
 		return false
 	}

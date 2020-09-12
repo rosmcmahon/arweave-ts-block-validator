@@ -3,7 +3,7 @@ import { BlockTxsPairs, Tag } from "./types";
 import { FORK_HEIGHT_1_8, BLOCK_TX_COUNT_LIMIT, BLOCK_TX_DATA_SIZE_LIMIT, WALLET_GEN_FEE, TX_DATA_SIZE_LIMIT, WALLET_NEVER_SPENT } from "./constants";
 import { wallet_ownerToAddressString } from "./utils/wallet";
 import Arweave from "arweave";
-import { nodeUtils_ApplyTx } from "./node-utils";
+import { applyTxToWalletsObject } from "./wallets-utils";
 import { txPerpetualStorage_calculateTxFee } from "./fees/tx-perpetual-storage";
 import { WalletsObject } from "./classes/WalletsObject";
 import { serialize, deserialize } from "v8";
@@ -92,7 +92,7 @@ const validateBlockTx = async (tx: Tx, diff: bigint, height: number, timestamp: 
 		//put tx in verifiedTxs
 		verifiedTxs.push(tx.idString)
 		//apply tx to modified wallets
-		await nodeUtils_ApplyTx(wallets, tx)
+		await applyTxToWalletsObject(wallets, tx)
 		return true
 	}
 
@@ -129,7 +129,7 @@ const validateBlockTx = async (tx: Tx, diff: bigint, height: number, timestamp: 
 	// {valid, NewFW, NewMempool}
 	// return true
 	verifiedTxs.push(tx.idString)
-	await nodeUtils_ApplyTx(wallets, tx)
+	await applyTxToWalletsObject(wallets, tx)
 	
 	return true
 }
@@ -184,7 +184,7 @@ export const verifyTx = async (tx: Tx, diff: bigint, height: number, timestamp: 
 	}
 
 	let walletsClone = deserialize(serialize(wallets))
-	await nodeUtils_ApplyTx(walletsClone, tx)
+	await applyTxToWalletsObject(walletsClone, tx)
 	if( ! await validate_overspend(tx, walletsClone) ){
 		console.log("overspend in tx", tx.idString)
 		return false

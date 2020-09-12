@@ -5,12 +5,13 @@
   "main": "dist/index.js",
   "scripts": {
     "test": "jest --runInBand --no-cache --logHeapUsage --verbose",
+    "test:txs": "jest blockTxsValidation --runInBand --no-cache --logHeapUsage --verbose",
     "test:e2e": "jest --config ./test/jest-e2e.json --verbose",
     "test:windows": "node --max-old-space-size=1024 ./node_modules/jest/bin/jest.js --runInBand --no-cache --logHeapUsage --verbose",
     "test:mem": "node --max-old-space-size=1024 node_modules/.bin/jest --logHeapUsage --verbose",
     "test:watch": "jest --watch --logHeapUsage --verbose --runInBand --detectOpenHandles",
     "test:clear": "jest --clearCache --verbose",
-    "start:scratch": "node --max-old-space-size=4096 -r ts-node/register ./test/scratchpad-tests.ts",
+    "start:scratch": "node --max-old-space-size=1024 -r ts-node/register ./test/scratchpad-tests.ts",
     "start:pow": "node --max-old-space-size=1024 -r ts-node/register ./test/pow-tests.ts"
   },
   "author": "Ros McMahon <rosmcmahon@gmail.com>",
