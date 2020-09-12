@@ -2,8 +2,7 @@ import axios from "axios"
 import { ReturnCode, BlockIndexTuple } from "../src/types"
 import { Block } from "../src/classes/Block"
 import { HOST_SERVER, RETARGET_BLOCKS } from "../src/constants"
-import { validateBlockQuick } from "../src/blockValidateQuick"
-import { validateBlockSlow } from "../src/blockValidateSlow"
+import { validateBlockSlow } from "../src/blockValidation"
 import { WalletsObject, createWalletsFromDTO } from "../src/classes/WalletsObject"
 
 
@@ -49,19 +48,10 @@ beforeAll(async () => {
 
 
 
-describe('BlockValidateQuick completes e2e Quick validation tests', ()=> {
 
-  it('blockValidateQuick should return true for a valid block', () => {
-		let result = validateBlockQuick(block, block.height )
-		
-    expect(result).toEqual({code: 200, message: "Block quick check OK"})
-  })
+describe('blockValidation completes e2e validation testing', ()=> {
 
-})
-
-describe('blockValidateSlow completes e2e Slow validation tests', ()=> {
-
-	it('validateBlockSlow should return true when given valid block data', async () => {
+	it('validateBlock should return true when given valid block & weave state data', async () => {
 		expect.assertions(1)
 		res = await validateBlockSlow(block, prevBlock, blockIndex, prevBlockWallets)
 			

@@ -8,13 +8,33 @@ import { validateMiningDifficulty } from './mine'
 import { nodeUtils_updateWallets, nodeUtils_IsWalletInvalid } from './node-utils'
 import { WalletsObject } from './classes/WalletsObject'
 import { serialize, deserialize } from 'v8'
+import { STORE_BLOCKS_AROUND_CURRENT, MIN_DIFF_FORK_1_8 } from './constants'
 
 
 export const validateBlockSlow = async (block: Block, prevBlock: Block, blockIndex: BlockIndexTuple[], prevBlockWallets: WalletsObject): Promise<ReturnCode> => {
 
 	Object.freeze(prevBlockWallets) //this is the wallet state of the previous block, let's leave it that way
 
-	/* 12 steps for slow validation (ref: validate in ar_node_utils.erl) */
+	/**
+	 * The following 2 steps are taken from ar_http_iface_middleware:post_block
+	 * Just 2 quick steps for initial validation - disregarding http bound steps.
+	 * The idea there is to return as fast as possible for invalid blocks.
+	 */
+
+	// 1. check block height range is +/- STORE_BLOCKS_BEHIND_CURRENT from current
+	if(block.height > (prevBlock.height + STORE_BLOCKS_AROUND_CURRENT)){
+		return {code: 400, message: "Height is too far ahead"}
+	}
+	if(block.height < (prevBlock.height - STORE_BLOCKS_AROUND_CURRENT)){
+		return {code: 400, message: "Height is too far behind"}
+	}
+
+	// 2. check_difficulty( BShadow#block.diff < ar_mine:min_difficulty(BShadow#block.height) )
+	if( block.diff < MIN_DIFF_FORK_1_8 ){
+		return {code: 400, message: "Difficulty too low"}
+	}
+
+	/* 12 steps for "slow" validation (ref: ar_node_utils:validate) */
 
 	// 1. Verify the height of the new block is the one higher than the current height.
 	if(block.height !== prevBlock.height + 1){

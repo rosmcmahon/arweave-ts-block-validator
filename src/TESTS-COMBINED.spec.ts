@@ -1,13 +1,13 @@
 import axios from 'axios'
 import { BlockDTO, ReturnCode, BlockIndexTuple } from './types'
 import { STORE_BLOCKS_AROUND_CURRENT, HOST_SERVER, RETARGET_BLOCKS, MIN_DIFF_FORK_1_8 } from './constants'
-import { validateBlockQuick } from './blockValidateQuick'
 import { Block, blockFieldSizeLimit, block_verifyWeaveSize, block_verifyBlockHashListMerkle } from './classes/Block'
 import { validatePoa, findPoaChallengeBlock } from './classes/Poa'
 import { retarget_validateDiff } from './difficulty-retarget'
 import { Tx } from './classes/Tx'
-import { validateBlockSlow } from './blockValidateSlow'
+import { validateBlockSlow } from './blockValidation'
 import { WalletsObject, createWalletsFromDTO } from './classes/WalletsObject'
+import { deserialize, serialize } from 'v8'
 
 /* *** Initialise all test data, and use in one big test file *** */
 
@@ -60,15 +60,20 @@ beforeAll(async () => {
 
 
 
-describe('BlockValidateQuick Tests', () => {
+describe('BlockValidate Quick Tests', () => {
 
-  it('validateBlockQuick should return false for an out of range height', async () => {
+  it('validateBlock should return false for an out of range height', async () => {
 		expect.assertions(2)
 
-    let ahead = validateBlockQuick(block, block.height - (STORE_BLOCKS_AROUND_CURRENT+10) )
+		let badHeight = deserialize(serialize(block)) 
+		badHeight.height = prevBlock.height + (STORE_BLOCKS_AROUND_CURRENT + 1)
+
+    let ahead = await validateBlockSlow(badHeight, prevBlock, null, null)
 		expect(ahead).toEqual({code: 400, message: "Height is too far ahead"})
 		
-    let behind = validateBlockQuick(block, block.height + (STORE_BLOCKS_AROUND_CURRENT+10) )
+		badHeight.height = prevBlock.height - (STORE_BLOCKS_AROUND_CURRENT + 1)
+
+    let behind = await validateBlockSlow(badHeight, prevBlock, null, null)
     expect(behind).toEqual({code: 400, message: "Height is too far behind"})
 	})
 	
@@ -78,7 +83,7 @@ describe('BlockValidateQuick Tests', () => {
 		// set bad difficulty integer 1 below min diff
 		test.diff = MIN_DIFF_FORK_1_8 - 1n 
 
-    res = validateBlockQuick(test, block.height-1 )
+    res = await validateBlockSlow(test, prevBlock, null, null )
     expect(res).toEqual({code: 400, message: "Difficulty too low"})
 	})
 
