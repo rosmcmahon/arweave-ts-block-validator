@@ -103,7 +103,9 @@ const calculateRewardPoolPerpetual = (
 	let txsCost = 0n
 	let txsReward = 0n
 
-	txs.forEach(tx => {
+	for (let i = 0; i < txs.length; i++) {
+		const tx = txs[i];
+		
 		let txFee = tx.reward
 		let txReward: bigint
 		if(ADD_ERLANG_ROUNDING_ERROR){
@@ -117,7 +119,7 @@ const calculateRewardPoolPerpetual = (
 		}
 		txsCost += (txFee - txReward)
 		txsReward += txReward
-	})
+	}
 
 	let baseReward = inflation + txsReward
 	let costPerGBPerBlock = txPerpetualStorage_usdToAr(
