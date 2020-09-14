@@ -132,7 +132,7 @@ describe('Wallet_List tests', () => {
 
 		// invalidate updatedWallets by interfering with sender balance of tx[0] 
 		let sender = await wallet_ownerToAddressString(blockKnownHash.txs[0].owner)
-		updatedWallets[sender].balance = -100n
+		updatedWallets[sender].balance = -1n
 
 		if(await nodeUtils_IsWalletInvalid(blockKnownHash.txs[0], updatedWallets)){
 			result = false

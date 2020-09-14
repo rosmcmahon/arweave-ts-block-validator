@@ -1,5 +1,5 @@
 
-import { ReturnCode, BlockIndexTuple } from  './types'
+import { ReturnCode, BlockIndexTuple, BlockTxsPairs } from  './types'
 import { Block, getIndepHash, generateBlockDataSegment, verifyBlockDepHash, blockFieldSizeLimit, block_verifyWeaveSize, block_verifyBlockHashListMerkle, block_verifyTxRoot } from './classes/Block'
 import { validatePoa, poa_modifyDiff } from './classes/Poa'
 import { validateDifficulty } from './hashing/difficulty-retarget'
@@ -9,13 +9,15 @@ import { updateWalletsWithBlockTxs, nodeUtils_IsWalletInvalid } from './wallets-
 import { WalletsObject } from './classes/WalletsObject'
 import { serialize, deserialize } from 'v8'
 import { STORE_BLOCKS_AROUND_CURRENT, MIN_DIFF_FORK_1_8 } from './constants'
+import { validateBlockTxs } from './blockTxsValidation'
 
 
 export const validateBlock = async (
 	block: Block, 
 	prevBlock: Block, 
 	blockIndex: BlockIndexTuple[], 
-	prevBlockWallets: WalletsObject
+	prevBlockWallets: WalletsObject,
+	blockTxPairs: BlockTxsPairs
 ): Promise<ReturnCode> => {
 
 	Object.freeze(prevBlockWallets) //this is the wallet state of the previous block, let's leave it that way
@@ -28,15 +30,15 @@ export const validateBlock = async (
 
 	// 1. Quick check block height range is +/- STORE_BLOCKS_BEHIND_CURRENT from current (prevBlock here)
 	if(block.height > (prevBlock.height + STORE_BLOCKS_AROUND_CURRENT)){
-		return {code: 400, message: "Height is too far ahead"}
+		return {value: false, message: "Height is too far ahead"}
 	}
 	if(block.height < (prevBlock.height - STORE_BLOCKS_AROUND_CURRENT)){
-		return {code: 400, message: "Height is too far behind"}
+		return {value: false, message: "Height is too far behind"}
 	}
 
 	// 2. Quick check_difficulty is greater than minimum difficulty
 	if( block.diff < MIN_DIFF_FORK_1_8 ){
-		return {code: 400, message: "Difficulty too low"}
+		return {value: false, message: "Difficulty too low"}
 	}
 
 	/**
@@ -46,97 +48,86 @@ export const validateBlock = async (
 
 	// 1. Verify the height of the new block is the one higher than the current height.
 	if(block.height !== prevBlock.height + 1){
-		return {code: 400, message: "Invalid previous height"}
+		return {value: false, message: "Invalid previous height"}
 	}
 
 	// 2. Verify that the previous_block hash of the new block is the indep_hash of the current block.
 	if( ! Buffer.from(prevBlock.indep_hash).equals(block.previous_block) ){
-		return {code: 400, message: "Invalid previous block hash"}
+		return {value: false, message: "Invalid previous block hash"}
 	}
 
 	// 3. PoA. Validate the proof of access of the block
 	if( ! await validatePoa(prevBlock.indep_hash, prevBlock.weave_size, blockIndex, block.poa) ){
-		return {code: 400, message: "Invalid PoA", height: block.height}
+		return {value: false, message: "Invalid PoA", height: block.height}
 	}
 
 	// 4. Difficulty: check matches calculated difficulty for this block level, with retarget if necessary.
 	if( ! validateDifficulty(block, prevBlock) ){
-		return {code: 400, message: "Invalid difficulty", height: block.height}
+		return {value: false, message: "Invalid difficulty", height: block.height}
 	}
 
-	// 5. independent_hash:
-	// if( ar_weave:indep_hash_post_fork_2_0(NewB) != NewB#block.indep_hash ) return false
+	// 5. Independent Hash: calculate independent hash and check equals given block hash
 	let indepHash = await getIndepHash(block)
 	if( ! Buffer.from(indepHash).equals(block.indep_hash) ){
-		return {code: 400, message: "Invalid independent hash"}
+		return {value: false, message: "Invalid independent hash"}
 	}
 
-	// 6. wallet_list: 
-	// UpdatedWallets = update_wallets(NewB, Wallets, RewardPool, Height)
-	// if(any wallets are invalid <is_wallet_invalid> ) return "Invalid updated wallet list"
+	// 6. Wallets list: create & update a new wallets object and check the block txs result in valid wallets
 	let updatedWallets1 = deserialize(serialize(prevBlockWallets)) // clone
 	await updateWalletsWithBlockTxs(block, updatedWallets1, prevBlock.reward_pool, prevBlock.height)
 	// check the updatedWallets
 	for (let index = 0; index < block.txs.length; index++) {
 		const tx = block.txs[index];
 		if( await nodeUtils_IsWalletInvalid(tx, updatedWallets1) ){
-			return {code: 400, message: "Invalid wallet list. txid:"+tx.idString, height: block.height}
+			return {value: false, message: "Invalid wallet list. txid:"+tx.idString, height: block.height}
 		}
 	}
 	
-	// 7. block_field_sizes: (block field size checks, no dependencies)
-	// if(! ar_block:block_field_size_limit(NewB) ) return false
+	// 7. Block Field Sizes: block field size checks -these probably should be done at the http level
 	if( ! blockFieldSizeLimit(block) ){
-		return {code: 400, message: "Received block with invalid field size"}
+		return {value: false, message: "Received block with invalid field size"}
 	}
 
-	// 8. txs: (mempool? weaveState?) N.B. Need the BlockTXPairs for this test! requires 50 blocks. long tx checks
-	// if( ar_tx_replay_pool:verify_block_txs === invalid ) return false
-
-	// let result = await ar_tx_replay_pool__verify_block_txs(
-	// 	block.txs, 
-	// 	block.diff, 
-	// 	prevBlock.height, 
-	// 	block.timestamp, 
-	// 	walletList, 
-	// 	blockTxPairs //need last 50 blocks?
-	// )
-	// if( !result ){
-	// 	return {code: 400, message: "Received block with invalid txs"}
-	// }
+	// 8. Block Txs. Validate each block tx against: the block as a whole, individually, and against the weave & wallets state
+	let updatedWallets2 = deserialize(serialize(prevBlockWallets)) // clone
+	let result = await validateBlockTxs(
+		block.txs, 
+		block.diff, 
+		prevBlock.height, 
+		block.timestamp, 
+		updatedWallets2, 
+		blockTxPairs 
+	)
+	if( !result ){
+		return {value: false, message: "Received block with invalid txs"}
+	}
 	
 
-	// 9. tx_root: 
-	// ar_block:verify_tx_root(NewB) === false; return false
+	// 9. Tx Toot: recreate the tx_root and compare against given hash
 	if( ! await block_verifyTxRoot(block) ){
-		return {code: 400, message: "Invalid tx_root", height: block.height}
+		return {value: false, message: "Invalid tx_root", height: block.height}
 	}
 
 
-	// 10. weave_size: 
-	// ar_block:verify_weave_size(NewB, OldB, TXs) === false; return false
+	// 10. Weave Size: check the size is updated correctly
 	if( ! block_verifyWeaveSize(block, prevBlock) ){
-		return {code: 400, message: "Invalid weave size", height: block.height}
+		return {value: false, message: "Invalid weave size", height: block.height}
 	}
 
-	// 11. block_index_root:
-	// ar_block:verify_block_hash_list_merkle(NewB, OldB, BI) === false; return false
+	// 11. Block Index Root: recreate the hashes, check against given
 	if( ! await block_verifyBlockHashListMerkle(block, prevBlock, blockIndex) ){
-		return {code: 400, message: "Invalid block index root", height: block.height}
+		return {value: false, message: "Invalid block index root", height: block.height}
 	}
 
-	// 12. pow: (depends on RandomX, so had to move to end of validations)
-	// POW = ar_weave:hash( ar_block:generate_block_data_segment(NewB), Nonce, Height );
-	// if(! ar_block:verify_dep_hash(NewB, POW) ) return false
-	// if(! ar_mine:validate(POW, ar_poa:modify_diff(Diff, POA#poa.option), Height) ) return false
+	// 12. PoW: recreate the hashes, check against given -depends on RandomX, so had to move to end of all validations
 	let pow = await weave_hash((await generateBlockDataSegment(block)), block.nonce, block.height)
 	if( ! verifyBlockDepHash(block, pow) ){
-		return {code: 400, message: "Invalid PoW hash", height: block.height}
+		return {value: false, message: "Invalid PoW hash", height: block.height}
 	}
 	if( ! validateMiningDifficulty(pow, poa_modifyDiff(block.diff, block.poa.option), block.height) ){
-		return {code: 400, message: "Invalid PoW", height: block.height}
+		return {value: false, message: "Invalid PoW", height: block.height}
 	}
 
-	return {code:200, message:"Block slow check OK"}
+	return {value: true, message:"Block slow check OK"}
 }
 

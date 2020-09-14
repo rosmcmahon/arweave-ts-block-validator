@@ -1,5 +1,5 @@
 export interface ReturnCode {
-	code: number
-	height?: number
+	value: boolean
 	message: string
+	height?: number
 }

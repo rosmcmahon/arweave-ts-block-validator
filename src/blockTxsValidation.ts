@@ -1,5 +1,5 @@
 import { Tx } from "./classes/Tx";
-import { BlockTxsPairs, Tag } from "./types";
+import { BlockTxsPairs, ReturnCode, Tag } from "./types";
 import { FORK_HEIGHT_1_8, BLOCK_TX_COUNT_LIMIT, BLOCK_TX_DATA_SIZE_LIMIT, WALLET_GEN_FEE, TX_DATA_SIZE_LIMIT, WALLET_NEVER_SPENT } from "./constants";
 import { wallet_ownerToAddressString } from "./utils/wallet";
 import Arweave from "arweave";
@@ -10,6 +10,8 @@ import { serialize, deserialize } from "v8";
 
 /* This file is loosely based on `tx-replay-pool.erl` unless otherwiese stated */
 
+const RETURNCODE_TRUE: ReturnCode = {value: true, message: "Valid block txs"}
+
 /* based on ar_tx_replay_pool:verify_block_txs */
 export const validateBlockTxs = async (
 	txs: Tx[],
@@ -18,17 +20,16 @@ export const validateBlockTxs = async (
 	timestamp: bigint,
 	prevBlockWallets: WalletsObject,
 	blockTxsPairs: BlockTxsPairs
-) => {
+): Promise<ReturnCode> => {
 
 	if(height<FORK_HEIGHT_1_8) throw new Error("ar_tx_replay_pool__verify_block_txs invalid before FORK_HEIGHT_1_8")
 
 	if(txs === []){ 
-		return true
+		return RETURNCODE_TRUE
 	}
 
 	if(txs.length > BLOCK_TX_COUNT_LIMIT){
-		console.log("BLOCK_TX_COUNT_LIMIT exceeded")
-		return false
+		return {value: false, message: "BLOCK_TX_COUNT_LIMIT exceeded"}
 	}
 
 	let updatedWallets: WalletsObject = deserialize(serialize(prevBlockWallets)) // clone as this function is for validation
@@ -36,105 +37,74 @@ export const validateBlockTxs = async (
 	let size = 0n
 
 	for (let i = 0; i < txs.length; i++) {
-		const tx = txs[i];
+		const tx = txs[i]
 
 		if(tx.format === 1){
 			size += tx.data_size
 		}
 		if(size > BLOCK_TX_DATA_SIZE_LIMIT){
-			console.log("BLOCK_TX_DATA_SIZE_LIMIT exceeded")
-			return false
+			return {value: false, message: "BLOCK_TX_DATA_SIZE_LIMIT exceeded"}
 		}
 
 		// updatedWallets and verifiedTxs get updated directly
-		let verifyTxResult = await validateBlockTx(tx, diff, height, timestamp, updatedWallets, blockTxsPairs, verifiedTxs)
+		let validateTxResult = await validateBlockTx(tx, diff, height, timestamp, updatedWallets, blockTxsPairs, verifiedTxs)
 
 
-		if(verifyTxResult === false){
-			console.debug(`validateTx failed for txs[${i}]: ${tx.idString}`)
-			console.debug('balance:'+updatedWallets[tx.idString].balance)
-			console.debug('last_tx:'+updatedWallets[tx.idString].last_tx)
-			return false
+		if(validateTxResult.value === false){
+			return validateTxResult
 		}
 	}
 
-	return true
+	return RETURNCODE_TRUE
 }
 
 /* based on ar_tx_replay_pool:verify_tx */
-const validateBlockTx = async (tx: Tx, diff: bigint, height: number, timestamp: bigint, wallets: WalletsObject, blockTxsPairs: BlockTxsPairs, verifiedTxs: string[]) => {
-	if(height<FORK_HEIGHT_1_8) throw new Error("tx-replay_verify_txs unsupported before FORK_HEIGHT_1_8")
+const validateBlockTx = async (
+	tx: Tx, diff: bigint, height: number, timestamp: bigint, wallets: WalletsObject, blockTxsPairs: BlockTxsPairs, verifiedTxs: string[]
+	): Promise<ReturnCode> => {
 
-	let lastTxString = Arweave.utils.bufferTob64Url(tx.last_tx)
-	
-	// if( ! ar_tx:verify(TX, Diff, Height, FloatingWallets, Timestamp, VerifySignature) ) 
-	// 	return false
-	if( ! await verifyTx(tx, diff, height, timestamp, wallets) ){
-		return false
+	let lastTxString = Arweave.utils.bufferTob64Url(tx.last_tx)	
+
+	let verifyTxResult = await verifyTx(tx, diff, height, timestamp, wallets)
+	if( verifyTxResult.value === false ){
+		return verifyTxResult
 	}
 	
-	//// last_tx_in_mempool
-	// if( maps:is_key(TX#tx.last_tx, Mempool) )
-	// 	return false
+	// Anchor check. last_tx in verified txs.
 	if( verifiedTxs.includes(lastTxString) ){
-		console.log('tx-replay-pool.verify_tx: '+lastTxString+' already in verifiedTxs')
-		return false
+		return {value: false, message: 'last_tx in verified txs pool'}
 	}
 
-	//// last_tx
-	// if( ar_tx:check_last_tx(FloatingWallets, TX) ){
-	//	NewMempool = maps:put(TX#tx.id, no_tx, Mempool),
-	//	NewFW = ar_node_utils:apply_tx(FloatingWallets, TX, Height),
-	//	{valid, NewFW, NewMempool};
-	// 	return true aka {newFW, newMempool}
-	// }
-	if( await ar_tx__check_last_tx(wallets, tx) ){
-		//put tx in verifiedTxs
+	// Anchor check. last_tx is same as last_tx in wallets
+	if( await verifyLastTxForWallets(wallets, tx) ){
 		verifiedTxs.push(tx.idString)
-		//apply tx to modified wallets
 		await applyTxToWalletsObject(wallets, tx)
-		return true
+		return RETURNCODE_TRUE
 	}
 
-	//// anchor_check
-	// if( ! lists:member(TX#tx.last_tx, WeaveState#state.bhl) ){
-	// 	return false
-	// }
-	if( ! blockTxsPairs[lastTxString]){
-		console.log("last_tx not in blockTxsPairs")
-		return false
+	// Anchor check. last_tx is a blockId or txid in the blockTxsPairs object
+	if( ! blockTxsPairs[lastTxString] ){
+		return {value: false, message: "last_tx anchor not in blockTxsPairs"}
 	}
 	
-	/// weave_check
-	// if( weave_map_contains_tx(TX#tx.id, WeaveState#state.weave_map) ){
-	// 	return false;  tx_already_in_weave
-	// }
-	if( weave_map_contains_tx(tx.idString, blockTxsPairs) ){
-		console.log("tx_already_in_weave")
-		return false
+	/// "weave check". If tx already in last 50 blocks then reject
+	if( blockTxsPairs_containsTx(tx.idString, blockTxsPairs) ){
+		return {value: false, message: "tx already in blockTxsPairs"}
 	}
 
-	//// mempool_check
-	// if( maps:is_key(TX#tx.id, Mempool) ){
-	// 	return false ; tx_already_in_mempool
-	// }
+	// "mempool_check" 
 	if( verifiedTxs.includes(tx.idString)){
-		console.log("tx already in verifiedTxs")
-		return false
+		return {value: false, message: "tx already in verifiedTxs"}
 	}
 
-	//// Survived checks, returns true
-	// NewMempool = maps:put(TX#tx.id, no_tx, Mempool),
-	// NewFW = ar_node_utils:apply_tx(FloatingWallets, TX, Height),
-	// {valid, NewFW, NewMempool}
-	// return true
+	// Survived checks, returns true
 	verifiedTxs.push(tx.idString)
 	await applyTxToWalletsObject(wallets, tx)
 	
-	return true
+	return RETURNCODE_TRUE
 }
 
-const weave_map_contains_tx = (txid: string, blockTxsPairs: BlockTxsPairs) => {
+const blockTxsPairs_containsTx = (txid: string, blockTxsPairs: BlockTxsPairs) => {
 	for (const blockId in blockTxsPairs) {
 		if( blockTxsPairs[blockId].includes(txid) ){
 			return true
@@ -143,7 +113,7 @@ const weave_map_contains_tx = (txid: string, blockTxsPairs: BlockTxsPairs) => {
 	return false
 }
 
-const ar_tx__check_last_tx = async (wallets: WalletsObject, tx: Tx) => {
+const verifyLastTxForWallets = async (wallets: WalletsObject, tx: Tx) => {
 	let address = await wallet_ownerToAddressString(tx.owner)
 	let last_tx = Arweave.utils.bufferTob64Url(tx.last_tx)
 
@@ -155,23 +125,22 @@ const ar_tx__check_last_tx = async (wallets: WalletsObject, tx: Tx) => {
 }
 
 /* based on ar_tx:verify */
-export const verifyTx = async (tx: Tx, diff: bigint, height: number, timestamp: bigint, wallets: WalletsObject) => {
+export const verifyTx = async (tx: Tx, diff: bigint, height: number, timestamp: bigint, wallets: WalletsObject): Promise<ReturnCode> => {
+
 	if(tx.quantity < 0n){
-		console.log("quantity_negative")
-		return false
-	}
-	if(tx.target === await wallet_ownerToAddressString(tx.owner)){
-		console.log("same_owner_as_target")
-		return false 
-	}
-	if( ! await tx.verify() ){
-		console.log("invalid signature or txid. Hash mismatch")
-		return false
+		return {value: false, message: "tx quantity negative"}
 	}
 
-	if(tx.reward < calculate_min_tx_cost(tx.data_size, diff, height+1, wallets, tx.target, timestamp)){
-		console.log("tx_too_cheap")
-		return false 
+	if(tx.target === await wallet_ownerToAddressString(tx.owner)){
+		return {value: false, message: "tx owner same as tx target"} 
+	}
+
+	if( ! await tx.verify() ){
+		return {value: false, message: "invalid signature or txid. Hash mismatch"} 
+	}
+
+	if(tx.reward < calculateMinTxCost(tx.data_size, diff, height+1, wallets, tx.target, timestamp)){
+		return {value: false, message: "tx reward too cheap"}  
 	}
 
 	/**
@@ -179,43 +148,38 @@ export const verifyTx = async (tx: Tx, diff: bigint, height: number, timestamp: 
 	 * They should be done on the incoming DTO / object creation, at source so to speak.
 	 */
 	if( ! tag_field_legal(tx) ){
-		console.log("tag_field_illegally_specified")
-		return false
+		return {value: false, message: "tx tag_field_illegally_specified"} 
 	}
 
+	// validate not overspend
 	let walletsClone = deserialize(serialize(wallets))
 	await applyTxToWalletsObject(walletsClone, tx)
-	if( ! await validate_overspend(tx, walletsClone) ){
-		console.log("overspend in tx", tx.idString)
-		return false
+	if( ! await validateOverspend(tx, walletsClone) ){
+		return {value: false, message: "overspend in tx"} 
 	}
 
 	if(tx.format === 1) {
 		if( !	tx_field_size_limit_v1(tx) ){
-			console.log("tx_fields_too_large")
-			return false
+			return {value: false, message: "tx_fields_too_large"}
 		}
 	} else if(tx.format === 2){
 		if( ! await tx_field_size_limit_v2(tx) ){
-			console.log("tx_fields_too_large")
-			return false
+			return {value: false, message: "tx_fields_too_large"}
 		}
 		if(tx.data_size < 0n){
-			console.log(" tx_data_size_negative")
-			return false
+			return {value: false, message: "tx_data_size_negative"}
 		}
 		if( (tx.data_size === 0n) !== ((await tx.getDataRoot()).length === 0) ){
-			console.log("tx_data_size_data_root_mismatch")
-			return false
+			return {value: false, message: "tx_data_size_data_root_mismatch"}
 		}
 	} else{
 		throw new Error(`tx format = ${tx.format} not supported`)
 	}
 
-	return true
+	return RETURNCODE_TRUE
 }
 
-const calculate_min_tx_cost = (size: bigint, diff: bigint, height: number, wallets: WalletsObject, target: string, timestamp: bigint,) => {
+const calculateMinTxCost = (size: bigint, diff: bigint, height: number, wallets: WalletsObject, target: string, timestamp: bigint,) => {
 	if(height<FORK_HEIGHT_1_8) throw new Error("calculate_min_tx_cost unsupported before FORK_HEIGHT_1_8")
 
 	let fee = 0n
@@ -245,30 +209,7 @@ const tag_field_legal = (tx: Tx) => {
 	return true
 }
 
-const validate_overspend = async (tx: Tx, wallets: WalletsObject) => {
-	// validate_overspend(TX, Wallets) ->
-	// 	From = ar_wallet:to_address(TX#tx.owner),
-	// 	Addresses = case TX#tx.target of
-	// 		<<>> ->
-	// 			[From];
-	// 		To ->
-	// 			[From, To]
-	// 	end,
-	// 	lists:all(
-	// 		fun(Addr) ->
-	// 			case maps:get(Addr, Wallets, not_found) of
-	// 				{0, Last} when byte_size(Last) == 0 ->
-	// 					false;
-	// 				{Quantity, _} when Quantity < 0 ->
-	// 					false;
-	// 				not_found ->
-	// 					false;
-	// 				_ ->
-	// 					true
-	// 			end
-	// 		end,
-	// 		Addresses
-	// 	).
+const validateOverspend = async (tx: Tx, wallets: WalletsObject) => {
 
 	let from = await wallet_ownerToAddressString(tx.owner)
 	

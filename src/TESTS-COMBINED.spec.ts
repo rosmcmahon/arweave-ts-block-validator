@@ -21,6 +21,7 @@ let prevBlock: Block
 let prevPrevBlock: Block
 let blockIndex: BlockIndexTuple[]  //for PoA and full test
 let prevBlockWallets: WalletsObject
+const BLOCKTXPAIRS_NULL = null
 
 beforeAll(async () => {
 	try{
@@ -68,13 +69,13 @@ describe('BlockValidate Quick Tests', () => {
 		let badHeight = deserialize(serialize(block)) 
 		badHeight.height = prevBlock.height + (STORE_BLOCKS_AROUND_CURRENT + 1)
 
-    let ahead = await validateBlock(badHeight, prevBlock, null, null)
-		expect(ahead).toEqual({code: 400, message: "Height is too far ahead"})
+    let ahead = await validateBlock(badHeight, prevBlock, null, null, BLOCKTXPAIRS_NULL)
+		expect(ahead).toEqual({value: false, message: "Height is too far ahead"})
 		
 		badHeight.height = prevBlock.height - (STORE_BLOCKS_AROUND_CURRENT + 1)
 
-    let behind = await validateBlock(badHeight, prevBlock, null, null)
-    expect(behind).toEqual({code: 400, message: "Height is too far behind"})
+    let behind = await validateBlock(badHeight, prevBlock, null, null, BLOCKTXPAIRS_NULL)
+    expect(behind).toEqual({value: false, message: "Height is too far behind"})
 	})
 	
 	it('validateBlockQuick should return false for difficulty too low', async () => {
@@ -83,8 +84,8 @@ describe('BlockValidate Quick Tests', () => {
 		// set bad difficulty integer 1 below min diff
 		test.diff = MIN_DIFF_FORK_1_8 - 1n 
 
-    res = await validateBlock(test, prevBlock, null, null )
-    expect(res).toEqual({code: 400, message: "Difficulty too low"})
+    res = await validateBlock(test, prevBlock, null, null, BLOCKTXPAIRS_NULL)
+    expect(res).toEqual({value: false, message: "Difficulty too low"})
 	})
 
 })
@@ -97,16 +98,16 @@ describe('BlockValidateSlow tests, general validation tests', () => {
 		//create bad height
 		badPrevBlock = Object.assign({}, prevBlock)
 		badPrevBlock.height--
-		let badHeightResult = await validateBlock(block, badPrevBlock, blockIndex, prevBlockWallets)
+		let badHeightResult = await validateBlock(block, badPrevBlock, blockIndex, prevBlockWallets, BLOCKTXPAIRS_NULL)
 
-		expect(badHeightResult).toEqual({code: 400, message: "Invalid previous height"})
+		expect(badHeightResult).toEqual({value: false, message: "Invalid previous height"})
 
 		//create bad hash
 		badPrevBlock = Object.assign({}, prevBlock)
 		badPrevBlock.indep_hash = prevBlock.indep_hash.map(byte => byte ^ 0xff) //flip all the bits (╯°□°）╯︵ ┻━┻
-		let badHashResult = await validateBlock(block, badPrevBlock, blockIndex, prevBlockWallets)
+		let badHashResult = await validateBlock(block, badPrevBlock, blockIndex, prevBlockWallets, BLOCKTXPAIRS_NULL)
 
-		expect(badHashResult).toEqual({code: 400, message: "Invalid previous block hash"})
+		expect(badHashResult).toEqual({value: false, message: "Invalid previous block hash"})
 	})
 })
 
@@ -148,7 +149,7 @@ describe('Block tests, general validation tests', () => {
 
 describe('PoA tests', () => {
 
-	it('Poa.findPoaChallengeBlock returns a valid block depth', async () => {
+	it('findPoaChallengeBlock returns a valid block depth', async () => {
 		expect.assertions(2)
 		let testByte =  10000000n
 	
@@ -158,7 +159,7 @@ describe('PoA tests', () => {
 		expect(testByte).toBeLessThanOrEqual(blockTop) 
 	}, 20000)
 	
-	it('Poa.validatePoa returns true/false for valid/invalid Poa', async () => {
+	it('validatePoa returns true/false for valid/invalid Poa', async () => {
 		expect.assertions(2)
 		let good = await validatePoa(prevBlock.indep_hash, prevBlock.weave_size, blockIndex, block.poa) 
 

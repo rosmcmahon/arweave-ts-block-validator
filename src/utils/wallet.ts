@@ -9,7 +9,7 @@ export const wallet_ownerToAddressString = async (pubkey: Uint8Array) => {
 export const wallet_jwkToAddressString = async (jwk: JWKInterface) => {
 	return Arweave.utils.bufferTob64Url( 
 		await Arweave.crypto.hash( 
-			Arweave.utils.stringToBuffer(jwk.n) 
+			Arweave.utils.b64UrlToBuffer(jwk.n) 
 		) 
 	)
 }

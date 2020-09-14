@@ -133,7 +133,7 @@ export const txPerpetualStorage_calculateTxFee = (size: bigint, diff: bigint, he
 	// 	TXReward = calculate_tx_reward(TXCost),
 	// 	TXCost + TXReward.
 
-	let txCost = calculate_tx_cost(size, diff, height, timestamp)
+	let txCost = calculateTxCost(size, diff, height, timestamp)
 
 	// calculate_tx_reward(TXCost) ->
 	//	erlang:trunc(TXCost * ?MINING_REWARD_MULTIPLIER).
@@ -142,7 +142,7 @@ export const txPerpetualStorage_calculateTxFee = (size: bigint, diff: bigint, he
 	return txCost + txReward
 }
 
-const calculate_tx_cost = (size: bigint, diff: bigint, height: number, timestamp: bigint) => {
+const calculateTxCost = (size: bigint, diff: bigint, height: number, timestamp: bigint) => {
 	if(height < FORK_HEIGHT_1_9) throw new Error("calculate_tx_cost not supported below FORK_HEIGHT_1_9")
 	// %% @doc Perpetual storage cost to the network.
 	// calculate_tx_cost(Bytes, Diff, Height, Timestamp) ->
@@ -157,7 +157,7 @@ const calculate_tx_cost = (size: bigint, diff: bigint, height: number, timestamp
 	let bytes = TX_SIZE_BASE + size //leave that division to the end
 	// let gigaBytes = Number(bytes) / (1024 ** 3) // this will likely be a miniscule fractional number
 	let perGb = txPerpetualStorage_usdToAr(
-		perpetual_cost_at_timestamp(timestamp),
+		perpetualCostAtTimestamp(timestamp),
 		diff,
 		height,
 	)
@@ -165,11 +165,11 @@ const calculate_tx_cost = (size: bigint, diff: bigint, height: number, timestamp
 	return (2n * perGb * bytes) / (1024n ** 3n)
 }
 
-const perpetual_cost_at_timestamp = (timestamp: bigint) => {
+const perpetualCostAtTimestamp = (timestamp: bigint) => {
 	// perpetual_cost_at_timestamp(Timestamp) ->
 	// 	K = get_cost_per_year_at_timestamp(Timestamp),
 	// 	perpetual_cost(K, ?USD_PER_GBY_DECAY_ANNUAL).
-	let k: Decimal = new Decimal( get_cost_per_year_at_timestamp(timestamp) )
+	let k: Decimal = new Decimal( getCostPerYearAtTimestamp(timestamp) )
 
 	// return perpetual_cost(k, USD_PER_GBY_DECAY_ANNUAL)
 	
@@ -182,7 +182,7 @@ const perpetual_cost_at_timestamp = (timestamp: bigint) => {
 	)
 }
 
-const get_cost_per_year_at_timestamp = (ts: bigint) => {
+const getCostPerYearAtTimestamp = (ts: bigint) => {
 	let dateTime = new Date(Number(ts)*1000) 
 	
 	return getCostPerYearAtDatetime(dateTime)
