@@ -74,13 +74,16 @@ export const validateBlock = async (
 
 	// 6. Wallets list: create & update a new wallets object and check the block txs result in valid wallets
 	let updatedWallets1 = deserialize(serialize(prevBlockWallets)) // clone
-	await updateWalletsWithBlockTxs(block, updatedWallets1, prevBlock.reward_pool, prevBlock.height)
+	let { newRewardPool } = await updateWalletsWithBlockTxs(block, updatedWallets1, prevBlock.reward_pool, prevBlock.height)
 	// check the updatedWallets
 	for (let index = 0; index < block.txs.length; index++) {
 		const tx = block.txs[index];
 		if( await nodeUtils_IsWalletInvalid(tx, updatedWallets1) ){
 			return {value: false, message: "Invalid wallet list. txid:"+tx.idString, height: block.height}
 		}
+	}
+	if(newRewardPool !== block.reward_pool){
+		console.log("Reward pool does not match calculated")
 	}
 	
 	// 7. Block Field Sizes: block field size checks -these probably should be done at the http level
