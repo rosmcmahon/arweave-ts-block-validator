@@ -96,14 +96,14 @@ describe('Block tests, with known hash data outputs', () => {
 
 describe('Wallet_List tests', () => {
 
-	it('WalletList. Validates that valid transactions result in valid wallet list', async () => {
-		expect.assertions(2)
+	it('WalletList. Checks that valid transactions result in valid wallet list, and reward matches', async () => {
+		expect.assertions(3)
 
 		expect(Object.keys(prevWallets).length).toBeGreaterThan(19000) // check we have wallets
 
 		let updatedWallets = deserialize(serialize(prevWallets)) // clone
 
-		await updateWalletsWithBlockTxs(blockKnownHash, updatedWallets, prevBlockKnownHash.reward_pool, prevBlockKnownHash.height)
+		let { newRewardPool } = await updateWalletsWithBlockTxs(blockKnownHash, updatedWallets, prevBlockKnownHash.reward_pool, prevBlockKnownHash.height)
 
 		let result = true // result should be true for valid wallet list
 		let txs = blockKnownHash.txs
@@ -116,6 +116,7 @@ describe('Wallet_List tests', () => {
 			}
 		}
 		expect(result).toEqual(true)
+		expect(newRewardPool).toEqual(blockKnownHash.reward_pool)
 
 	}, 20000)
 
