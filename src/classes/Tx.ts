@@ -5,6 +5,7 @@ import { HOST_SERVER, DATA_CHUNK_SIZE } from "../constants"
 import { MerkleElement, computeRootHash } from "../utils/merkle"
 import deepHash from "../utils/deepHash"
 import { arrayCompare } from "../utils/buffer-utilities"
+import { JWKInterface } from "arweave/node/lib/wallet"
 
 interface Tag {
 	name: string //these are left as base64url
@@ -110,7 +111,7 @@ export class Tx {
 	} 
 	
 	async verify(): Promise<boolean> {
-		/* This function verifies the signature and txid */
+		/* This function verifies the signature and txid using the public key */
     const sigHash = await Arweave.crypto.hash(this.signature)
 
     if( !arrayCompare(this.id, sigHash) ) {
@@ -125,6 +126,14 @@ export class Tx {
       signaturePayload,
       this.signature
     );
+	}
+
+	/* A validator does not need this. This is just for use in testing */
+	async sign(jwk: JWKInterface) {
+		this.owner = Arweave.utils.b64UrlToBuffer(jwk.n)
+		this.signature = await Arweave.crypto.sign(jwk, await this.getSignatureData())
+		this.id = await Arweave.crypto.hash(this.signature)
+		this.idString = Arweave.utils.bufferTob64Url(this.id)
 	}
 
 }
