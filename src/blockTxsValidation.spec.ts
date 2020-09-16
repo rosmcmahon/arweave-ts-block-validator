@@ -4,10 +4,9 @@ import { Block } from "./classes/Block"
 import { Tx } from "./classes/Tx"
 import { createWalletsFromDTO, WalletsObject } from "./classes/WalletsObject"
 import { BLOCK_TX_COUNT_LIMIT, BLOCK_TX_DATA_SIZE_LIMIT, HOST_SERVER, WALLET_NEVER_SPENT } from "./constants"
-import { BlockDTO, BlockTxsPairs, ReturnCode, TxDTO } from "./types"
+import { BlockDTO, BlockTxsPairs, ReturnCode } from "./types"
 import Arweave from 'arweave'
 import { deserialize, serialize } from "v8"
-import Transaction from "arweave/node/lib/transaction"
 import { JWKInterface } from "arweave/node/lib/wallet"
 import { wallet_jwkToAddressString } from "./utils/wallet"
 
@@ -39,6 +38,7 @@ let jwkAddress: string
 // picking this block to work on as it has a selection of v1 & v2 txs (some blocks have zero txs)
 let height = 520919 // 89 txs including large v1 data tx: eIcAGwqFCHek3EvpiRXdsESZAPKLXJMzco-7lWm4yO4
 const V1DATA_IDSTRING = 'eIcAGwqFCHek3EvpiRXdsESZAPKLXJMzco-7lWm4yO4'
+const AR_TRANSFER_IDSTRING = 'UmE3zdrZIykfY_iY-fUU90Hcrf8XaKy3mtnk6mCLsH4'
 const OUTOFSCOPE_BLOCKID_510000 = "RqCpcr175Xa3glLP7p-NOOw3h8_NZNaJbgqi29myyotpwuT_q83uBdbI9QutIk_i" //out of scope blockid, height 510000
 const OUTOFSCOPE_TXID_510000 = "gbU39n24hIxv05sBvVyGtEWflSiooqK_VnjB9HSWATo" //out of scope txid[0] from height 510000
 
@@ -199,16 +199,17 @@ describe('Block Txs Validation tests', () => {
 	it('Returns false for bad anchor not in blockTxPairs', async ()=> {
 		expect.assertions(1)
 
-		// create a tx with a bad anchor 
-		let badAnchorTransaction = await arweave.createTransaction({
-			data:'0',
-			last_tx: OUTOFSCOPE_BLOCKID_510000 // this could be any blockid/txid not in blockTxPairs
-		}, jwk)
-		await arweave.transactions.sign(badAnchorTransaction, jwk)
-		
-		// push bad anchor tx it onto txs
+		// pick a tx and give it a bad anchor 
 		let blockTxsClone: Tx[] = Object.assign([], block.txs)
-		blockTxsClone.push( copyTranstactionToTx(badAnchorTransaction) )
+		let badTx = await Tx.getByIdString(blockTxsClone[0].idString) // re-download is a better clone
+
+		badTx.last_tx = Arweave.utils.b64UrlToBuffer(OUTOFSCOPE_BLOCKID_510000) // this could be any blockid/txid not in blockTxPairs
+
+		// let repackage that
+		await badTx.sign(jwk)
+
+		// put bad anchor tx back into txs
+		blockTxsClone[0] = badTx
 
 		let bad = await validateBlockTxs(
 			blockTxsClone, //oops!
@@ -231,12 +232,9 @@ describe('Verify Tx tests', () => {
 		expect.assertions(1)
 
 		// create a bad Tx with negative amount
-		let badTransaction = await arweave.createTransaction({
-			quantity: "-1", // the negative quantity
-			target: 'YbCkgLfef-xTdgSE7EmUjVdeLTsTybrTx9r-xS7c1OQ', //random address 
-		}, jwk)
-		await arweave.transactions.sign(badTransaction, jwk)
-		let badTx: Tx = copyTranstactionToTx(badTransaction)
+		let badTx = await Tx.getByIdString(block.txs[0].idString)
+		badTx.quantity = -1n
+		await badTx.sign(jwk)
 		
 		let bad = await verifyTx(
 			badTx,
@@ -253,12 +251,11 @@ describe('Verify Tx tests', () => {
 		expect.assertions(1)
 
 		// create a bad Tx 
-		let badTransaction = await arweave.createTransaction({
-			quantity: "1", 
-			target: jwkAddress, // same address 
-		}, jwk)
-		await arweave.transactions.sign(badTransaction, jwk)
-		let badTx: Tx = copyTranstactionToTx(badTransaction)
+		let badTx = await Tx.getByIdString(AR_TRANSFER_IDSTRING) //value transfer tx
+
+		badTx.target = jwkAddress // put to same address as signing wallet
+
+		await badTx.sign(jwk)
 		
 		let bad = await verifyTx(
 			badTx,
@@ -275,12 +272,9 @@ describe('Verify Tx tests', () => {
 		expect.assertions(1)
 
 		// create a bad Tx 
-		let badTransaction = await arweave.createTransaction({
-			data:'0',
-		}, jwk)
-		await arweave.transactions.sign(badTransaction, jwk)
-		let badTx: Tx = copyTranstactionToTx(badTransaction)
-		badTx.signature[0] ^= 0xff //mess up the sig
+		let badTx = await Tx.getByIdString(block.txs[0].idString)
+
+		badTx.signature[0] ^= 0xff //mess up the signature		
 		
 		let bad = await verifyTx(
 			badTx,
@@ -295,14 +289,13 @@ describe('Verify Tx tests', () => {
 
 	it('Returns false for a tx when wallet does not have enough funds', async () => {
 		expect.assertions(1)
-debugger;
+
 		// create a bad Tx 
-		let badTransaction = await arweave.createTransaction({
-			quantity: "1000000000000000000", // 
-			target: 'YbCkgLfef-xTdgSE7EmUjVdeLTsTybrTx9r-xS7c1OQ', //random address 
-		}, jwk)
-		await arweave.transactions.sign(badTransaction, jwk)
-		let badTx: Tx = copyTranstactionToTx(badTransaction)
+		let badTx = await Tx.getByIdString(AR_TRANSFER_IDSTRING) //value transfer tx
+
+		badTx.quantity = prevBlockWallets[jwkAddress].balance + 1n  // + reward means not enoughb in jwk wallet
+
+		await badTx.sign(jwk)
 		
 		let bad = await verifyTx(
 			badTx,
@@ -317,16 +310,17 @@ debugger;
 
 	it('Returns false if tx reward too cheap', async () => {
 		expect.assertions(1)
-debugger;
-		// create a bad Tx 
-		let badTransaction = await arweave.createTransaction({
-			data: '777',
-			reward: '1',
-		}, jwk)
-		await arweave.transactions.sign(badTransaction, jwk)
-		let badTx: Tx = copyTranstactionToTx(badTransaction)
 
-		// badTx.reward = 0n //too low
+debugger;
+
+		// create a bad Tx 
+		let badTx = await Tx.getByIdString(block.txs[0].idString)
+
+		console.log('badTx.reward',badTx.reward)
+
+		badTx.reward = 0n //too low
+
+		await badTx.sign(jwk)
 		
 		let bad = await verifyTx(
 			badTx,
@@ -342,23 +336,3 @@ debugger;
 })
 
 
-
-/* Testing utility */
-const copyTranstactionToTx = (t: Transaction) => {
-	let dto: TxDTO = {
-		format: t.format,
-		id: t.id,
-		last_tx: t.last_tx,
-		owner: t.owner,
-		tags: t.tags, // might be issue here
-		target: t.target,
-		quantity: Number(t.quantity),
-		data: Arweave.utils.bufferTob64Url(t.data),
-		data_size: t.data_size,
-		data_root: t.data_root,
-		signature: t.signature,
-		reward: t.reward,
-		data_tree: [] // hmm
-	}
-	return new Tx(dto)
-}
