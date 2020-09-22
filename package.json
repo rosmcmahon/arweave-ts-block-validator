@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "an arweave block validator, nothing more",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "test": "jest --runInBand --no-cache --logHeapUsage --verbose",
     "test:txs": "jest blockTxsValidation --runInBand --no-cache --logHeapUsage --verbose",
@@ -12,7 +13,8 @@
     "test:watch": "jest --watch --logHeapUsage --verbose --runInBand --detectOpenHandles",
     "test:clear": "jest --clearCache --verbose",
     "start:scratch": "node --max-old-space-size=1024 -r ts-node/register ./test/scratchpad-tests.ts",
-    "start:pow": "node --max-old-space-size=1024 -r ts-node/register ./test/pow-tests.ts"
+    "start:pow": "node --max-old-space-size=1024 -r ts-node/register ./test/pow-tests.ts",
+    "build": "tsc -p tsconfig.build.json"
   },
   "author": "Ros McMahon <rosmcmahon@gmail.com>",
   "license": "GPL-3.0",

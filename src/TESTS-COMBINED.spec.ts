@@ -19,9 +19,12 @@ let blockJson: BlockDTO
 let block: Block
 let prevBlock: Block
 let prevPrevBlock: Block
-let blockIndex: BlockIndexTuple[]  //for PoA and full test
+let blockIndex: BlockIndexTuple[] 
 let prevBlockWallets: WalletsObject
-const BLOCKTXPAIRS_NULL = null
+// nulls
+const BLOCKINDEX_NULL: BlockIndexTuple[] = []
+const WALLET_NULL = {}
+const BLOCKTXPAIRS_NULL = {}
 
 beforeAll(async () => {
 	try{
@@ -69,12 +72,12 @@ describe('BlockValidate Quick Tests', () => {
 		let badHeight = deserialize(serialize(block)) 
 		badHeight.height = prevBlock.height + (STORE_BLOCKS_AROUND_CURRENT + 1)
 
-    let ahead = await validateBlock(badHeight, prevBlock, null, null, BLOCKTXPAIRS_NULL)
+    let ahead = await validateBlock(badHeight, prevBlock, BLOCKINDEX_NULL, WALLET_NULL , BLOCKTXPAIRS_NULL)
 		expect(ahead).toEqual({value: false, message: "Height is too far ahead"})
 		
 		badHeight.height = prevBlock.height - (STORE_BLOCKS_AROUND_CURRENT + 1)
 
-    let behind = await validateBlock(badHeight, prevBlock, null, null, BLOCKTXPAIRS_NULL)
+    let behind = await validateBlock(badHeight, prevBlock, BLOCKINDEX_NULL, WALLET_NULL , BLOCKTXPAIRS_NULL)
     expect(behind).toEqual({value: false, message: "Height is too far behind"})
 	})
 	
@@ -84,7 +87,7 @@ describe('BlockValidate Quick Tests', () => {
 		// set bad difficulty integer 1 below min diff
 		test.diff = MIN_DIFF_FORK_1_8 - 1n 
 
-    res = await validateBlock(test, prevBlock, null, null, BLOCKTXPAIRS_NULL)
+    res = await validateBlock(test, prevBlock, BLOCKINDEX_NULL, WALLET_NULL , BLOCKTXPAIRS_NULL)
     expect(res).toEqual({value: false, message: "Difficulty too low"})
 	})
 
@@ -152,8 +155,8 @@ describe('PoA tests', () => {
 	it('findPoaChallengeBlock returns a valid block depth', async () => {
 		expect.assertions(2)
 		let testByte =  10000000n
-	
-		const {txRoot, blockBase, blockTop, bh} = findPoaChallengeBlock(testByte, blockIndex)
+		
+		const {blockBase, blockTop} = findPoaChallengeBlock(testByte, blockIndex)
 	
 		expect(testByte).toBeGreaterThan(blockBase) 
 		expect(testByte).toBeLessThanOrEqual(blockTop) 

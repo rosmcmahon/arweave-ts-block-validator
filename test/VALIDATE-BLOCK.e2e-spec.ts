@@ -42,6 +42,12 @@ beforeAll(async () => {
 		/* Process fetched data */
 
 		blockIndex = bIndex.data
+
+		if(!blockIndex[0].hash){
+			throw new Error('Error! Incorrect BlockIndex format, blockIndex[0] = ' + JSON.stringify(blockIndex[0]) )
+		} 
+
+
 		prevBlockWallets = createWalletsFromDTO(walletList.data)
 		
 		let blockDtos: BlockDTO[] = responses.map(res=>res.data)

@@ -1,5 +1,7 @@
-# arweave-ts-block-validator
+# Arweave Typescript Block Validator
 an arweave block validator, nothing more
+
+** (Under development, not for production) **
 
 ## Installation
 

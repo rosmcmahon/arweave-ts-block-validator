@@ -97,7 +97,8 @@ export const findPoaChallengeBlock = (byte: bigint, blockIndex: BlockIndexTuple[
 		}
 		++index0; ++index1
 	}
-	console.debug('recallByte out of bounds of weave') //we can never get here from given inputs
+	//we can never get here from given program inputs.
+	console.debug('recallByte out of bounds of weave') 
 }
 
 export const poa_modifyDiff = (diff: bigint, option: number): bigint => {
