@@ -30,6 +30,7 @@
     "typescript": "^3.9.7"
   },
   "dependencies": {
+    "ar-node-randomx": "github:mcmonkeys1/node-randomx",
     "arweave": "^1.9.1",
     "decimal.js": "^10.2.0"
   }

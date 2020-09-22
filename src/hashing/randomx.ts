@@ -1,14 +1,14 @@
 import { RANDOMX_KEY_SWAP_FREQ } from "../constants"
 import { Block } from "../classes/Block"
 import Arweave from "arweave"
-let Randomx = require('../../node-randomx/build/Release/addon')
+import { RandomxCreateVM, RandomxHash, RandomxVMReference } from 'ar-node-randomx'
 
 /* Use the RandomX node-addon to set up a "VM" and do the hashing */
 
 const initLightRandomx = async (key: Uint8Array) => {
-	let vm: Object
+	let vm: RandomxVMReference
 	try{
-		vm = await Randomx.RandomxVM(key.buffer, ["jit"])
+		vm = RandomxCreateVM(key, ["jit"])
 	}
 	catch(e){
 		console.log(e)
@@ -17,10 +17,10 @@ const initLightRandomx = async (key: Uint8Array) => {
 	return vm
 }
 
-const hashLightRandomx = async (vm: Object, data: Uint8Array) => {
+const hashLightRandomx = async (vm: RandomxVMReference, data: Uint8Array) => {
 	let hash: ArrayBuffer
 	try {
-		hash = await Randomx.hash(vm, data.buffer)
+		hash = RandomxHash(vm, data)
 	} catch (e) {
 		console.log(e)
 		throw new Error("Error when RandomX hashing.")

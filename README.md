@@ -5,38 +5,19 @@ an arweave block validator, nothing more
 
 ## Installation
 
-First clone the repo & enter the root folder
+~~First clone the repo & enter the root folder~~
 
-To build on Windows you will need the infamously tricky to install node-gyp toolchain, although it has greatly improved lately, try this:
+~~## Build node-randomx addon~~
 
-```
-npm install --global --production windows-build-tools
-```
+~~*this is a bit hacky, but please follow along~~
 
-Maybe you'll get lucky ;-)
-
-
-## Build node-randomx addon
-
-*this is a bit hacky, but please follow along
+## Clone the repo & build the block validator
 
 ```
-rmdir node-randomx
-git clone -b binaries https://github.com/mcmonkeys1/node-randomx.git
-cd node-randomx
-node-gyp clean
-node-gyp configure
-node-gyp build
-```
-
-## Build the block validator
-
-```
-cd ..
 npm install
 ```
 
-## Now run the tests 
+## Now you can run the tests 
 
 `npm run test` - to run most unit tests
 
@@ -44,3 +25,11 @@ npm install
 
 `npm run test:e2e` - for complete end to end testing
 
+
+## Troubleshooting
+
+If you are having trouble installing on any version of Windows apart from Windows 10 x64, you may need to install node-gyp for compiling the node-randomx library first:
+
+```
+npm install --global --production windows-build-tools
+```
