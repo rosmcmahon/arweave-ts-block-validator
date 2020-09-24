@@ -2,10 +2,11 @@ import axios from 'axios'
 import Arweave from 'arweave'
 import { HOST_SERVER, BLOCK_TX_COUNT_LIMIT, BLOCK_TX_DATA_SIZE_LIMIT } from '../src/constants';
 import { Block } from '../src/classes/Block';
-import { BlockDTO, BlockIndexTuple, BlockTxsPairs } from '../src/types';
+import { BlockDTO, BlockIndexDTO, BlockTxsPairs } from '../src/types';
 import { validateBlockTxs } from '../src/blockTxsValidation';
 import { Tx } from '../src/classes/Tx';
 import { WalletsObject, createWalletsFromDTO } from '../src/classes/WalletsObject';
+import ArCache from 'arweave-cacher';
 
 const arweave = Arweave.init({})
 
@@ -27,7 +28,7 @@ const main = async () => {
 	let blockDtos: BlockDTO[]
 	let block: Block
 	let prevBlock: Block
-	let blockIndex: BlockIndexTuple[]  //for PoA and full test
+	let blockIndex: BlockIndexDTO  //for PoA and full test
 	let prevBlockWallets: WalletsObject
 	let blockTxsPairs: BlockTxsPairs
 
@@ -50,25 +51,25 @@ const main = async () => {
 		// 	{ headers: { "X-Block-Format": "3" } }) //unavailable on arweave.net
 		// )
 
-		// wallet List
-		promises.push( axios.get(HOST_SERVER+'/block/height/'+(height-1).toString()+'/wallet_list') ) 
+		// // wallet List
+		promises.push( ArCache.getWalletList(height - 1) ) 
 
 		// block DTOs for test block, plus previous 50 blocks
 		for (let i = 0; i < 51; i++) { //plus the one we are working on
-			promises.push( axios.get(HOST_SERVER+'/block/height/'+height.toString()) )
+			promises.push( ArCache.getBlockDtoByHeight(height) )
 			height--
 		}
 
-		/* Retrieve the data */
+		// /* Retrieve the data */
 
-		const [/*bIndex,*/ walletList , ...responses] = await Promise.all( promises )  // *** this an expensive line!!! ***
+		const [/*bIndex,*/ walletList , ...responses] = await Promise.all( promises )  
 
 		/* Process fetched data */
 
 		// blockIndex = bIndex.data // *********** NOT FOR HERE!! ********************
-		prevBlockWallets = createWalletsFromDTO(walletList.data)
+		prevBlockWallets = createWalletsFromDTO(walletList)
 		Object.freeze(prevBlockWallets) 
-		blockDtos = responses.map(res=>res.data)
+		blockDtos = responses
 		block = await Block.createFromDTO(blockDtos[0]) // This fetches txs also
 		prevBlock = await Block.createFromDTO(blockDtos[1])
 
@@ -80,7 +81,8 @@ const main = async () => {
 		}
 	
 	}catch(e){
-		console.log(FAIL, 'Error! Could not retrieve test data!', e.code)
+		console.log(FAIL, 'Error! Could not retrieve test data!', e.toString())
+		process.exit(1)
 	}
 
 	console.log("Test data ready!")
@@ -101,7 +103,7 @@ const main = async () => {
 		prevBlockWallets, 
 		blockTxsPairs // this does not get height checked. assumed to be correct 50 blocks input data
 	)
-	if(result === true){
+	if(result.value === true){
 		console.log(PASS, "ar_tx_replay_pool__verify_block_txs returned true")
 	}else{
 		console.log(FAIL, "Received block with invalid txs")
@@ -121,7 +123,7 @@ const main = async () => {
 		prevBlockWallets, 
 		blockTxsPairs 
 	)
-	printTest(badTxsCount === false)
+	printTest(badTxsCount.value === false)
 
 
 	console.log()
@@ -149,7 +151,7 @@ const main = async () => {
 		prevBlockWallets, 
 		blockTxsPairs 
 	)
-	printTest(badTxSizeReturn === false)
+	printTest(badTxSizeReturn.value === false)
 
 	//////////////////////////////////////////////////////////////////////////////////////
 

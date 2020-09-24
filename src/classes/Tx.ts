@@ -1,11 +1,11 @@
 import { TxDTO } from "../types"
 import Arweave from "arweave"
-import Axios from "axios"
 import { HOST_SERVER, DATA_CHUNK_SIZE } from "../constants"
 import { MerkleElement, computeRootHash } from "../utils/merkle"
 import deepHash from "../utils/deepHash"
 import { arrayCompare } from "../utils/buffer-utilities"
 import { JWKInterface } from "arweave/node/lib/wallet"
+import ArCache from "arweave-cacher"
 
 interface Tag {
 	name: string //these are left as base64url
@@ -49,12 +49,14 @@ export class Tx {
 	}
 
 	static async getByIdString(txid: string): Promise<Tx> {
-		let txDto = (await Axios.get(HOST_SERVER+'/tx/'+txid)).data
+		ArCache.setHostServer(HOST_SERVER)
+		let txDto = (await ArCache.getTxDto(txid))
 		return new Tx(txDto)
 	}
 	static async getById(txid: Uint8Array): Promise<Tx> {
+		ArCache.setHostServer(HOST_SERVER)
 		let txString = Arweave.utils.bufferTob64Url(txid)
-		let txDto = (await Axios.get(HOST_SERVER+'/tx/'+txString)).data
+		let txDto = (await ArCache.getTxDto(txString))
 		return new Tx(txDto)
 	}
 

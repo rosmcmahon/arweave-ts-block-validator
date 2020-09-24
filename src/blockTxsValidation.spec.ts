@@ -1,4 +1,5 @@
 import axios from "axios"
+import ArCache from 'arweave-cacher'
 import { validateBlockTxs, verifyTx } from "./blockTxsValidation"
 import { Block } from "./classes/Block"
 import { Tx } from "./classes/Tx"
@@ -49,25 +50,29 @@ beforeAll(async () => {
 		/* Prepare data requests */
 
 		let promises = []
+		ArCache.setHostServer(HOST_SERVER)
+		ArCache.setDebugMessagesOn(false)
 
 		// wallet List
-		promises.push( axios.get(HOST_SERVER + '/block/height/' + (height-1).toString() + '/wallet_list') ) 
+		// promises.push( axios.get(HOST_SERVER + '/block/height/' + (height-1).toString() + '/wallet_list') ) 
+		promises.push( ArCache.getWalletList(height - 1))
 
 		// block DTOs for test block + previous 50 blocks
 		for (let i = 0; i < 51; i++) { 
-			promises.push(axios.get( HOST_SERVER + '/block/height/' + height.toString() ))
+			// promises.push(axios.get( HOST_SERVER + '/block/height/' + height.toString() ))
+			promises.push( ArCache.getBlockDtoByHeight(height) )
 			height--
 		}
 
 		/* Retrieve the data */
-
-		const [walletList , ...responses] = await Promise.all( promises )  //this an expensive line
-
-		/* Process fetched data */
-
-		prevBlockWallets = createWalletsFromDTO(walletList.data)
 		
-		blockDtos = responses.map(res=>res.data)
+		const [walletList , ...responses] = await Promise.all( promises ) 
+		
+		/* Process fetched data */
+		
+		prevBlockWallets = createWalletsFromDTO(walletList)
+		
+		blockDtos = responses
 		block = await Block.createFromDTO(blockDtos[0]) // This fetches txs also
 		prevBlock = await Block.createFromDTO(blockDtos[1])
 
@@ -78,6 +83,7 @@ beforeAll(async () => {
 			blockTxsPairs[dto.indep_hash] = dto.txs
 		}
 
+
 		// create a fake testing wallet, with an entry in the WalletsObject, and give it some balance
 		jwk = await arweave.wallets.generate()
 		jwkAddress = await wallet_jwkToAddressString(jwk)
@@ -87,6 +93,7 @@ beforeAll(async () => {
 	
 	}catch(e){
 		console.log('\x1b[31mERROR!\x1b[0m', 'Could not retrieve test data!', e.code)
+		process.exit(1)
 	}
 
 }, 60000)

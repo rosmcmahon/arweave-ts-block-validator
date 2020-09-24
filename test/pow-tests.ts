@@ -1,11 +1,10 @@
-import axios from "axios"
+import ArCache from "arweave-cacher"
 import { Block, generateBlockDataSegment } from "../src/classes/Block"
 import { HOST_SERVER, MAX_DIFF } from "../src/constants"
 import { weave_hash } from "../src/hashing/weave-hash"
 import { validateMiningDifficulty } from "../src/hashing/mine"
 import { poa_modifyDiff } from "../src/classes/Poa"
 import { arrayCompare } from "../src/utils/buffer-utilities"
-import { WalletsObject, createWalletsFromDTO } from "src/classes/WalletsObject"
 
 
 const main = async () => {
@@ -20,16 +19,19 @@ const main = async () => {
 
 	try{
 
+		ArCache.setHostServer(HOST_SERVER)
+		ArCache.setDebugMessagesOn(false)
+
 		const [
 			bjKnownHash, 
 			bjPrevKnownHash, 
 		] = await Promise.all([
-			axios.get(HOST_SERVER+'/block/height/509850'), //known, poa option 1, 
-			axios.get(HOST_SERVER+'/block/height/509849'), //known, poa option 2
+			ArCache.getBlockDtoByHeight(509850), //known, poa option 1, 
+			ArCache.getBlockDtoByHeight(509849), //known, poa option 2
 		])
 
-		block1 = await Block.createFromDTO(bjKnownHash.data)
-		block2 = await Block.createFromDTO(bjPrevKnownHash.data)
+		block1 = await Block.createFromDTO(bjKnownHash)
+		block2 = await Block.createFromDTO(bjPrevKnownHash)
 		
 	}catch(e){
 		console.debug('Network error! Could not retrieve tests data!', e.code)

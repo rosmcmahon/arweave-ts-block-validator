@@ -6,12 +6,13 @@ import { updateWalletsWithBlockTxs, nodeUtils_IsWalletInvalid } from './wallets-
 import { wallet_ownerToAddressString } from './utils/wallet'
 import { WalletsObject, createWalletsFromDTO } from './classes/WalletsObject'
 import { serialize, deserialize } from 'v8'
+import ArCache from 'arweave-cacher'
 
 
 //BDSBase & BDS for /height/509850 hash/si5OoWK-OcYt3LOEDCP2V4SWuj5X5n1LdoTh09-DtOppz_VkE72Cb0DCvygYMbW5
 const BDS_BASE_KNOWN_HASH = "dOljnXSULT9pTX4wiagcUOqrZZjBWLwKBR3Aoe3-HhNAW_CiKHNsrvqwL14x6BMm"
 const BDS_KNOWN_HASH = "uLdZH6FVM-TI_KiA8oZCGbqXwknwyg69ur7KPrSMVPcBljPnIzeOhnPRPyOoifWV"
-const HEIGHT_V1_TX = "520919" //contains eIcAGwqFCHek3EvpiRXdsESZAPKLXJMzco-7lWm4yO4 v1 data tx (6MB+, needs chunking) + random v2 txs
+const HEIGHT_V1_TX = 520919 //contains eIcAGwqFCHek3EvpiRXdsESZAPKLXJMzco-7lWm4yO4 v1 data tx (6MB+, needs chunking) + random v2 txs
 
 let blockKnownHash: Block
 let prevBlockKnownHash: Block
@@ -21,6 +22,8 @@ let v1BigV2Block: Block
 
 beforeAll(async () => {
 	try{
+		ArCache.setHostServer(HOST_SERVER)
+		ArCache.setDebugMessagesOn(false)
 
 		const [
 			bjKnownHash, 
@@ -28,19 +31,19 @@ beforeAll(async () => {
 			bjPrevWalletList, 
 			bjV1BigV2,
 		] = await Promise.all([
-			axios.get(HOST_SERVER+'/block/height/509850'), //known hash, poa option 1, has 4 txs
-			axios.get(HOST_SERVER+'/block/height/509849'), //known hash, poa option 2
-			axios.get('https://arweave.net/block/height/509849/wallet_list'), //arweave.net keeps old wallet_list
-			axios.get(HOST_SERVER+'/block/height/'+HEIGHT_V1_TX), //contains BIG v1 data tx (needs chunking) + v2 txs
+			ArCache.getBlockDtoByHeight(509850), //known hash, poa option 1, has 4 txs
+			ArCache.getBlockDtoByHeight(509849), //known hash, poa option 2
+			ArCache.getWalletList(509849), //old wallet_list! keep cache
+			ArCache.getBlockDtoByHeight(HEIGHT_V1_TX)
 		])
 
-		blockKnownHash = await Block.createFromDTO(bjKnownHash.data)
-		prevBlockKnownHash = await Block.createFromDTO(bjPrevKnownHash.data)
-		prevWallets = createWalletsFromDTO(bjPrevWalletList.data)
-		v1BigV2Block = await Block.createFromDTO(bjV1BigV2.data)
+		blockKnownHash = await Block.createFromDTO(bjKnownHash)
+		prevBlockKnownHash = await Block.createFromDTO(bjPrevKnownHash)
+		prevWallets = createWalletsFromDTO(bjPrevWalletList)
+		v1BigV2Block = await Block.createFromDTO(bjV1BigV2)
 
 	}catch(e){
-		console.debug('Network error! Could not retrieve tests data!', e.code)
+		console.log('Network error! Could not retrieve tests data!', e.code)
 		process.exit(1)
 	}
 }, 60000)

@@ -1,4 +1,4 @@
-import axios from 'axios'
+import ArCache from 'arweave-cacher'
 import { BlockDTO, ReturnCode, BlockIndexDTO } from './types'
 import { STORE_BLOCKS_AROUND_CURRENT, HOST_SERVER, RETARGET_BLOCKS, MIN_DIFF_FORK_1_8 } from './constants'
 import { Block, blockFieldSizeLimit, block_verifyWeaveSize, block_verifyBlockHashListMerkle } from './classes/Block'
@@ -28,7 +28,10 @@ const BLOCKTXPAIRS_NULL = {}
 
 beforeAll(async () => {
 	try{
-		const currentHeight = Number((await axios.get(HOST_SERVER+'/info')).data.height)
+		ArCache.setHostServer(HOST_SERVER)
+		ArCache.setDebugMessagesOn(false)
+
+		const currentHeight = await ArCache.getCurrentHeight()
 		//we want height % 10 so we get a difficulty retarget block
 		let workingHeight = currentHeight - (currentHeight % RETARGET_BLOCKS)
 
@@ -40,20 +43,20 @@ beforeAll(async () => {
 			bj2WalletList, 
 			bj3
 		] = await Promise.all([
-			axios.get(HOST_SERVER+'/hash_list', { headers: { "X-Block-Format": "3" } }), // tuples header unavailable on arweave.net
+			ArCache.getBlockIndex(workingHeight-1),
 
-			axios.get(HOST_SERVER+'/block/height/'+(workingHeight).toString()), 
-			axios.get(HOST_SERVER+'/block/height/'+(workingHeight-1).toString()), 
-			axios.get('https://arweave.net/block/height/'+(workingHeight-1).toString()+'/wallet_list'), //arweave.net keeps old
-			axios.get(HOST_SERVER+'/block/height/'+(workingHeight-2).toString()), 
+			ArCache.getBlockDtoByHeight(workingHeight),
+			ArCache.getBlockDtoByHeight(workingHeight - 1),
+			ArCache.getWalletList(workingHeight - 1),
+			ArCache.getBlockDtoByHeight(workingHeight - 2),
 		])
-		blockIndex = bIndex.data
+		blockIndex = bIndex
 
-		blockJson = bj1.data
+		blockJson = bj1
 		block = await Block.createFromDTO(blockJson)
-		prevBlock = await Block.createFromDTO(bj2.data)
-		prevBlockWallets = createWalletsFromDTO(bj2WalletList.data)
-		prevPrevBlock = await Block.createFromDTO(bj3.data)
+		prevBlock = await Block.createFromDTO(bj2)
+		prevBlockWallets = createWalletsFromDTO(bj2WalletList)
+		prevPrevBlock = await Block.createFromDTO(bj3)
 
 	}catch(e){
 		console.debug('Network error! Could not retrieve tests data!', e.code)

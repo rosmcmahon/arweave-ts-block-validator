@@ -1,3 +1,13 @@
+# Ignore replaceable test data
+/arweave-cache/blocks
+/arweave-cache/txs
+/arweave-cache/block-index.json
+/arweave-cache/wallet-lists/*
+# Keep these wallet lists!
+!/arweave-cache/wallet-lists/509849.wallets.json
+!/arweave-cache/wallet-lists/520918.wallets.json
+
+
 # compiled output
 /dist
 /node_modules
@@ -34,5 +44,4 @@ lerna-debug.log*
 !.vscode/extensions.json
 
 # Other
-
 # /test/scratchpad-tests.ts
