@@ -1,5 +1,5 @@
 import axios from "axios"
-import { ReturnCode, BlockIndexTuple, BlockTxsPairs, BlockDTO } from "../src/types"
+import { ReturnCode, BlockIndexDTO, BlockTxsPairs, BlockDTO } from "../src/types"
 import { Block } from "../src/classes/Block"
 import { HOST_SERVER, RETARGET_BLOCKS } from "../src/constants"
 import { validateBlock } from "../src/blockValidation"
@@ -9,7 +9,7 @@ import { WalletsObject, createWalletsFromDTO } from "../src/classes/WalletsObjec
 let res: ReturnCode
 let block: Block
 let prevBlock: Block
-let blockIndex: BlockIndexTuple[]  //for PoA and full test
+let blockIndex: BlockIndexDTO  //for PoA and full test
 let prevBlockWallets: WalletsObject
 let blockTxsPairs: BlockTxsPairs
 

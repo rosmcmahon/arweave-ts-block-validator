@@ -1,5 +1,5 @@
 import Arweave from "arweave"
-import { BlockIndexTuple } from "../types"
+import { BlockIndexDTO } from "../types"
 import * as Merkle from '../utils/merkle'
 import { bufferToBigInt } from '../utils/buffer-utilities'
 import { POA_MIN_MAX_OPTION_DEPTH, ALTERNATIVE_POA_DIFF_MULTIPLIER } from '../constants'
@@ -14,7 +14,7 @@ export interface Poa {
 }
 
 /* Validate a complete proof of access object */
-export const validatePoa = async (prevIndepHash: Uint8Array, prevWeaveSize: bigint, blockIndex: BlockIndexTuple[], poa: Poa): Promise<Boolean> => {
+export const validatePoa = async (prevIndepHash: Uint8Array, prevWeaveSize: bigint, blockIndex: BlockIndexDTO, poa: Poa): Promise<Boolean> => {
 	if(prevWeaveSize === 0n){
 		return true // The weave does not have data yet.
 	}
@@ -80,7 +80,7 @@ const poaMultiHash = async (data: Uint8Array, remaining: number): Promise<Uint8A
 	return poaMultiHash(hashX, remaining - 1 )
 }
 
-export const findPoaChallengeBlock = (byte: bigint, blockIndex: BlockIndexTuple[]) => {
+export const findPoaChallengeBlock = (byte: bigint, blockIndex: BlockIndexDTO) => {
 	// The base of the block is the weave_size tag of the previous_block. 
 	// Traverse down the block index until the challenge block is inside the block's bounds.
 	// Where: blockIndex[0] is the latest block, and blockIndex[blockIndex.length-1] is the earliest block

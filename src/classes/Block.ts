@@ -1,5 +1,5 @@
 import { HOST_SERVER, FORK_HEIGHT_1_8, DATA_CHUNK_SIZE, MAX_PATH_SIZE, FORK_HEIGHT_2_0 } from '../constants'
-import { BlockDTO, Tag, BlockIndexTuple } from '../types'
+import { BlockDTO, Tag } from '../types'
 import Arweave from 'arweave'
 import Axios from 'axios'
 import deepHash from '../utils/deepHash'
@@ -207,7 +207,7 @@ export const  block_verifyWeaveSize = (block: Block, prevBlock: Block) => {
 	return block.weave_size === newSize
 }
 
-export const block_verifyBlockHashListMerkle = async (block: Block, prevBlock: Block, blockIndex: BlockIndexTuple[]) => {
+export const block_verifyBlockHashListMerkle = async (block: Block, prevBlock: Block) => {
 	if(block.height<FORK_HEIGHT_2_0) throw new Error("Unavailable: block_verifyBlockHashListMerkle < FORK_HEIGHT_2_0")
 
 	// Check that the given merkle root in a new block is valid.

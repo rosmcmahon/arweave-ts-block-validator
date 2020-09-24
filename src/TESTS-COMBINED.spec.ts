@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { BlockDTO, ReturnCode, BlockIndexTuple } from './types'
+import { BlockDTO, ReturnCode, BlockIndexDTO } from './types'
 import { STORE_BLOCKS_AROUND_CURRENT, HOST_SERVER, RETARGET_BLOCKS, MIN_DIFF_FORK_1_8 } from './constants'
 import { Block, blockFieldSizeLimit, block_verifyWeaveSize, block_verifyBlockHashListMerkle } from './classes/Block'
 import { validatePoa, findPoaChallengeBlock } from './classes/Poa'
@@ -19,10 +19,10 @@ let blockJson: BlockDTO
 let block: Block
 let prevBlock: Block
 let prevPrevBlock: Block
-let blockIndex: BlockIndexTuple[] 
+let blockIndex: BlockIndexDTO 
 let prevBlockWallets: WalletsObject
 // nulls
-const BLOCKINDEX_NULL: BlockIndexTuple[] = []
+const BLOCKINDEX_NULL: BlockIndexDTO = []
 const WALLET_NULL = {}
 const BLOCKTXPAIRS_NULL = {}
 
@@ -138,12 +138,12 @@ describe('Block tests, general validation tests', () => {
 
 	it('block_verifyBlockHashListMerkle returns true/false for valid/invalid block index root hash', async () => {
 		expect.assertions(2)
-		let good = await block_verifyBlockHashListMerkle(block, prevBlock, blockIndex)
+		let good = await block_verifyBlockHashListMerkle(block, prevBlock)
 		
 		expect(good).toEqual(true) 
 
 		//now mix the blocks up to get invalid blockIndex root hash
-		let bad = await block_verifyBlockHashListMerkle(prevBlock, block, blockIndex)
+		let bad = await block_verifyBlockHashListMerkle(prevBlock, block)
 		
 		expect(bad).toEqual(false) 
 	})

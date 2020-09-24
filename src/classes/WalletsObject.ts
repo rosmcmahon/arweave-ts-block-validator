@@ -7,7 +7,7 @@ export interface WalletsObject {
 	}
 }
 
-export const createWalletsFromDTO = (walletList: WalletListDTO[]) => {
+export const createWalletsFromDTO = (walletList: WalletListDTO) => {
 	let walletsObj: WalletsObject = {}
 	for (let i = 0; i < walletList.length; i++) {
 		const entry = walletList[i]

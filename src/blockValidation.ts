@@ -1,5 +1,5 @@
 
-import { ReturnCode, BlockIndexTuple, BlockTxsPairs } from  './types'
+import { ReturnCode, BlockIndexDTO, BlockTxsPairs } from  './types'
 import { Block, getIndepHash, generateBlockDataSegment, verifyBlockDepHash, blockFieldSizeLimit, block_verifyWeaveSize, block_verifyBlockHashListMerkle, block_verifyTxRoot } from './classes/Block'
 import { validatePoa, poa_modifyDiff } from './classes/Poa'
 import { validateDifficulty } from './hashing/difficulty-retarget'
@@ -15,7 +15,7 @@ import { validateBlockTxs } from './blockTxsValidation'
 export const validateBlock = async (
 	block: Block, 
 	prevBlock: Block, 
-	blockIndex: BlockIndexTuple[], 
+	blockIndex: BlockIndexDTO, 
 	prevBlockWallets: WalletsObject,
 	blockTxPairs: BlockTxsPairs
 ): Promise<ReturnCode> => {
@@ -118,7 +118,7 @@ export const validateBlock = async (
 	}
 
 	// 11. Block Index Root: recreate the hashes, check against given
-	if( ! await block_verifyBlockHashListMerkle(block, prevBlock, blockIndex) ){
+	if( ! await block_verifyBlockHashListMerkle(block, prevBlock) ){
 		return {value: false, message: "Invalid block index root", height: block.height}
 	}
 
