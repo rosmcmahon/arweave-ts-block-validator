@@ -12,8 +12,8 @@ const main = async () => {
 	let block1: Block
 	let block2: Block
 
-	const PASS = "\x1b[32mPASS:\x1b[0m"
-	const FAIL = "\x1b[31mFAIL:\x1b[0m"
+	const PASS = "\x1b[32m"+"PASS:"+"\x1b[0m" //prints green colour
+	const FAIL = "\x1b[31m"+"FAIL:"+"\x1b[0m" //prints red colour
 
 	/* Test data set up */
 
