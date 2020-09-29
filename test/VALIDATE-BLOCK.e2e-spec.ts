@@ -83,7 +83,7 @@ describe('blockValidation completes e2e validation testing', ()=> {
 		expect.assertions(1)
 		res = await validateBlock(block, prevBlock, blockIndex, prevBlockWallets, blockTxsPairs)
 			
-		expect(res).toEqual({value: true, message: "Block slow check OK"})
+		expect(res).toEqual({value: true, message:"Block validation OK"})
 	}, 20000)
 
 })

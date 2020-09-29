@@ -131,6 +131,6 @@ export const validateBlock = async (
 		return {value: false, message: "Invalid PoW", height: block.height}
 	}
 
-	return {value: true, message:"Block slow check OK"}
+	return {value: true, message:"Block validation OK"}
 }
 

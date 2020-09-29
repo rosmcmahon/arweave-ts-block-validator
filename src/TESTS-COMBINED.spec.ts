@@ -59,7 +59,7 @@ beforeAll(async () => {
 		prevPrevBlock = await Block.createFromDTO(bj3)
 
 	}catch(e){
-		console.debug('Network error! Could not retrieve tests data!', e.code)
+		console.log('Network error! Could not retrieve tests data!', e.code)
 		process.exit(1)
 	}
 
