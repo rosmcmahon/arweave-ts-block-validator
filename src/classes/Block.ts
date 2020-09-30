@@ -225,6 +225,10 @@ export const block_verifyTxRoot = async (block: Block) => {
 }
 
 const generateTxRootForBlock = async (txs: Tx[]) => {
+	if(txs.length ===0){
+		return new Uint8Array(0)
+	}
+
 	let sizeTaggedTxs = await generateSizeTaggedList(txs)
 	let sizeTaggedDataRoots = generateSizeTaggedDataRootsStructure(sizeTaggedTxs)
 	const root = await computeRootHash(sizeTaggedDataRoots) 
