@@ -33,9 +33,9 @@ const main = async () => {
 		)
 
 		if(result.value){
-			console.log('✔️  Block validation passed')
+			console.log('✔️  Block validation passed: ' + result.message)
 		}else{
-			console.log('⛔  Block validation failed')
+			console.log('⛔  Block validation failed:' + result.message)
 		}
 
 		// print some stats, make it look like we're doing something

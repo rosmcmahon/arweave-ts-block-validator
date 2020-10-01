@@ -61,7 +61,7 @@ const calculateRewardPoolPerpetual = (
 ) => {
 
 	if(height < FORK_HEIGHT_2_0){
-		throw new Error("nodeUtilsCalculateRewardPoolPerpetual unimplemented below FORK_HEIGHT_2_0")
+		throw new Error("calculateRewardPoolPerpetual unimplemented below FORK_HEIGHT_2_0")
 	}
 	/*
 

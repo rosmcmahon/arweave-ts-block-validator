@@ -15,8 +15,8 @@ export const calculateInflation = (height: number) => {
 	Decimal.config({precision: 25}) // more than enough precision
 	let log2 = Decimal.ln(2) //a float constant
 	let years = new Decimal(height).dividedBy(BLOCKS_PER_YEAR)
-	let powerExp = Decimal.pow(2,-(years)) //2^years_since_genesis
-	let bigFloat = Decimal.mul(0.2, GENESIS_TOKENS).mul(powerExp).mul(log2)
+	let powerExp = Decimal.pow(2, years.neg()) //2^years_since_genesis
+	let bigFloat = ( Decimal.mul(0.2, GENESIS_TOKENS).mul(powerExp).mul(log2) ).dividedBy(BLOCKS_PER_YEAR)
 	
 	if(ADD_ERLANG_ROUNDING_ERROR){
 		return Number(
