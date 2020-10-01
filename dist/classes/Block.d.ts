@@ -26,9 +26,6 @@ export declare class Block {
     hash_list_merkle: Uint8Array;
     poa: Poa;
     static createFromDTO(dto: BlockDTO): Promise<Block>;
-    static getByHeight(height: number): Promise<Block>;
-    static getByHash(hash: Uint8Array): Promise<Block>;
-    static getCurrent(): Promise<Block>;
 }
 export declare const getIndepHash: (block: Block) => Promise<Uint8Array>;
 export declare const generateBlockDataSegment: (block: Block) => Promise<Uint8Array>;

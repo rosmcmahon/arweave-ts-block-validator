@@ -1,4 +1,3 @@
-import axios from 'axios'
 import Arweave from "arweave"
 import { HOST_SERVER } from './constants'
 import { Block,	generateBlockDataSegmentBase, generateBlockDataSegment, getIndepHash, block_verifyTxRoot } from './classes/Block'

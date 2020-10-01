@@ -1,4 +1,3 @@
-import axios from "axios"
 import ArCache from 'arweave-cacher'
 import { validateBlockTxs, verifyTx } from "./blockTxsValidation"
 import { Block } from "./classes/Block"
@@ -54,12 +53,10 @@ beforeAll(async () => {
 		ArCache.setDebugMessagesOn(false)
 
 		// wallet List
-		// promises.push( axios.get(HOST_SERVER + '/block/height/' + (height-1).toString() + '/wallet_list') ) 
 		promises.push( ArCache.getWalletList(height - 1))
 
 		// block DTOs for test block + previous 50 blocks
 		for (let i = 0; i < 51; i++) { 
-			// promises.push(axios.get( HOST_SERVER + '/block/height/' + height.toString() ))
 			promises.push( ArCache.getBlockDtoByHeight(height) )
 			height--
 		}

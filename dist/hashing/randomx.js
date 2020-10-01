@@ -5,9 +5,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.randomxHash = void 0;
 const constants_1 = require("../constants");
-const Block_1 = require("../classes/Block");
 const arweave_1 = __importDefault(require("arweave"));
 const ar_node_randomx_1 = require("ar-node-randomx");
+const arweave_cacher_1 = __importDefault(require("arweave-cacher"));
 const initLightRandomx = async (key) => {
     let vm;
     try {
@@ -44,6 +44,7 @@ const randomxKey = async (swapHeight) => {
         return arweave_1.default.utils.stringToBuffer("Arweave Genesis RandomX Key");
     }
     let keyBlockHeight = swapHeight - constants_1.RANDOMX_KEY_SWAP_FREQ;
-    const keyBlock = await Block_1.Block.getByHeight(keyBlockHeight);
-    return keyBlock.hash;
+    const keyBlock = await arweave_cacher_1.default.getBlockDtoByHeight(keyBlockHeight);
+    console.log("\x1b[31mrandomx-debugging:\x1b[0m", "keyBlockHeight", keyBlockHeight);
+    return arweave_1.default.utils.b64UrlToBuffer(keyBlock.hash);
 };

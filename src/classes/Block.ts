@@ -1,7 +1,6 @@
-import { HOST_SERVER, FORK_HEIGHT_1_8, DATA_CHUNK_SIZE, MAX_PATH_SIZE, FORK_HEIGHT_2_0 } from '../constants'
+import { FORK_HEIGHT_1_8, DATA_CHUNK_SIZE, MAX_PATH_SIZE, FORK_HEIGHT_2_0 } from '../constants'
 import { BlockDTO, Tag } from '../types'
 import Arweave from 'arweave'
-import Axios from 'axios'
 import deepHash from '../utils/deepHash'
 import { Poa } from './Poa'
 import { arrayCompare, bufferToInt } from '../utils/buffer-utilities'
@@ -75,21 +74,6 @@ export class Block {
 		}	
 	
 		return b
-	}
-
-	/* Some convenience functions */
-	static async getByHeight(height: number): Promise<Block> {
-		let blockJson = (await Axios.get(HOST_SERVER+'/block/height/'+height)).data
-		return await Block.createFromDTO(blockJson)
-	}
-	static async getByHash(hash: Uint8Array): Promise<Block> {
-		let b64url = Arweave.utils.bufferTob64Url(hash)
-		let blockJson = (await Axios.get(HOST_SERVER+'/block/hash/'+b64url)).data
-		return await Block.createFromDTO(blockJson)
-	}
-	static async getCurrent(): Promise<Block> {
-		let blockJson = (await Axios.get(HOST_SERVER+'/block/current')).data
-		return await Block.createFromDTO(blockJson)
 	}
 	
 }

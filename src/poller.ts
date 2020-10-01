@@ -11,7 +11,7 @@ import { updateWalletsWithBlockTxs } from './wallets-utils'
  * This is the main entry-point for the poller
  */
 const main = async () => {
-	let height = await ArCache.getCurrentHeight() 
+	let height = /*538382*/ await ArCache.getCurrentHeight() - 10 // we will start back a bit
 
 	let {blockDtos, blockIndex, prevWallets, blockTxsPairs} = await initData(height)
 
@@ -50,7 +50,7 @@ const main = async () => {
 		// Next!
 
 		//apply txs to WalletsObject
-		await updateWalletsWithBlockTxs(block, prevWallets, prevBlock.reward_pool, prevBlock.height)
+		// await updateWalletsWithBlockTxs(block, prevWallets, prevBlock.reward_pool, prevBlock.height)
 
 		//wait for new block
 		height++
@@ -63,8 +63,6 @@ const main = async () => {
 
 		blockDtos = [newBlockDto, ...blockDtos]
 
-		console.log('DEBUG: blockDtos[0].height =', blockDtos[0].height)
-		console.log('DEBUG: blockDtos[1].height =', blockDtos[1].height)
 
 	}// end infinite loop
 }

@@ -1,7 +1,7 @@
 import { RANDOMX_KEY_SWAP_FREQ } from "../constants"
-import { Block } from "../classes/Block"
 import Arweave from "arweave"
 import { RandomxCreateVM, RandomxHash, RandomxVMReference } from 'ar-node-randomx'
+import ArCache from "arweave-cacher"
 
 /* Use the RandomX node-addon to set up a "VM" and do the hashing */
 
@@ -49,8 +49,10 @@ const randomxKey = async (swapHeight: number) => {
 	}
 	//keyBlockHeight gives at least 2000 blocks warning (miners need time to generate RandomX state)
 	let keyBlockHeight = swapHeight - RANDOMX_KEY_SWAP_FREQ 
-	const keyBlock = await Block.getByHeight(keyBlockHeight)
+	const keyBlock = await ArCache.getBlockDtoByHeight(keyBlockHeight)
 
-	return keyBlock.hash
+console.log("\x1b[31mrandomx-debugging:\x1b[0m", "keyBlockHeight", keyBlockHeight)
+
+	return Arweave.utils.b64UrlToBuffer(keyBlock.hash)
 }
 

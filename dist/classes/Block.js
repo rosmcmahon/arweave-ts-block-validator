@@ -6,7 +6,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.block_verifyTxRoot = exports.block_verifyBlockHashListMerkle = exports.block_verifyWeaveSize = exports.blockFieldSizeLimit = exports.verifyBlockDepHash = exports.generateBlockDataSegmentBase = exports.generateBlockDataSegment = exports.getIndepHash = exports.Block = void 0;
 const constants_1 = require("../constants");
 const arweave_1 = __importDefault(require("arweave"));
-const axios_1 = __importDefault(require("axios"));
 const deepHash_1 = __importDefault(require("../utils/deepHash"));
 const buffer_utilities_1 = require("../utils/buffer-utilities");
 const Tx_1 = require("./Tx");
@@ -49,19 +48,6 @@ class Block {
             chunk: arweave_1.default.utils.b64UrlToBuffer(dto.poa.chunk)
         };
         return b;
-    }
-    static async getByHeight(height) {
-        let blockJson = (await axios_1.default.get(constants_1.HOST_SERVER + '/block/height/' + height)).data;
-        return await Block.createFromDTO(blockJson);
-    }
-    static async getByHash(hash) {
-        let b64url = arweave_1.default.utils.bufferTob64Url(hash);
-        let blockJson = (await axios_1.default.get(constants_1.HOST_SERVER + '/block/hash/' + b64url)).data;
-        return await Block.createFromDTO(blockJson);
-    }
-    static async getCurrent() {
-        let blockJson = (await axios_1.default.get(constants_1.HOST_SERVER + '/block/current')).data;
-        return await Block.createFromDTO(blockJson);
     }
 }
 exports.Block = Block;
@@ -158,6 +144,9 @@ exports.block_verifyTxRoot = async (block) => {
     return buffer_utilities_1.arrayCompare(block.tx_root, await generateTxRootForBlock(block.txs));
 };
 const generateTxRootForBlock = async (txs) => {
+    if (txs.length === 0) {
+        return new Uint8Array(0);
+    }
     let sizeTaggedTxs = await generateSizeTaggedList(txs);
     let sizeTaggedDataRoots = generateSizeTaggedDataRootsStructure(sizeTaggedTxs);
     const root = await merkle_1.computeRootHash(sizeTaggedDataRoots);

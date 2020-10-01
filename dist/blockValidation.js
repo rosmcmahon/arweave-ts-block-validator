@@ -65,12 +65,13 @@ exports.validateBlock = async (block, prevBlock, blockIndex, prevBlockWallets, b
     if (!await Block_1.block_verifyBlockHashListMerkle(block, prevBlock)) {
         return { value: false, message: "Invalid block index root", height: block.height };
     }
-    let pow = await weave_hash_1.weave_hash((await Block_1.generateBlockDataSegment(block)), block.nonce, block.height);
+    let bds = await Block_1.generateBlockDataSegment(block);
+    let pow = await weave_hash_1.weave_hash(bds, block.nonce, block.height);
     if (!Block_1.verifyBlockDepHash(block, pow)) {
         return { value: false, message: "Invalid PoW hash", height: block.height };
     }
     if (!mine_1.validateMiningDifficulty(pow, Poa_1.poa_modifyDiff(block.diff, block.poa.option), block.height)) {
         return { value: false, message: "Invalid PoW", height: block.height };
     }
-    return { value: true, message: "Block slow check OK" };
+    return { value: true, message: "Block validation OK" };
 };

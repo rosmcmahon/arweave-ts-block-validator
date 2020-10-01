@@ -1,4 +1,3 @@
-import axios from 'axios'
 import Arweave from 'arweave'
 import { HOST_SERVER, BLOCK_TX_COUNT_LIMIT, BLOCK_TX_DATA_SIZE_LIMIT } from '../src/constants';
 import { Block } from '../src/classes/Block';
@@ -42,13 +41,12 @@ const main = async () => {
 		/* Prepare data requests */
 
 		let promises = []
-		// let height = Number((await axios.get(HOST_SERVER+'/info')).data.height)
 		let height = 520919 // 89 txs including large v1 data tx: eIcAGwqFCHek3EvpiRXdsESZAPKLXJMzco-7lWm4yO4
 
 		// block index
 		// promises.push( axios.get(
 		// 	HOST_SERVER+'/block/height/'+(height-1).toString()+'/hash_list', 
-		// 	{ headers: { "X-Block-Format": "3" } }) //unavailable on arweave.net
+		// 	{ headers: { "X-Block-Format": "3" } }) 
 		// )
 
 		// // wallet List

@@ -105,7 +105,6 @@ export const validateBlock = async (
 		return {value: false, message: "Received block with invalid txs"}
 	}
 	
-
 	// 9. Tx Toot: recreate the tx_root and compare against given hash
 	if( ! await block_verifyTxRoot(block) ){
 		return {value: false, message: "Invalid tx_root", height: block.height}
@@ -123,7 +122,8 @@ export const validateBlock = async (
 	}
 
 	// 12. PoW: recreate the hashes, check against given -depends on RandomX, so had to move to end of all validations
-	let pow = await weave_hash((await generateBlockDataSegment(block)), block.nonce, block.height)
+	let bds = await generateBlockDataSegment(block)
+	let pow = await weave_hash(bds, block.nonce, block.height)
 	if( ! verifyBlockDepHash(block, pow) ){
 		return {value: false, message: "Invalid PoW hash", height: block.height}
 	}

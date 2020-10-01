@@ -652,8 +652,8 @@
         "affectsGlobalScope": false
       },
       "../src/classes/block.ts": {
-        "version": "2ef47dcd4a1deb81e3b07d1d967bab4629f0e08480045aeda700d9b3fae72dfb",
-        "signature": "5e9fba4a46accaf7106c7f16a668721c8af1ea5c59fff4b864826e4af62210a8",
+        "version": "e753667aba00ec25a1b4c1f32c1b2ef85434f8b062fc389de6b94e60011dd363",
+        "signature": "c1892a4ae7cda702a8bcc7116f6c48bcde885322e92c3da491f3416efafa00c7",
         "affectsGlobalScope": false
       },
       "../src/classes/walletsobject.ts": {
@@ -687,12 +687,12 @@
         "affectsGlobalScope": false
       },
       "../src/hashing/randomx.ts": {
-        "version": "524b400defc75b02d3bedf6e6e233492b40dafcff339cdd4201aeb14ad6d0908",
+        "version": "9daaeaf43d258d29cca8ec0cfb9c203bc4becabe7461f9769bbbe773fb8cf80c",
         "signature": "dad2db1585e729902a54eab99360b05bb005d822feac23bc1a75afb77333a10a",
         "affectsGlobalScope": false
       },
       "../src/hashing/weave-hash.ts": {
-        "version": "5617052e015baa50516fae9820749f7e2207184fbbcb89bc97515701fc2122c1",
+        "version": "32500ebe61963adf78179b10e8d7e50c57fe1171e1a5b84c9298aa66190c4f45",
         "signature": "ec85c5e7179ac9765ebaf47f57b36856e9defc7c235248f33a7e78d65adaaae6",
         "affectsGlobalScope": false
       },
@@ -702,7 +702,7 @@
         "affectsGlobalScope": false
       },
       "../src/blockvalidation.ts": {
-        "version": "7e831f66b56141ec7e5ce6e25159138ef9ab23006dbcde60faf2d7048ece5bc5",
+        "version": "a8e7f5a3a1808eb0a0131d25f8fff66eb802c2f2db1a8cf17b3518451156d554",
         "signature": "09efe97313217a1826848bfcdf5ec4502f7aec16fc2873eb83100f74732510e8",
         "affectsGlobalScope": false
       },
@@ -714,6 +714,11 @@
       "../src/index.ts": {
         "version": "4a907a5f00557c8b6f31a2637cbd9145687dbbba51f163f60c618a42fa1560e2",
         "signature": "b7b82b40f9f9e94024549af03974ed357f5797f503ce320c7341276b6c4e66bc",
+        "affectsGlobalScope": false
+      },
+      "../src/poller.ts": {
+        "version": "c70e9cce85707129e188f0e72c59a22b86bc9cf3f228952964057d8130d35b5d",
+        "signature": "f761c91419d0a89422a0004ef1a92929dd4d2d5e5c16758654d8b0467d1998c6",
         "affectsGlobalScope": false
       },
       "../node_modules/@babel/types/lib/index.d.ts": {
@@ -1185,7 +1190,6 @@
       ],
       "../src/classes/block.ts": [
         "../node_modules/arweave/node/index.d.ts",
-        "../node_modules/axios/index.d.ts",
         "../src/classes/poa.ts",
         "../src/classes/tx.ts",
         "../src/constants.ts",
@@ -1243,8 +1247,8 @@
       ],
       "../src/hashing/randomx.ts": [
         "../node_modules/ar-node-randomx/index.d.ts",
+        "../node_modules/arweave-cacher/dist/index.d.ts",
         "../node_modules/arweave/node/index.d.ts",
-        "../src/classes/block.ts",
         "../src/constants.ts"
       ],
       "../src/hashing/weave-hash.ts": [
@@ -1256,6 +1260,15 @@
         "../src/blockvalidation.ts",
         "../src/classes/index.ts",
         "../src/types/index.ts"
+      ],
+      "../src/poller.ts": [
+        "../node_modules/arweave-cacher/dist/index.d.ts",
+        "../node_modules/arweave/node/index.d.ts",
+        "../src/blockvalidation.ts",
+        "../src/classes/index.ts",
+        "../src/constants.ts",
+        "../src/types/index.ts",
+        "../src/wallets-utils.ts"
       ],
       "../src/types/dtos/block.dto.ts": [
         "../src/types/tag.ts"
@@ -1809,6 +1822,7 @@
       "../src/hashing/randomx.ts",
       "../src/hashing/weave-hash.ts",
       "../src/index.ts",
+      "../src/poller.ts",
       "../src/types/blocktxspairs.ts",
       "../src/types/dtos/block.dto.ts",
       "../src/types/dtos/blockindex.dto.ts",
