@@ -40,6 +40,19 @@
 			"outFiles": [
 				"${workspaceFolder}/**/*.js"
 			]
+		},
+		{
+			"type": "node",
+			"request": "launch",
+			"name": "Launch Poller",
+			"skipFiles": [
+				"<node_internals>/**"
+			],
+      "program": "${workspaceFolder}/src/poller.ts",
+      "preLaunchTask": "tsc: build - tsconfig.json",
+			"outFiles": [
+				"${workspaceFolder}/**/*.js"
+			]
 		}
 	]
 }
