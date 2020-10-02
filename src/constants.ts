@@ -60,10 +60,8 @@ export const DIFF_ADJUSTMENT_DOWN_COMPARATOR = 2400n // RETARGET_BLOCK_TIME * DI
 // The number of blocks that pass before RandomX key changes again
 export const RANDOMX_KEY_SWAP_FREQ = 2000
 
-// How much harder it should be to mine each subsequent alternative POA option.
-export const ALTERNATIVE_POA_DIFF_MULTIPLIER = 2
-
 /* Inflation constants */
+
 // The total supply of tokens in the Genesis block,
 export const GENESIS_TOKENS = 55000000
 // Winstons per AR.
@@ -73,27 +71,32 @@ export const BLOCKS_PER_YEAR = 262800 // 30 * 24 * 365
 export const BASE_BYTES_PER_AR = 10000000
 // Base wallet generation fee
 export const WALLET_GEN_FEE = 250000000000n
-// @doc The minimum cost per byte for a single TX.
+// The minimum cost per byte for a single TX.
 export const COST_PER_BYTE = 100000 //(WINSTON_PER_AR div BASE_BYTES_PER_AR)
 
 /* Perpetual storage constants */
+
+export const N_REPLICATIONS = 10 
+// How much harder it should be to mine each subsequent alternative POA option.
+export const ALTERNATIVE_POA_DIFF_MULTIPLIER = 2
+
 // Mining reward as a proportion of tx cost.
 export const MINING_REWARD_MULTIPLIER = 0.2
 export const MINING_REWARD_DIVIDER = 5n //better to integer divide a final calculation
-export const MINING_REWARD_DIVIDER_MODIFIED = 6n //ref: nodeUtils_calculateRewardPoolPerpetual
-export const N_REPLICATIONS = 10 
+export const MINING_REWARD_DIVIDER_MODIFIED = 6n //ref: calculateRewardPoolPerpetual
 // Figures taken from the "date-GBh spreadsheet" see: perpetual_storage.hrl
 export const USD_PER_GBY_2018 = 0.001045
 export const USD_PER_GBY_2019 = 0.000925
 // Decay rate of the storage cost in GB/year.
 export const USD_PER_GBY_DECAY_ANNUAL = 0.995 // i.e. 0.5% annual decay rate
-
 // The network height at the time when 
-// the $/AR exchange rate was ?INITIAL_USD_PER_AR.
-export const INITIAL_USD_PER_AR_HEIGHT = FORK_HEIGHT_1_9
-export const INITIAL_USD_PER_AR_DIFF = 29n
+// the $/AR exchange rate was INITIAL_USD_PER_AR.
+export const INITIAL_USD_PER_AR_HEIGHT = FORK_HEIGHT_2_2
+export const INITIAL_USD_PER_AR_DIFF = 33n
+export const INITIAL_USD_PER_AR = 2 //ref: perpetual_storage.hrl
 
 /* Block field size limits */
+
 // Max size of a single data chunk, in bytes.
 export const DATA_CHUNK_SIZE = 256 * 1024
 // Max size of the PoA data path, in bytes.

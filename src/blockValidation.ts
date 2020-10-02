@@ -101,7 +101,7 @@ export const validateBlock = async (
 		updatedWallets2, 
 		blockTxPairs 
 	)
-	if( !result ){
+	if( ! result.value ){
 		return {value: false, message: "Received block with invalid txs"}
 	}
 	
