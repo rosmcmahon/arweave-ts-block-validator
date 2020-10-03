@@ -7,11 +7,60 @@ import { validateBlock } from './blockValidation'
 import { updateWalletsWithBlockTxs } from './wallets-utils'
 
 
+const initData = async (height: number) => {
+	
+	/* Initialise promises */
+
+	let promises = []
+	ArCache.setHostServer(HOST_SERVER)
+	ArCache.setDebugMessagesOn(false)
+
+	// block index. (N.B. tuples header unavailable on arweave.net)
+	promises.push( ArCache.getBlockIndex(height-1) )
+
+	// wallet List for previous block. Older lists not always available from nodes as they get cleared to save space
+	promises.push( ArCache.getWalletList(height - 1) ) 
+
+	// block DTOs for 1 test block + previous 50 blocks
+	let h = height
+	for (let i = 0; i < 51; i++) { 
+		promises.push(ArCache.getBlockDtoByHeight(h))
+		h--
+	}
+
+	/* Retrieve the data. We are using ArCache to check for cached data before fetching from HOST_SERVER */
+
+	const [bIndex, walletList , ...responses] = await Promise.all( promises )  //this an expensive line
+
+	/* Process initial data */
+
+	let blockIndex: BlockIndexDTO = bIndex
+	if(!blockIndex[0].hash){
+		throw new Error('Error! Incorrect BlockIndex format, blockIndex[0] = ' + JSON.stringify(blockIndex[0]) )
+	}
+
+	let prevWallets: WalletsObject = createWalletsFromDTO(walletList)
+	let blockDtos: BlockDTO[] = responses
+
+	let blockTxsPairs: BlockTxsPairs = {}
+	for (let i = 1; i < blockDtos.length; i++) {
+		const dto = blockDtos[i];
+		blockTxsPairs[dto.indep_hash] = dto.txs
+	}
+
+	return {
+		blockDtos,
+		blockIndex,
+		prevWallets,
+		blockTxsPairs
+	}
+}
+
 /**
  * This is the main entry-point for the poller
  */
 const main = async () => {
-	let height = await ArCache.getCurrentHeight() - 60 // we will start back a bit
+	let height = await ArCache.getCurrentHeight() - 4 // we will start back a bit
 
 	let {blockDtos, blockIndex, prevWallets, blockTxsPairs} = await initData(height)
 
@@ -68,55 +117,6 @@ const main = async () => {
 }
 main();
 
-
-const initData = async (height: number) => {
-	
-	/* Initialise promises */
-
-	let promises = []
-	ArCache.setHostServer(HOST_SERVER)
-	ArCache.setDebugMessagesOn(true)
-
-	// block index. (N.B. tuples header unavailable on arweave.net)
-	promises.push( ArCache.getBlockIndex(height-1) )
-
-	// wallet List for previous block. Older lists not always available from nodes as they get cleared to save space
-	promises.push( ArCache.getWalletList(height - 1) ) 
-
-	// block DTOs for 1 test block + previous 50 blocks
-	let h = height
-	for (let i = 0; i < 51; i++) { 
-		promises.push(ArCache.getBlockDtoByHeight(h))
-		h--
-	}
-
-	/* Retrieve the data. We are using ArCache to check for cached data before fetching from HOST_SERVER */
-
-	const [bIndex, walletList , ...responses] = await Promise.all( promises )  //this an expensive line
-
-	/* Process initial data */
-
-	let blockIndex: BlockIndexDTO = bIndex
-	if(!blockIndex[0].hash){
-		throw new Error('Error! Incorrect BlockIndex format, blockIndex[0] = ' + JSON.stringify(blockIndex[0]) )
-	}
-
-	let prevWallets: WalletsObject = createWalletsFromDTO(walletList)
-	let blockDtos: BlockDTO[] = responses
-
-	let blockTxsPairs: BlockTxsPairs = {}
-	for (let i = 1; i < blockDtos.length; i++) {
-		const dto = blockDtos[i];
-		blockTxsPairs[dto.indep_hash] = dto.txs
-	}
-
-	return {
-		blockDtos,
-		blockIndex,
-		prevWallets,
-		blockTxsPairs
-	}
-}
 
 const pollForNewBlock =  async (height: number) => {
 	// sleep timer one-liner

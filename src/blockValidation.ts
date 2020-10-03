@@ -102,7 +102,7 @@ export const validateBlock = async (
 		blockTxPairs 
 	)
 	if( ! result.value ){
-		return {value: false, message: "Received block with invalid txs"}
+		return {value: false, message: "Received block with invalid tx: " + result.message}
 	}
 	
 	// 9. Tx Toot: recreate the tx_root and compare against given hash

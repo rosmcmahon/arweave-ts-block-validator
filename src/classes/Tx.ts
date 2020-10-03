@@ -114,12 +114,13 @@ export class Tx {
 	
 	async verify(): Promise<boolean> {
 		/* This function verifies the signature and txid using the public key */
-    const sigHash = await Arweave.crypto.hash(this.signature)
 
-    if( !arrayCompare(this.id, sigHash) ) {
-			// invalid signature or txid. Hash mismatch
-			return false
-		}
+		// // N.B. Commenting out, as we do not check this in the protocol
+    // const sigHash = await Arweave.crypto.hash(this.signature)
+    // if( !arrayCompare(this.id, sigHash) ) {
+		// 	// invalid signature or txid. Hash mismatch
+		// 	return false
+		// }
 		
 		const signaturePayload = await this.getSignatureData();
 
