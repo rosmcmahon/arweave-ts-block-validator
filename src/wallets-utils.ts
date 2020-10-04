@@ -127,7 +127,7 @@ const calculateRewardPoolPerpetual = (
 		diff,
 		height
 	)
-	let burden = weaveSize * costPerGBPerBlock / 1073741824n
+	let burden = weaveSize * BigInt(costPerGBPerBlock) / 1073741824n
 	let ar = burden - baseReward
 	let newPool = oldPool + txsCost
 

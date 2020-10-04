@@ -61,7 +61,7 @@ export const validateBlockTxs = async (
 /* based on ar_tx_replay_pool:verify_tx */
 const validateBlockTx = async (
 	tx: Tx, diff: bigint, height: number, timestamp: bigint, wallets: WalletsObject, blockTxsPairs: BlockTxsPairs, verifiedTxs: string[]
-	): Promise<ReturnCode> => {
+): Promise<ReturnCode> => {
 
 	let lastTxString = Arweave.utils.bufferTob64Url(tx.last_tx)	
 
@@ -136,10 +136,17 @@ export const verifyTx = async (tx: Tx, diff: bigint, height: number, timestamp: 
 	}
 
 	if( ! await tx.verify() ){
+		console.log('invalid sig txid '+tx.idString)
 		return {value: false, message: "invalid signature or txid. Hash mismatch"} 
 	}
 
-	if(tx.reward < calculateMinTxCost(tx.data_size, diff, height+1, wallets, tx.target, timestamp)){
+let thisCalcdMinTxCost = calculateMinTxCost(tx.data_size, diff, height + 1, wallets, tx.target, timestamp)
+console.log( 
+	`tx.id ${tx.idString}
+	calcedCost ${thisCalcdMinTxCost} / tx.reward ${tx.reward} = ${ (Number(thisCalcdMinTxCost)/Number(tx.reward)) }
+	`
+)
+	if(tx.reward < calculateMinTxCost(tx.data_size, diff, height + 1, wallets, tx.target, timestamp)){
 		return {value: false, message: "tx reward too cheap"}  
 	}
 
@@ -185,7 +192,7 @@ const calculateMinTxCost = (size: bigint, diff: bigint, height: number, wallets:
 	let fee = 0n
 
 	// check for first time wallet fee
-	if(!wallets[target]){
+	if(target.length > 0 && !wallets[target]){
 		fee = WALLET_GEN_FEE
 	}
 

@@ -60,7 +60,7 @@ const initData = async (height: number) => {
  * This is the main entry-point for the poller
  */
 const main = async () => {
-	let height = await ArCache.getCurrentHeight() - 4 // we will start back a bit
+	let height = await ArCache.getCurrentHeight() - 5 // we will start back a bit
 
 	let {blockDtos, blockIndex, prevWallets, blockTxsPairs} = await initData(height)
 

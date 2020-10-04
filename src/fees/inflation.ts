@@ -12,16 +12,21 @@ export const calculateInflation = (height: number) => {
 	 * This calculation will involve floating point numbers and large integers.
 	 * Rough maths says the return int value need to be correct to about 19 decimal places (decreasing as the years pass) 
 	 */
-	Decimal.config({precision: 25}) // more than enough precision
-	let log2 = Decimal.ln(2) //a float constant
-	let years = new Decimal(height).dividedBy(BLOCKS_PER_YEAR)
-	let powerExp = Decimal.pow(2, years.neg()) //2^years_since_genesis
-	let bigFloat = ( Decimal.mul(0.2, GENESIS_TOKENS).mul(powerExp).mul(log2) ).dividedBy(BLOCKS_PER_YEAR)
+
+	// Decimal.config({precision: 25}) // more than enough precision
+	// let log2 = Decimal.ln(2) //a float constant
+	// let years = new Decimal(height).dividedBy(BLOCKS_PER_YEAR)
+	// let powerExp = Decimal.pow(2, years.neg()) //2^years_since_genesis
+	// let bigFloat = ( Decimal.mul(0.2, GENESIS_TOKENS).mul(powerExp).mul(log2) ).dividedBy(BLOCKS_PER_YEAR)
 	
-	if(ADD_ERLANG_ROUNDING_ERROR){
-		return Number(
-			bigFloat.mul(WINSTON_PER_AR)
-		)
-	}
-	// return bigFloat.mul(WINSTON_PER_AR) // without rounding error
+	// if(ADD_ERLANG_ROUNDING_ERROR){
+	// 	return Number(
+	// 		bigFloat.mul(WINSTON_PER_AR)
+	// 	)
+	// }
+	// // return bigFloat.mul(WINSTON_PER_AR) // without rounding error
+
+	return WINSTON_PER_AR * (
+		(0.2 * GENESIS_TOKENS * Math.pow(2, -height/BLOCKS_PER_YEAR) * Math.log(2)) / BLOCKS_PER_YEAR
+	)
 }

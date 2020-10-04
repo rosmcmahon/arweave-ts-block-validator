@@ -7,7 +7,11 @@ import { Decimal } from 'decimal.js'
  */
 
 export const switchToLinearDiff = (diff: bigint) => {
-	return ( (2n ** 256n) - (2n ** (256n - diff)) ) 
+	// erlang:trunc(math:pow(2, 256)) - erlang:trunc(math:pow(2, 256 - Diff)).
+	return BigInt(
+		Math.floor(Math.pow(2, 256)) - Math.floor(Math.pow(2, (256 - Number(diff))))
+	)
+	// return ( (2n ** 256n) - (2n ** (256n - diff)) ) 
 }
 
 export const validateDifficulty = (block: Block, prevBlock: Block) => {

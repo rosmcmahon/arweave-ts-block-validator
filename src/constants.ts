@@ -91,9 +91,9 @@ export const USD_PER_GBY_2019 = 0.000925
 export const USD_PER_GBY_DECAY_ANNUAL = 0.995 // i.e. 0.5% annual decay rate
 // The network height at the time when 
 // the $/AR exchange rate was INITIAL_USD_PER_AR.
-export const INITIAL_USD_PER_AR_HEIGHT = FORK_HEIGHT_2_2
-export const INITIAL_USD_PER_AR_DIFF = 33n
-export const INITIAL_USD_PER_AR = 2 //ref: perpetual_storage.hrl
+export const INITIAL_USD_PER_AR_HEIGHT = FORK_HEIGHT_1_9
+export const INITIAL_USD_PER_AR_DIFF = 29n
+export const INITIAL_USD_PER_AR = 1.2 //ref: perpetual_storage.hrl
 
 /* Block field size limits */
 
