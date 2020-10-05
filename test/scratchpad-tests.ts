@@ -113,9 +113,16 @@ const main = async () => {
 	let tx6 = new Tx(await ArCache.getTxDto('TwZCU9mV8QJXPBIr08s_iKU27PZj2SVMis1L816UDso')) //7TO8..
 	printTest(await tx6.verify())
 	
+	/**
+	 * Salt needs to be removed in order for these to work!
+	 * https://github.com/ArweaveTeam/arweave-js/blob/master/src/common/lib/crypto/node-driver.ts#L81
+	 */
+
+
 	// tx6.tags = []
 	await tx6.sign(await arweave.wallets.generate())
 	printTest(await tx6.verify())
+
 
 
 }

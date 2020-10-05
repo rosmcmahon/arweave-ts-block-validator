@@ -29,7 +29,7 @@
   },
   "dependencies": {
     "ar-node-randomx": "github:mcmonkeys1/node-randomx",
-    "arweave": "^1.9.1",
+    "arweave": "github:mcmonkeys1/arweave-js#remove_salt_from_verify",
     "arweave-cacher": "github:mcmonkeys1/arweave-cacher",
     "decimal.js": "^10.2.0"
   }
