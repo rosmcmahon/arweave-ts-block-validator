@@ -3,6 +3,7 @@ import Arweave from "arweave"
 import { RandomxCreateVM, RandomxHash, RandomxVMReference } from 'ar-node-randomx'
 import ArCache from "arweave-cacher"
 import { ipcMsg2Uint8Array } from '../utils/buffer-utilities'
+import col from 'ansi-colors'
 
 /* Use the RandomX node-addon to set up a "VM" and do the hashing */
 
@@ -30,7 +31,7 @@ const hashLightRandomx = async (vm: RandomxVMReference, data: Uint8Array) => {
 }
 
 /**
- * This is our entrypoint.
+ * This is our entrypoint. 
  * Since we are not mining we will be using RandomX hash_light and will not keep large randomX dataset in memory.
  */
 process.on('message', async (msg:{height: number, data}) => {
@@ -63,7 +64,7 @@ const randomxKey = async (swapHeight: number) => {
 	let keyBlockHeight = swapHeight - RANDOMX_KEY_SWAP_FREQ 
 	const keyBlock = await ArCache.getBlockDtoByHeight(keyBlockHeight)
 
-console.log("\x1b[31mrandomx-debugging:\x1b[0m", "keyBlockHeight", keyBlockHeight)
+	console.log(col.cyan("randomx-debugging:"), "keyBlockHeight", keyBlockHeight)
 
 	return Arweave.utils.b64UrlToBuffer(keyBlock.hash)
 }

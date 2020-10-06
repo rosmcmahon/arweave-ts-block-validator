@@ -13,7 +13,7 @@ const initData = async (height: number) => {
 
 	let promises = []
 	ArCache.setHostServer(HOST_SERVER)
-	ArCache.setDebugMessagesOn(false)
+	ArCache.setDebugMessagesOn(true)
 
 	// block index. (N.B. tuples header unavailable on arweave.net)
 	promises.push( ArCache.getBlockIndex(height-1) )
@@ -60,7 +60,7 @@ const initData = async (height: number) => {
  * This is the main entry-point for the poller
  */
 const main = async () => {
-	let height = await ArCache.getCurrentHeight() - 5 // we will start back a bit
+	let height = await ArCache.getCurrentHeight() - 100 // we will start back a bit
 
 	let {blockDtos, blockIndex, prevWallets, blockTxsPairs} = await initData(height)
 
@@ -84,7 +84,7 @@ const main = async () => {
 		if(result.value){
 			console.log('✔️  Block validation passed: ' + result.message)
 		}else{
-			console.log('⛔  Block validation failed:' + result.message)
+			console.log('⛔  Block validation failed: ' + result.message)
 		}
 
 		// print some stats, make it look like we're doing something
@@ -93,8 +93,8 @@ const main = async () => {
 		console.log('Indep_hash\t', Arweave.utils.bufferTob64Url(block.indep_hash))
 		console.log('Numer of Txs\t', block.txs.length)
 		console.log('Timestamp\t', new Date(Number(block.timestamp)*1000).toLocaleString())
-		console.log(`New Weave Data\t ${(block.block_size) / (1024n ** 2n)} MBs`)
-		console.log(`New Weave Size\t ${block.weave_size / (1024n ** 3n)} GBs`)
+		console.log(`New Weave Data\t ${(block.block_size) / (1024n ** 2n)} MB`)
+		console.log(`New Weave Size\t ${block.weave_size / (1024n ** 3n)} GB`)
 
 		// Next!
 
@@ -105,15 +105,22 @@ const main = async () => {
 		height++
 		let newBlockDto = await pollForNewBlock(height) // might take a few minutes
 
-		//remove 51st block and add new block to start
 		let extraBlock = blockDtos[blockDtos.length - 1]
+		//update blockTxsPairs
 		delete blockTxsPairs[extraBlock.indep_hash]
+		blockTxsPairs[blockDtos[0].indep_hash] = blockDtos[0].txs
+		//update blockIndex
+		blockIndex = [
+			{tx_root: blockDtos[0].tx_root, weave_size: blockDtos[0].weave_size.toString(), hash: blockDtos[0].indep_hash},
+			...blockIndex
+		]
+		//remove 51st block and add new block to start of blockDtos
 		blockDtos.pop()
-
 		blockDtos = [newBlockDto, ...blockDtos]
 
 
-	}// end infinite loop
+
+	}// infinite loop
 }
 main();
 

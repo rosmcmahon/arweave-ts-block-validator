@@ -28,6 +28,7 @@
     "typescript": "^3.9.7"
   },
   "dependencies": {
+    "ansi-colors": "^4.1.1",
     "ar-node-randomx": "github:mcmonkeys1/node-randomx",
     "arweave": "github:mcmonkeys1/arweave-js#remove_salt_from_verify",
     "arweave-cacher": "github:mcmonkeys1/arweave-cacher",
