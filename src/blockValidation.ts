@@ -123,13 +123,13 @@ export const validateBlock = async (
 
 	// 12. PoW: recreate the hashes, check against given -depends on RandomX, so had to move to end of all validations
 	let bds = await generateBlockDataSegment(block)
-	// let pow = await weave_hash(bds, block.nonce, block.height)
-	// if( ! verifyBlockDepHash(block, pow) ){
-	// 	return {value: false, message: "Invalid PoW hash", height: block.height}
-	// }
-	// if( ! validateMiningDifficulty(pow, poa_modifyDiff(block.diff, block.poa.option), block.height) ){
-	// 	return {value: false, message: "Invalid PoW", height: block.height}
-	// }
+	let pow = await weave_hash(bds, block.nonce, block.height)
+	if( ! verifyBlockDepHash(block, pow) ){
+		return {value: false, message: "Invalid PoW hash", height: block.height}
+	}
+	if( ! validateMiningDifficulty(pow, poa_modifyDiff(block.diff, block.poa.option), block.height) ){
+		return {value: false, message: "Invalid PoW", height: block.height}
+	}
 
 	return {value: true, message:"Block validation OK"}
 }

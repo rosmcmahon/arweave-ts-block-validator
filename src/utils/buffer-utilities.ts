@@ -44,3 +44,12 @@ export function bufferToInt(buffer: Uint8Array): number {
   }
   return value;
 }
+
+export const ipcMsg2Uint8Array = (obj: object) => {
+	let out = []
+	for (let i = 0; i < Object.keys(obj).length; i++) {
+		const element = obj[i]
+		out.push(element)
+	}
+	return new Uint8Array(out)
+}

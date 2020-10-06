@@ -6,6 +6,7 @@ import { validateBlockTxs } from '../src/blockTxsValidation';
 import { Tx } from '../src/classes/Tx';
 import { WalletsObject, createWalletsFromDTO } from '../src/classes/WalletsObject';
 import ArCache from 'arweave-cacher';
+import { randomxHash } from '../src/hashing/randomx';
 
 const arweave = Arweave.init({})
 
@@ -100,29 +101,33 @@ const main = async () => {
 	// }
 
 
-	let tx1 = new Tx(await ArCache.getTxDto('pxbF_ZwpXkjAPjd9F4YhLf8Y8fdlbIGz6UhfnswSp2Q')) //v1
-	printTest(await tx1.verify())
-	let tx2 = new Tx(await ArCache.getTxDto('pYl1wofBvMrXg68WR4kcvOj0mGj8Y3qmoLOkTcb1Wxs')) //v2
-	printTest(await tx2.verify())
-	let tx3 = new Tx(await ArCache.getTxDto('OIUywTGmBF9DO3TbPVC4iPAv3WhM4M1fYIWiJsG2gLk')) //7TO8..
-	printTest(await tx3.verify())
-	let tx4 = new Tx(await ArCache.getTxDto('V8Fllbyin4By2DF4_fN501fhnj8gtDw7K6W5snCHdB8')) //7TO8..
-	printTest(await tx4.verify())
-	let tx5 = new Tx(await ArCache.getTxDto('a305zYpPbjaP67naskCCBi5GVyEwbiTomaTeO6ULOIo')) //7TO8..
-	printTest(await tx5.verify())
-	let tx6 = new Tx(await ArCache.getTxDto('TwZCU9mV8QJXPBIr08s_iKU27PZj2SVMis1L816UDso')) //7TO8..
-	printTest(await tx6.verify())
+	// let tx1 = new Tx(await ArCache.getTxDto('pxbF_ZwpXkjAPjd9F4YhLf8Y8fdlbIGz6UhfnswSp2Q')) //v1
+	// printTest(await tx1.verify())
+	// let tx2 = new Tx(await ArCache.getTxDto('pYl1wofBvMrXg68WR4kcvOj0mGj8Y3qmoLOkTcb1Wxs')) //v2
+	// printTest(await tx2.verify())
+	// let tx3 = new Tx(await ArCache.getTxDto('OIUywTGmBF9DO3TbPVC4iPAv3WhM4M1fYIWiJsG2gLk')) //7TO8..
+	// printTest(await tx3.verify())
+	// let tx4 = new Tx(await ArCache.getTxDto('V8Fllbyin4By2DF4_fN501fhnj8gtDw7K6W5snCHdB8')) //7TO8..
+	// printTest(await tx4.verify())
+	// let tx5 = new Tx(await ArCache.getTxDto('a305zYpPbjaP67naskCCBi5GVyEwbiTomaTeO6ULOIo')) //7TO8..
+	// printTest(await tx5.verify())
+	// let tx6 = new Tx(await ArCache.getTxDto('TwZCU9mV8QJXPBIr08s_iKU27PZj2SVMis1L816UDso')) //7TO8..
+	// printTest(await tx6.verify())
 	
-	/**
-	 * Salt needs to be removed in order for these to work!
-	 * https://github.com/ArweaveTeam/arweave-js/blob/master/src/common/lib/crypto/node-driver.ts#L81
-	 */
+	// /**
+	//  * Salt needs to be removed in order for these to work!
+	//  * https://github.com/ArweaveTeam/arweave-js/blob/master/src/common/lib/crypto/node-driver.ts#L81
+	//  */
 
 
-	// tx6.tags = []
-	await tx6.sign(await arweave.wallets.generate())
-	printTest(await tx6.verify())
+	// // tx6.tags = []
+	// await tx6.sign(await arweave.wallets.generate())
+	// printTest(await tx6.verify())
 
+	//promisedForkWrapper test
+	let result = await randomxHash(541500, new Uint8Array(Buffer.from('12345678')))
+
+	console.log('result from scratch: ', result)
 
 
 }

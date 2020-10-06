@@ -11,6 +11,7 @@ const main = async () => {
 
 	let block1: Block
 	let block2: Block
+	let blockFailing: Block
 
 	const PASS = "\x1b[32m"+"PASS:"+"\x1b[0m" //prints green colour
 	const FAIL = "\x1b[31m"+"FAIL:"+"\x1b[0m" //prints red colour
@@ -24,14 +25,17 @@ const main = async () => {
 
 		const [
 			bjKnownHash, 
-			bjPrevKnownHash, 
+			bjPrevKnownHash,
+			bjFailing 
 		] = await Promise.all([
 			ArCache.getBlockDtoByHeight(509850), //known, poa option 1, 
 			ArCache.getBlockDtoByHeight(509849), //known, poa option 2
+			ArCache.getBlockDtoByHeight(542333), // unknown failing test
 		])
 
 		block1 = await Block.createFromDTO(bjKnownHash)
 		block2 = await Block.createFromDTO(bjPrevKnownHash)
+		blockFailing = await Block.createFromDTO(bjFailing)
 		
 	}catch(e){
 		console.debug('Network error! Could not retrieve tests data!', e.code)
@@ -105,5 +109,32 @@ const main = async () => {
 	
 	console.log()
 	console.log('Pow testing complete')
+
+	/* Test FAILING: check pow hash and validate poa.option for FAILING TEST */
+
+	console.log()
+	console.log('Test FAILING: check pow hash and validate poa.option for FAILING TEST')
+
+	let powFail = await weave_hash(
+		(await generateBlockDataSegment(blockFailing)), 
+		blockFailing.nonce, 
+		blockFailing.height
+	)
+
+	if( arrayCompare(powFail, blockFailing.hash) ){
+		console.log(PASS, "PoW 1 hash == RandomX hash")
+	}else{
+		console.log(FAIL, "PoW 1 hash != RandomX hash")
+	}
+
+	//check poa.option = 1
+	let testFail = validateMiningDifficulty(powFail, poa_modifyDiff(blockFailing.diff, blockFailing.poa.option), blockFailing.height)
+
+	if (testFail) {
+		console.log(PASS, "Difficulty valid poa.option = ", blockFailing.poa.option)
+	} else {
+		console.log(FAIL, "Difficulty invalid with poa.option = ", blockFailing.poa.option)
+	}
+
 }
 main();

@@ -4,7 +4,7 @@ import { HOST_SERVER, DATA_CHUNK_SIZE } from "../constants"
 import { MerkleElement, computeRootHash } from "../utils/merkle"
 import deepHash from "../utils/deepHash"
 import { arrayCompare } from "../utils/buffer-utilities"
-import { JWKInterface } from "arweave/node/lib/wallet"
+import { JWKInterface } from 'arweave/node/lib/wallet'
 import ArCache from "arweave-cacher"
 
 interface Tag {
@@ -115,7 +115,7 @@ export class Tx {
 	async verify(): Promise<boolean> {
 		/* This function verifies the signature and txid using the public key */
 
-		// // N.B. Commenting out, as we do not check this in the protocol
+		// // N.B. Commenting out, as we do not check this in the Erlang node
     // const sigHash = await Arweave.crypto.hash(this.signature)
     // if( !arrayCompare(this.id, sigHash) ) {
 		// 	// invalid signature or txid. Hash mismatch

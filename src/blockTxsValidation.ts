@@ -84,6 +84,7 @@ const validateBlockTx = async (
 
 	// Anchor check. last_tx is a blockId or txid in the blockTxsPairs object
 	if( ! blockTxsPairs[lastTxString] ){
+console.log(`last_tx anchor not in blockTxsPairs: txid=${tx.idString}, lastTx=${Arweave.utils.bufferTob64Url(tx.last_tx)}`)
 		return {value: false, message: "last_tx anchor not in blockTxsPairs"}
 	}
 	
