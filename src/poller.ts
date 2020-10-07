@@ -1,5 +1,6 @@
 import ArCache from 'arweave-cacher'
 import Arweave from 'arweave'
+import col from 'ansi-colors'
 import { Block, createWalletsFromDTO, WalletsObject } from './classes'
 import { BlockDTO, BlockIndexDTO, BlockTxsPairs } from './types'
 import { HOST_SERVER } from './constants'
@@ -60,7 +61,7 @@ const initData = async (height: number) => {
  * This is the main entry-point for the poller
  */
 const main = async () => {
-	let height = await ArCache.getCurrentHeight() - 100 // we will start back a bit
+	let height = await ArCache.getCurrentHeight() - 5 // we will start back a bit
 
 	let {blockDtos, blockIndex, prevWallets, blockTxsPairs} = await initData(height)
 
@@ -70,6 +71,15 @@ const main = async () => {
 			Block.createFromDTO(blockDtos[0]),
 			Block.createFromDTO(blockDtos[1])
 		])
+
+		// print some stats for the block validation
+		console.log('Stats for candidate block:')
+		console.log('height\t\t', block.height)
+		console.log('indep_hash\t', Arweave.utils.bufferTob64Url(block.indep_hash))
+		console.log('numer of txs\t', block.txs.length)
+		console.log('timestamp\t', new Date(Number(block.timestamp)*1000).toLocaleString())
+		console.log(`new Weave Data\t ${(block.block_size) / (1024n ** 2n)} MB`)
+		console.log(`new Weave Size\t ${block.weave_size / (1024n ** 3n)} GB`)
 
 		console.log(`Validating new height ${block.height}...`)
 
@@ -82,19 +92,13 @@ const main = async () => {
 		)
 
 		if(result.value){
-			console.log('✔️  Block validation passed: ' + result.message)
+			console.log(col.green('✔️  Block validation passed'), result.message, block.height)
+
 		}else{
-			console.log('⛔  Block validation failed: ' + result.message)
+			console.log(col.red('⛔ Block validation failed'), result.message, block.height)
+			//should we try again?
 		}
 
-		// print some stats, make it look like we're doing something
-		console.log('New block info:')
-		console.log('Height\t\t', block.height)
-		console.log('Indep_hash\t', Arweave.utils.bufferTob64Url(block.indep_hash))
-		console.log('Numer of Txs\t', block.txs.length)
-		console.log('Timestamp\t', new Date(Number(block.timestamp)*1000).toLocaleString())
-		console.log(`New Weave Data\t ${(block.block_size) / (1024n ** 2n)} MB`)
-		console.log(`New Weave Size\t ${block.weave_size / (1024n ** 3n)} GB`)
 
 		// Next!
 
@@ -102,7 +106,7 @@ const main = async () => {
 		await updateWalletsWithBlockTxs(block, prevWallets, prevBlock.reward_pool, prevBlock.height)
 
 		//wait for new block
-		height++
+		height++ 
 		let newBlockDto = await pollForNewBlock(height) // might take a few minutes
 
 		let extraBlock = blockDtos[blockDtos.length - 1]

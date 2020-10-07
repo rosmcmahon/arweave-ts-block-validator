@@ -10,6 +10,8 @@ import { WalletsObject } from './classes/WalletsObject'
 import { serialize, deserialize } from 'v8'
 import { STORE_BLOCKS_AROUND_CURRENT, MIN_DIFF_FORK_1_8 } from './constants'
 import { validateBlockTxs } from './blockTxsValidation'
+import col from 'ansi-colors'
+import { bufferToBigInt } from './utils/buffer-utilities'
 
 
 export const validateBlock = async (
@@ -127,8 +129,13 @@ export const validateBlock = async (
 	if( ! verifyBlockDepHash(block, pow) ){
 		return {value: false, message: "Invalid PoW hash", height: block.height}
 	}
-	if( ! validateMiningDifficulty(pow, poa_modifyDiff(block.diff, block.poa.option), block.height) ){
-		return {value: false, message: "Invalid PoW", height: block.height}
+	let diff = poa_modifyDiff(block.diff, block.poa.option)
+	if( ! validateMiningDifficulty(pow, diff, block.height) ){
+		console.log(col.red(`block.diff==${block.diff}`))
+		console.log(col.red(`poa.option==${block.poa.option}`))
+		console.log(col.red(`valid pow===${bufferToBigInt(pow)}`))
+		console.log(col.red(`poaModDiff==${diff}`))
+		return {value: false, message: "Invalid PoW mining difficulty", height: block.height}
 	}
 
 	return {value: true, message:"Block validation OK"}

@@ -7,6 +7,7 @@ import { applyTxToWalletsObject } from "./wallets-utils";
 import { txPerpetualStorage_calculateTxFee } from "./fees/tx-perpetual-storage";
 import { WalletsObject } from "./classes/WalletsObject";
 import { serialize, deserialize } from "v8";
+import col from 'ansi-colors'
 
 /* This file is loosely based on `tx-replay-pool.erl` unless otherwiese stated */
 
@@ -84,7 +85,7 @@ const validateBlockTx = async (
 
 	// Anchor check. last_tx is a blockId or txid in the blockTxsPairs object
 	if( ! blockTxsPairs[lastTxString] ){
-console.log(`last_tx anchor not in blockTxsPairs: txid=${tx.idString}, lastTx=${Arweave.utils.bufferTob64Url(tx.last_tx)}`)
+		console.log(col.red(`last_tx anchor not in blockTxsPairs: txid=${tx.idString}, lastTx=${Arweave.utils.bufferTob64Url(tx.last_tx)}`))
 		return {value: false, message: "last_tx anchor not in blockTxsPairs"}
 	}
 	
@@ -142,11 +143,9 @@ export const verifyTx = async (tx: Tx, diff: bigint, height: number, timestamp: 
 	}
 
 let thisCalcdMinTxCost = calculateMinTxCost(tx.data_size, diff, height + 1, wallets, tx.target, timestamp)
-console.log( 
-	`tx.id ${tx.idString}
-	calcedCost ${thisCalcdMinTxCost} / tx.reward ${tx.reward} = ${ (Number(thisCalcdMinTxCost)/Number(tx.reward)) }
-	`
-)
+console.log(col.red(
+	`${ (Number(thisCalcdMinTxCost)/Number(tx.reward)) }\t= calcedCost ${thisCalcdMinTxCost}\t / tx.reward ${tx.reward},\t tx.id ${tx.idString}`
+))
 	if(tx.reward < calculateMinTxCost(tx.data_size, diff, height + 1, wallets, tx.target, timestamp)){
 		return {value: false, message: "tx reward too cheap"}  
 	}

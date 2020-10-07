@@ -279,7 +279,8 @@ const betweenDecimals = (num: Decimal, min: Decimal, max: Decimal) =>{
 
 /* based on ar_difficulty:multiply_difficulty */
 export const multiplyDifficulty = (diff: bigint, multiplier: number) => {
-	let mult = BigInt(multiplier)
-	let modifier = ((1n / mult) * (MAX_DIFF - diff))
-	return MAX_DIFF - modifier
+
+	let modifier = Math.floor((1 / multiplier) * Number(MAX_DIFF - diff))
+	
+	return MAX_DIFF - BigInt(modifier)
 }
