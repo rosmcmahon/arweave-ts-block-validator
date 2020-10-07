@@ -5,19 +5,19 @@ an arweave block validator, nothing more
 
 ## Installation
 
-~~First clone the repo & enter the root folder~~
-
-~~## Build node-randomx addon~~
-
-~~*this is a bit hacky, but please follow along~~
-
-## Clone the repo & build the block validator
+Clone the repo, then run installation scripts
 
 ```
 npm install
 ```
 
-## Now you can run the tests 
+## Run the simple polling validator
+
+```
+npm start
+```
+
+## Running unit tests 
 
 `npm run test` - to run most unit tests
 
@@ -33,3 +33,9 @@ If you are having trouble installing on any version of Windows apart from Window
 ```
 npm install --global --production windows-build-tools
 ```
+For all other OSes take a look at the rest of the [node-gyp installion instructions](https://github.com/nodejs/node-gyp#installation) for node-gyp for prerequisites.
+
+## Companion repos
+
+- [arweave-cacher](https://github.com/mcmonkeys1/arweave-cacher)
+- [ar-node-randomx](https://github.com/mcmonkeys1/node-randomx)

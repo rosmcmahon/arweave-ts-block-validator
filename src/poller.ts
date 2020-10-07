@@ -135,7 +135,7 @@ const pollForNewBlock =  async (height: number) => {
 		if(h >= height){
 			return await ArCache.getBlockDtoByHeight(height)
 		}
-		await sleep(20000)
+		await sleep(30000)
 	}
 }
 
