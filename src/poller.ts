@@ -8,13 +8,11 @@ import { validateBlock } from './blockValidation'
 import { updateWalletsWithBlockTxs } from './wallets-utils'
 
 
-const initData = async (height: number) => {
+const initArCacheData = async (height: number) => {
 	
 	/* Initialise promises */
 
 	let promises = []
-	ArCache.setHostServer(HOST_SERVER)
-	ArCache.setDebugMessagesOn(true)
 
 	// block index. (N.B. tuples header unavailable on arweave.net)
 	promises.push( ArCache.getBlockIndex(height-1) )
@@ -61,9 +59,15 @@ const initData = async (height: number) => {
  * This is the main entry-point for the poller
  */
 const main = async () => {
-	let height = await ArCache.getCurrentHeight() - 5 // we will start back a bit
 
-	let {blockDtos, blockIndex, prevWallets, blockTxsPairs} = await initData(height)
+	console.log(col.bold('Gathering data for first block validation...'))
+
+	ArCache.setHostServer(HOST_SERVER)
+	ArCache.setDebugMessagesOn( process.env.VERBOSE === 'true' )
+
+	let height = await ArCache.getCurrentHeight() - 2 // we will start back a bit
+
+	let {blockDtos, blockIndex, prevWallets, blockTxsPairs} = await initArCacheData(height)
 
 	while(true){
 
@@ -81,7 +85,7 @@ const main = async () => {
 		console.log(`new Weave Data\t ${(block.block_size) / (1024n ** 2n)} MB`)
 		console.log(`new Weave Size\t ${block.weave_size / (1024n ** 3n)} GB`)
 
-		console.log(`Validating new height ${block.height}...`)
+		console.log(col.bold(`Validating new height ${block.height}...`))
 
 		let result = await validateBlock(
 			block,
@@ -92,15 +96,17 @@ const main = async () => {
 		)
 
 		if(result.value){
-			console.log(col.green('✔️  Block validation passed'), result.message, block.height)
+			console.log('✔️ ', col.bgGreen.black('Block validation passed '), result.message, block.height)
 
 		}else{
-			console.log(col.red('⛔ Block validation failed'), result.message, block.height)
+			console.log('⛔', col.bgRed.bold('Block validation failed '), result.message, block.height)
 			//should we try again?
 		}
 
 
 		// Next!
+
+		console.log(col.bold('Preparing for next validation...'))
 
 		//apply txs to WalletsObject
 		await updateWalletsWithBlockTxs(block, prevWallets, prevBlock.reward_pool, prevBlock.height)
@@ -135,7 +141,7 @@ const pollForNewBlock =  async (height: number) => {
 
 	while(true){
 		let h = await ArCache.getCurrentHeight()
-		console.log('...timer got height ', h)
+		console.log('...poller got height ', h)
 		if(h >= height){
 			return await ArCache.getBlockDtoByHeight(height)
 		}

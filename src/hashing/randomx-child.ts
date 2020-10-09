@@ -4,6 +4,7 @@ import { RandomxCreateVM, RandomxHash, RandomxVMReference } from 'ar-node-random
 import ArCache from "arweave-cacher"
 import { ipcMsg2Uint8Array } from '../utils/buffer-utilities'
 import col from 'ansi-colors'
+import { consoleVerbose } from "src/utils/logger"
 
 /* Use the RandomX node-addon to set up a "VM" and do the hashing */
 
@@ -64,7 +65,7 @@ const randomxKey = async (swapHeight: number) => {
 	let keyBlockHeight = swapHeight - RANDOMX_KEY_SWAP_FREQ 
 	const keyBlock = await ArCache.getBlockDtoByHeight(keyBlockHeight)
 
-	console.log(col.cyan("randomx-debugging:"), "keyBlockHeight", keyBlockHeight)
+	console.log(col.blackBright("randomx key block height: " + keyBlockHeight))
 
 	return Arweave.utils.b64UrlToBuffer(keyBlock.hash)
 }

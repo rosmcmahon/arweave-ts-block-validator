@@ -5,6 +5,7 @@ import { weave_hash } from "../src/hashing/weave-hash"
 import { validateMiningDifficulty } from "../src/hashing/mine"
 import { poa_modifyDiff } from "../src/classes/Poa"
 import { arrayCompare } from "../src/utils/buffer-utilities"
+import col from 'ansi-colors'
 
 
 const main = async () => {
@@ -13,8 +14,8 @@ const main = async () => {
 	let block2: Block
 	let blockFailing: Block
 
-	const PASS = "\x1b[32m"+"PASS:"+"\x1b[0m" //prints green colour
-	const FAIL = "\x1b[31m"+"FAIL:"+"\x1b[0m" //prints red colour
+	const PASS = col.bgGreen.black("PASS:") //prints green colour
+	const FAIL = col.bgRed("FAIL:") //prints red colour
 
 	/* Test data set up */
 
@@ -106,14 +107,11 @@ const main = async () => {
 	} else {
 		console.log(PASS, "validateMiningDifficulty returned false for bad Difficulty")
 	}
-	
-	console.log()
-	console.log('Pow testing complete')
 
 	/* Test FAILING: check pow hash and validate poa.option for FAILING TEST */
 
 	console.log()
-	console.log('Test FAILING: check pow hash and validate poa.option for FAILING TEST')
+	console.log('Test 4: check pow hash and validate poa.option for edge case poa_modifyDiff')
 
 	let powFail = await weave_hash(
 		(await generateBlockDataSegment(blockFailing)), 
@@ -122,9 +120,9 @@ const main = async () => {
 	)
 
 	if( arrayCompare(powFail, blockFailing.hash) ){
-		console.log(PASS, "PoW 1 hash == RandomX hash")
+		console.log(PASS, "PoW 4 hash == RandomX hash")
 	}else{
-		console.log(FAIL, "PoW 1 hash != RandomX hash")
+		console.log(FAIL, "PoW 4 hash != RandomX hash")
 	}
 
 	//check poa.option = 1
@@ -136,5 +134,8 @@ const main = async () => {
 		console.log(FAIL, "Difficulty invalid with poa.option = ", blockFailing.poa.option)
 	}
 
+	/* Testing complete */
+	console.log()
+	console.log('Pow testing complete')
 }
 main();

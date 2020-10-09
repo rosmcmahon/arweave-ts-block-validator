@@ -8,6 +8,7 @@ import { txPerpetualStorage_calculateTxFee } from "./fees/tx-perpetual-storage";
 import { WalletsObject } from "./classes/WalletsObject";
 import { serialize, deserialize } from "v8";
 import col from 'ansi-colors'
+import { consoleVerbose } from "./utils/logger";
 
 /* This file is loosely based on `tx-replay-pool.erl` unless otherwiese stated */
 
@@ -139,14 +140,15 @@ export const verifyTx = async (tx: Tx, diff: bigint, height: number, timestamp: 
 
 	if( ! await tx.verify() ){
 		console.log('invalid sig txid '+tx.idString)
-		return {value: false, message: "invalid signature or txid. Hash mismatch"} 
+		return {value: false, message: "invalid signature. Hash mismatch"} 
 	}
 
-let thisCalcdMinTxCost = calculateMinTxCost(tx.data_size, diff, height + 1, wallets, tx.target, timestamp)
-console.log(col.red(
-	`${ (Number(thisCalcdMinTxCost)/Number(tx.reward)) }\t= calcedCost ${thisCalcdMinTxCost}\t / tx.reward ${tx.reward},\t tx.id ${tx.idString}`
-))
-	if(tx.reward < calculateMinTxCost(tx.data_size, diff, height + 1, wallets, tx.target, timestamp)){
+	let calculatedMinTxCost = calculateMinTxCost(tx.data_size, diff, height + 1, wallets, tx.target, timestamp)
+	consoleVerbose(col.red(
+		(Number(calculatedMinTxCost)/Number(tx.reward)) + '\t= calcedCost '
+		+ calculatedMinTxCost + '\t / tx.reward ' + tx.reward + ',\t tx.id ' + tx.idString
+	))
+	if(tx.reward < calculatedMinTxCost){
 		return {value: false, message: "tx reward too cheap"}  
 	}
 

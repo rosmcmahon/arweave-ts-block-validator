@@ -6,12 +6,13 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "test": "jest --runInBand --no-cache",
-    "test:e2e": "jest --config ./test/jest-e2e.json --verbose",
+    "test:e2e": "jest --config ./test/jest-e2e.json",
     "test:watch": "jest --watch --runInBand --detectOpenHandles",
     "test:clear": "jest --clearCache",
     "start:scratch": "node --max-old-space-size=1024 -r ts-node/register ./test/scratchpad-tests.ts",
     "start:pow": "node --max-old-space-size=1024 -r ts-node/register ./test/pow-tests.ts",
     "start": "node --max-old-space-size=1024 -r ts-node/register ./src/poller.ts",
+    "start:verbose": "cross-env VERBOSE=true node --max-old-space-size=1024 -r ts-node/register ./src/poller.ts",
     "build": "tsc -p tsconfig.build.json"
   },
   "author": "Ros McMahon <rosmcmahon@gmail.com>",
@@ -20,6 +21,7 @@
     "@types/jest": "^26.0.10",
     "@types/node": "^14.6.0",
     "axios": "^0.19.2",
+    "cross-env": "^7.0.2",
     "jest": "^26.4.0",
     "jest-circus": "^26.4.2",
     "prettier": "^2.0.5",
