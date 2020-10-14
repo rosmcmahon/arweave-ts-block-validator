@@ -16,13 +16,13 @@ export const txPerpetualStorage_usdToAr = (usd: number, diff: bigint, height: nu
 // 	).
 // -endif.
 
-	let initialDiff = switchToLinearDiff( INITIAL_USD_PER_AR_DIFF )
+	let initialDiff = switchToLinearDiff( INITIAL_USD_PER_AR_DIFF(height) )
 	let deltaP = Number( MAX_DIFF - initialDiff ) / Number(MAX_DIFF - diff)
-	let initialInflation = calculateInflation(INITIAL_USD_PER_AR_HEIGHT)
+	let initialInflation = calculateInflation(INITIAL_USD_PER_AR_HEIGHT(height))
 	let deltaInflation = calculateInflation(height) / initialInflation
 
 	return Math.floor(
-		(usd * WINSTON_PER_AR * deltaInflation) / (INITIAL_USD_PER_AR * deltaP)
+		(usd * WINSTON_PER_AR * deltaInflation) / (INITIAL_USD_PER_AR(height) * deltaP)
 	)
 }
 

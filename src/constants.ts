@@ -27,7 +27,7 @@ export const FORK_HEIGHT_1_7 = 235200
 export const FORK_HEIGHT_1_8 = 269510
 export const FORK_HEIGHT_1_9 = 315700
 export const FORK_HEIGHT_2_0 = 422250
-export const FORK_HEIGHT_2_2 = 500000
+export const FORK_HEIGHT_2_2 = 552180
 
 export const POA_MIN_MAX_OPTION_DEPTH = 100
 
@@ -74,15 +74,14 @@ export const WALLET_GEN_FEE = 250000000000n
 // The minimum cost per byte for a single TX.
 export const COST_PER_BYTE = 100000 //(WINSTON_PER_AR div BASE_BYTES_PER_AR)
 
-/* Perpetual storage constants */
+/* Perpetual storage constants - ref: perpetual_storage.hrl */
 
 export const N_REPLICATIONS = 10 
 // How much harder it should be to mine each subsequent alternative POA option.
 export const ALTERNATIVE_POA_DIFF_MULTIPLIER = 2
-
 // Mining reward as a proportion of tx cost.
 export const MINING_REWARD_MULTIPLIER = 0.2
-export const MINING_REWARD_DIVIDER = 5n //better to integer divide a final calculation
+export const MINING_REWARD_DIVIDER = 5n //better to integer divide a final truncating calculation
 export const MINING_REWARD_DIVIDER_MODIFIED = 6n //ref: calculateRewardPoolPerpetual
 // Figures taken from the "date-GBh spreadsheet" see: perpetual_storage.hrl
 export const USD_PER_GBY_2018 = 0.001045
@@ -91,9 +90,9 @@ export const USD_PER_GBY_2019 = 0.000925
 export const USD_PER_GBY_DECAY_ANNUAL = 0.995 // i.e. 0.5% annual decay rate
 // The network height at the time when 
 // the $/AR exchange rate was INITIAL_USD_PER_AR.
-export const INITIAL_USD_PER_AR_HEIGHT = FORK_HEIGHT_1_9
-export const INITIAL_USD_PER_AR_DIFF = 29n
-export const INITIAL_USD_PER_AR = 1.2 //ref: perpetual_storage.hrl
+export const INITIAL_USD_PER_AR_HEIGHT = (height: number) => (height >= FORK_HEIGHT_2_2) ? FORK_HEIGHT_2_2 : FORK_HEIGHT_1_9
+export const INITIAL_USD_PER_AR_DIFF = (height: number) => (height >= FORK_HEIGHT_2_2) ? 34n : 29n
+export const INITIAL_USD_PER_AR = (height: number) => (height >= FORK_HEIGHT_2_2) ? 4 : 1.2
 
 /* Block field size limits */
 
