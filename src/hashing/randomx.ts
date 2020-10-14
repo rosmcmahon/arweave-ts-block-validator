@@ -43,7 +43,7 @@ const randomxKey = async (swapHeight: number) => {
 	let keyBlockHeight = swapHeight - RANDOMX_KEY_SWAP_FREQ 
 	const keyBlock = await ArCache.getBlockDtoByHeight(keyBlockHeight)
 
-	consoleVerbose(col.blue("randomx key block height: "), keyBlockHeight)
+	consoleVerbose(col.blue("randomx key block height and hash: "), keyBlockHeight, keyBlock.hash)
 
 	return Arweave.utils.b64UrlToBuffer(keyBlock.hash)
 }
