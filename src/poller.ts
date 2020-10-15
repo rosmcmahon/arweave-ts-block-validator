@@ -10,6 +10,7 @@ import fs from 'fs/promises'
 import { logEntry } from './utils/logger'
 import { EOL } from 'os'
 
+const TRAIL_BEHIND = 15
 
 const initArCacheData = async (height: number) => {
 	
@@ -68,7 +69,7 @@ const main = async () => {
 	ArCache.setHostServer(HOST_SERVER)
 	ArCache.setDebugMessagesOn( process.env.VERBOSE === 'true' )
 
-	let height = await ArCache.getCurrentHeight() - 2 // we will start back a bit
+	let height = await ArCache.getCurrentHeight() - TRAIL_BEHIND // we will start back a bit
 
 	let {blockDtos, blockIndex, prevWallets, blockTxsPairs} = await initArCacheData(height)
 
@@ -167,7 +168,7 @@ const pollForNewBlock =  async (height: number) => {
 	const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
 	while(true){
-		let h = await ArCache.getCurrentHeight()
+		let h = await ArCache.getCurrentHeight() - TRAIL_BEHIND
 		console.log('...poller got height ', h)
 		if(h >= height){
 			return await ArCache.getBlockDtoByHeight(height)
