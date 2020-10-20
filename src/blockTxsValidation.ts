@@ -281,8 +281,8 @@ const getTagsLength = (tags: Tag[]) => {
 
 	let tagsDecoded: Tag[] = tags.map<Tag>( (tag: Tag) => {
 		return {
-			name: Arweave.utils.b64UrlDecode(tag.name),
-			value: Arweave.utils.b64UrlDecode(tag.value)
+			name: Arweave.utils.b64UrlToString(tag.name),
+			value: Arweave.utils.b64UrlToString(tag.value)
 		}
 	})
 
