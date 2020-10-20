@@ -11,7 +11,7 @@ export const consoleVerbose = (...args: any[]) => {
 
 export const logEntry = async (combinedString: string) => {
 	let output = 
-		'-= BEGIN' + new Date().toLocaleString() + ' =-' + EOL
+		'-= BEGIN ' + new Date().toLocaleString() + ' =-' + EOL
 		+ combinedString
 		+ '-= FINISH =-' + EOL + EOL
 	console.log(output)
