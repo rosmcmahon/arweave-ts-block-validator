@@ -7,12 +7,16 @@ import { Tx } from '../src/classes/Tx';
 import { WalletsObject, createWalletsFromDTO } from '../src/classes/WalletsObject';
 import ArCache from 'arweave-cacher';
 import { randomxHash } from '../src/hashing/randomx';
+import col from 'ansi-colors'
 
-const arweave = Arweave.init({})
+const arweave = Arweave.init({
+	host: 'arweave.net',
+	protocol: 'https',
+})
 
 // test convenience utilities
-const PASS = "\x1b[32mPASS\x1b[0m"
-const FAIL = "\x1b[31mFAIL\x1b[0m"
+const PASS = col.green('PASS')
+const FAIL = col.red('FAIL')
 const printTest = (b: boolean) => b ? console.log(PASS) : console.log(FAIL)
 
 const main = async () => {
@@ -82,52 +86,8 @@ const main = async () => {
 
 
 	// //////////////////////////////////////////////////////////////////////////////////////
-	// console.log('ar_tx_replay_pool__verify_block_txs tests')
-	// console.log()
-	// console.log("Validate txs. Returns true when valid data given")
-	
-	// let result = await validateBlockTxs(
-	// 	block.txs, 
-	// 	block.diff, 
-	// 	prevBlock.height, 
-	// 	block.timestamp, 
-	// 	prevBlockWallets, 
-	// 	blockTxsPairs // this does not get height checked. assumed to be correct 50 blocks input data
-	// )
-	// if(result.value === true){
-	// 	console.log(PASS, "ar_tx_replay_pool__verify_block_txs returned true")
-	// }else{
-	// 	console.log(FAIL, "Received block with invalid txs")
-	// }
 
 
-	// let tx1 = new Tx(await ArCache.getTxDto('pxbF_ZwpXkjAPjd9F4YhLf8Y8fdlbIGz6UhfnswSp2Q')) //v1
-	// printTest(await tx1.verify())
-	// let tx2 = new Tx(await ArCache.getTxDto('pYl1wofBvMrXg68WR4kcvOj0mGj8Y3qmoLOkTcb1Wxs')) //v2
-	// printTest(await tx2.verify())
-	// let tx3 = new Tx(await ArCache.getTxDto('OIUywTGmBF9DO3TbPVC4iPAv3WhM4M1fYIWiJsG2gLk')) //7TO8..
-	// printTest(await tx3.verify())
-	// let tx4 = new Tx(await ArCache.getTxDto('V8Fllbyin4By2DF4_fN501fhnj8gtDw7K6W5snCHdB8')) //7TO8..
-	// printTest(await tx4.verify())
-	// let tx5 = new Tx(await ArCache.getTxDto('a305zYpPbjaP67naskCCBi5GVyEwbiTomaTeO6ULOIo')) //7TO8..
-	// printTest(await tx5.verify())
-	// let tx6 = new Tx(await ArCache.getTxDto('TwZCU9mV8QJXPBIr08s_iKU27PZj2SVMis1L816UDso')) //7TO8..
-	// printTest(await tx6.verify())
-	
-	// /**
-	//  * Salt needs to be removed in order for these to work!
-	//  * https://github.com/ArweaveTeam/arweave-js/blob/master/src/common/lib/crypto/node-driver.ts#L81
-	//  */
-
-
-	// // tx6.tags = []
-	// await tx6.sign(await arweave.wallets.generate())
-	// printTest(await tx6.verify())
-
-	//promisedForkWrapper test
-	let result = await randomxHash(541500, new Uint8Array(Buffer.from('12345678')))
-
-	console.log('result from scratch: ', result)
 
 
 }
