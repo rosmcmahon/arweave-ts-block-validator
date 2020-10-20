@@ -69,8 +69,10 @@ export const WINSTON_PER_AR = 1000000000000
 export const BLOCKS_PER_YEAR = 262800 // 30 * 24 * 365
 // The base cost of a byte in AR
 export const BASE_BYTES_PER_AR = 10000000
-// Base wallet generation fee
+// Base wallet generation fee (pre FORK_2_2)
 export const WALLET_GEN_FEE = 250000000000n
+// Fee in USD. - AR is derived from diff & height
+export const WALLET_GEN_FEE_USD = 0.10
 // The minimum cost per byte for a single TX.
 export const COST_PER_BYTE = 100000 //(WINSTON_PER_AR div BASE_BYTES_PER_AR)
 

@@ -1,10 +1,10 @@
 import { Tx } from "./classes/Tx";
 import { BlockTxsPairs, ReturnCode, Tag } from "./types";
-import { FORK_HEIGHT_1_8, BLOCK_TX_COUNT_LIMIT, BLOCK_TX_DATA_SIZE_LIMIT, WALLET_GEN_FEE, TX_DATA_SIZE_LIMIT, WALLET_NEVER_SPENT } from "./constants";
+import { FORK_HEIGHT_1_8, BLOCK_TX_COUNT_LIMIT, BLOCK_TX_DATA_SIZE_LIMIT, WALLET_GEN_FEE, TX_DATA_SIZE_LIMIT, WALLET_NEVER_SPENT, FORK_HEIGHT_2_2, WALLET_GEN_FEE_USD } from "./constants";
 import { wallet_ownerToAddressString } from "./utils/wallet";
 import Arweave from "arweave";
 import { applyTxToWalletsObject } from "./wallets-utils";
-import { txPerpetualStorage_calculateTxFee } from "./fees/tx-perpetual-storage";
+import { txPerpetualStorage_calculateTxFee, txPerpetualStorage_usdToAr } from "./fees/tx-perpetual-storage";
 import { WalletsObject } from "./classes/WalletsObject";
 import { serialize, deserialize } from "v8";
 import col from 'ansi-colors'
@@ -195,7 +195,13 @@ const calculateMinTxCost = (size: bigint, diff: bigint, height: number, wallets:
 
 	// check for first time wallet fee
 	if(target.length > 0 && !wallets[target]){
-		fee = WALLET_GEN_FEE
+		if(height < FORK_HEIGHT_2_2){
+			fee = WALLET_GEN_FEE
+		} else { 
+			fee = BigInt( 
+				txPerpetualStorage_usdToAr(WALLET_GEN_FEE_USD, diff, height) 
+			)
+		}
 	}
 
 	fee += txPerpetualStorage_calculateTxFee(size, diff, height, timestamp);

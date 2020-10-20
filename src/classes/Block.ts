@@ -26,7 +26,7 @@ export class Block {
 	tx_root: Uint8Array						// Merkle root of the tree of transactions' data roots.
 	tx_tree: Uint8Array[]					// Merkle tree of transactions' data roots.
 	hash_list?: Uint8Array[]			// A list of hashes used for fork recovery 
-	wallet_list: Uint8Array				// Large download, retrieve separately
+	wallet_list: Uint8Array				// Large separate download before fork_2_2. After for_2_2 contains a hash root of wallets tree
 	reward_addr: Uint8Array				// Address to credit mining reward or the unclaimed atom.
 	tags: Tag[]  									// Unused? Miner specified tags to store with the block.
 	reward_pool: bigint						// Current pool of mining rewards.
