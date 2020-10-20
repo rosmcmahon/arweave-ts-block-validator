@@ -6,7 +6,11 @@ import { BlockDTO, BlockIndexDTO, BlockTxsPairs } from './types'
 import { HOST_SERVER } from './constants'
 import { validateBlock } from './blockValidation'
 import { updateWalletsWithBlockTxs } from './wallets-utils'
+import fs from 'fs/promises'
+import { logEntry } from './utils/logger'
+import { EOL } from 'os'
 
+const TRAIL_BEHIND = 15
 
 const initArCacheData = async (height: number) => {
 	
@@ -65,7 +69,7 @@ const main = async () => {
 	ArCache.setHostServer(HOST_SERVER)
 	ArCache.setDebugMessagesOn( process.env.VERBOSE === 'true' )
 
-	let height = await ArCache.getCurrentHeight() - 2 // we will start back a bit
+	let height = await ArCache.getCurrentHeight() - TRAIL_BEHIND // we will start back a bit
 
 	let {blockDtos, blockIndex, prevWallets, blockTxsPairs} = await initArCacheData(height)
 
@@ -100,11 +104,31 @@ const main = async () => {
 
 		}else{
 			console.log('⛔', col.bgRed.bold('Block validation failed '), result.message, block.height)
-			//should we try again?
+
+			// log the error
+			let logs =
+				'Block validation failed' + EOL
+				+ 'result.message:\t' + result.message + EOL
+				+ 'blockDtos[0].height:\t' + blockDtos[0].height + EOL
+				+ 'blockDtos[0].indep_hash:\t' + blockDtos[0].indep_hash + EOL
+				+ 'blockDtos[0].previous_block:\t' + blockDtos[0].previous_block + EOL
+				+ 'blockDtos[1].indep_hash:\t' + blockDtos[1].indep_hash + EOL
+			await logEntry(logs)
+
+			// recover with new data for next block
+			console.log(col.bold('Gathering fresh data after a validation fail...'))
+
+			height++
+			let {blockDtos: bDtos, blockIndex: bi, prevWallets: pW, blockTxsPairs: bTPs} = await initArCacheData(height)
+			blockDtos = bDtos
+			blockIndex = bi
+			prevWallets = pW
+			blockTxsPairs = bTPs
+
+			continue; // main while(true)
 		}
 
-
-		// Next!
+		// Next block!
 
 		console.log(col.bold('Preparing for next validation...'))
 
@@ -121,7 +145,11 @@ const main = async () => {
 		blockTxsPairs[blockDtos[0].indep_hash] = blockDtos[0].txs
 		//update blockIndex
 		blockIndex = [
-			{tx_root: blockDtos[0].tx_root, weave_size: blockDtos[0].weave_size.toString(), hash: blockDtos[0].indep_hash},
+			{
+				tx_root: blockDtos[0].tx_root, 
+				weave_size: blockDtos[0].weave_size.toString(), 
+				hash: blockDtos[0].indep_hash
+			},
 			...blockIndex
 		]
 		//remove 51st block and add new block to start of blockDtos
@@ -140,11 +168,12 @@ const pollForNewBlock =  async (height: number) => {
 	const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
 	while(true){
-		let h = await ArCache.getCurrentHeight()
+		let h = await ArCache.getCurrentHeight() - TRAIL_BEHIND
 		console.log('...poller got height ', h)
 		if(h >= height){
 			return await ArCache.getBlockDtoByHeight(height)
 		}
+
 		await sleep(30000)
 	}
 }

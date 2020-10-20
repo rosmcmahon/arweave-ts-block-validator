@@ -278,9 +278,17 @@ const tx_field_size_limit_v2 = async (tx: Tx) => {
 }
 
 const getTagsLength = (tags: Tag[]) => {
+
+	let tagsDecoded: Tag[] = tags.map<Tag>( (tag: Tag) => {
+		return {
+			name: Arweave.utils.b64UrlToString(tag.name),
+			value: Arweave.utils.b64UrlToString(tag.value)
+		}
+	})
+
 	let total = 0
-	for (let i = 0; i < tags.length; i++) {
-		const tag = tags[i];
+	for (let i = 0; i < tagsDecoded.length; i++) {
+		const tag = tagsDecoded[i];
 		total += tag.name.length + tag.value.length
 	}
 	return total
