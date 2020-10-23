@@ -1,5 +1,5 @@
 import { Decimal } from 'decimal.js'
-import { BLOCKS_PER_YEAR, GENESIS_TOKENS, WINSTON_PER_AR, ADD_ERLANG_ROUNDING_ERROR } from '../constants'
+import { BLOCKS_PER_YEAR, GENESIS_TOKENS, WINSTON_PER_AR, ADD_APPROXIMATION } from '../constants'
 
 export const calculateInflation = (height: number) => {
 	/*
@@ -19,7 +19,7 @@ export const calculateInflation = (height: number) => {
 	// let powerExp = Decimal.pow(2, years.neg()) //2^years_since_genesis
 	// let bigFloat = ( Decimal.mul(0.2, GENESIS_TOKENS).mul(powerExp).mul(log2) ).dividedBy(BLOCKS_PER_YEAR)
 	
-	// if(ADD_ERLANG_ROUNDING_ERROR){
+	// if(ADD_APPROXIMATION){
 	// 	return Number(
 	// 		bigFloat.mul(WINSTON_PER_AR)
 	// 	)

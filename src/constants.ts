@@ -1,7 +1,7 @@
 // This is the host used for retieving block data 
 export const HOST_SERVER = 'http://eu-west-1.arweave.net:1984'
 
-export const ADD_ERLANG_ROUNDING_ERROR = true // need to add rounding error to match erlang
+export const ADD_APPROXIMATION = true // need to add rounding approximation to match erlang
 
 // The value of last_tx if the wallet never spent AR before
 export const WALLET_NEVER_SPENT = ''

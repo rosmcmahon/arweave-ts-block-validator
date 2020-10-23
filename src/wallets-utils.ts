@@ -1,4 +1,4 @@
-import { FORK_HEIGHT_1_8, FORK_HEIGHT_2_0, MINING_REWARD_DIVIDER_MODIFIED, ADD_ERLANG_ROUNDING_ERROR, MINING_REWARD_MULTIPLIER, WALLET_NEVER_SPENT } from './constants'
+import { FORK_HEIGHT_1_8, FORK_HEIGHT_2_0, MINING_REWARD_DIVIDER_MODIFIED, ADD_APPROXIMATION, MINING_REWARD_MULTIPLIER, WALLET_NEVER_SPENT } from './constants'
 import { Block } from './classes/Block'
 import { Tx } from './classes/Tx'
 import { WalletsObject } from './classes/WalletsObject'
@@ -108,7 +108,7 @@ const calculateRewardPoolPerpetual = (
 		
 		let txFee = tx.reward
 		let txReward: bigint
-		if(ADD_ERLANG_ROUNDING_ERROR){
+		if(ADD_APPROXIMATION){
 			txReward = BigInt(
 				Math.floor(Number(
 					( new Decimal(MINING_REWARD_MULTIPLIER).mul(txFee.toString()) ).div(MINING_REWARD_MULTIPLIER + 1)

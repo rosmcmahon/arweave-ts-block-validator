@@ -1,4 +1,4 @@
-import { RETARGET_BLOCKS, FORK_HEIGHT_1_8, FORK_HEIGHT_1_9, DIFF_ADJUSTMENT_DOWN_LIMIT, DIFF_ADJUSTMENT_UP_LIMIT, DIFF_ADJUSTMENT_UP_COMPARATOR, DIFF_ADJUSTMENT_DOWN_COMPARATOR, RETARGET_BLOCK_TIME, TARGET_TIME, RETARGET_TOLERANCE_FLOAT, NEW_RETARGET_TOLERANCE, MAX_DIFF, MIN_DIFF_FORK_1_8, ADD_ERLANG_ROUNDING_ERROR } from '../constants'
+import { RETARGET_BLOCKS, FORK_HEIGHT_1_8, FORK_HEIGHT_1_9, DIFF_ADJUSTMENT_DOWN_LIMIT, DIFF_ADJUSTMENT_UP_LIMIT, DIFF_ADJUSTMENT_UP_COMPARATOR, DIFF_ADJUSTMENT_DOWN_COMPARATOR, RETARGET_BLOCK_TIME, TARGET_TIME, RETARGET_TOLERANCE_FLOAT, NEW_RETARGET_TOLERANCE, MAX_DIFF, MIN_DIFF_FORK_1_8, ADD_APPROXIMATION } from '../constants'
 import { Block } from '../classes/Block'
 import { Decimal } from 'decimal.js'
 
@@ -45,7 +45,7 @@ const calculateDifficulty = (oldDiff: bigint, ts: bigint, last: bigint, height: 
 }
 
 /**
- * Keyword: ADD_ERLANG_ROUNDING_ERROR
+ * Keyword: ADD_APPROXIMATION
  * The below function posits a possible solution to using floating point numbers in the calculation of the block difficulty.
  * It is comment heavy, begins with the erlang code, and using algebra to generate equations that avoid early value calculations
  * that would increase the rounding errors (floating or int) in the difficulty generated.
@@ -231,9 +231,9 @@ const calculateDifficultyLinear = (oldDiff: bigint, ts: bigint, last: bigint, he
 	let timeDeltaFLOAT = actualTimeFLOAT / targetTimeFLOAT
 	let oneMinusTimeDeltaFLOAT = Math.abs(1 - timeDeltaFLOAT)
 
-	if(ADD_ERLANG_ROUNDING_ERROR && (Number(oneMinusTimeDelta) < RETARGET_TOLERANCE_FLOAT) ){
+	if(ADD_APPROXIMATION && (Number(oneMinusTimeDelta) < RETARGET_TOLERANCE_FLOAT) ){
 		return oldDiff
-	} else if( ! ADD_ERLANG_ROUNDING_ERROR && oneMinusTimeDelta.lessThan(RETARGET_TOLERANCE_FLOAT) ){
+	} else if( ! ADD_APPROXIMATION && oneMinusTimeDelta.lessThan(RETARGET_TOLERANCE_FLOAT) ){
 		return oldDiff
 	}
 
@@ -251,7 +251,7 @@ const calculateDifficultyLinear = (oldDiff: bigint, ts: bigint, last: bigint, he
 	let diffInverse: Decimal = new Decimal((MAX_DIFF - oldDiff).toString()).mul(effectiveTimeDelta)
 
 	let diffInverseInt: bigint
-	if(ADD_ERLANG_ROUNDING_ERROR){
+	if(ADD_APPROXIMATION){
 		diffInverseInt = BigInt( Number(diffInverse) )
 	} else{
 		diffInverseInt = BigInt(diffInverse)
