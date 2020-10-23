@@ -288,7 +288,7 @@ describe('Verify Tx tests', () => {
 			prevBlockWallets
 		)
 
-		expect(bad).toEqual({value: false, message: "invalid signature or txid. Hash mismatch"})
+		expect(bad).toEqual({value: false, message: "invalid signature. Hash mismatch"})
 	})
 
 	it('Returns false for a tx when wallet does not have enough funds', async () => {

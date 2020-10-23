@@ -71,6 +71,8 @@ const main = async () => {
 
 	let height = await ArCache.getCurrentHeight() - TRAIL_BEHIND // we will start back a bit
 
+	logEntry('poller begins using starting height ' + height)
+
 	let {blockDtos, blockIndex, prevWallets, blockTxsPairs} = await initArCacheData(height)
 
 	while(true){

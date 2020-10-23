@@ -85,7 +85,7 @@ export const validateBlock = async (
 		}
 	}
 	if(newRewardPool !== block.reward_pool){
-		return {value: false, message: "Reward pool does not match calculated"}
+		return {value: false, message: "Invalid reward pool"}
 	}
 	
 	// 7. Block Field Sizes: block field size checks -these probably should be done at the http level

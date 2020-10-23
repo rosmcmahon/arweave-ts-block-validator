@@ -12,7 +12,7 @@ export const consoleVerbose = (...args: any[]) => {
 export const logEntry = async (combinedString: string) => {
 	let output = 
 		'-= BEGIN ' + new Date().toLocaleString() + ' =-' + EOL
-		+ combinedString
+		+ combinedString + EOL
 		+ '-= FINISH =-' + EOL + EOL
 	console.log(output)
 	await fs.appendFile('logfile.log', output)
