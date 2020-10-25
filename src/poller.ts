@@ -104,6 +104,7 @@ const main = async () => {
 		if(result.value){
 			console.log('✔️ ', col.bgGreen.black('Block validation passed '), result.message, block.height)
 
+			await logEntry(block.height + ":" + result.message)
 		}else{
 			console.log('⛔', col.bgRed.bold('Block validation failed '), result.message, block.height)
 
