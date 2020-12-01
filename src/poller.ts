@@ -10,7 +10,7 @@ import fs from 'fs/promises'
 import { logEntry } from './utils/logger'
 import { EOL } from 'os'
 
-const TRAIL_BEHIND = 15
+const TRAIL_BEHIND = 4
 
 const initArCacheData = async (height: number) => {
 	
