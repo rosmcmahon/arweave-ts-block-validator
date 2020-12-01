@@ -14,6 +14,6 @@ export const logEntry = async (combinedString: string) => {
 		'-= BEGIN ' + new Date().toLocaleString() + ' =-' + EOL
 		+ combinedString + EOL
 		+ '-= FINISH =-' + EOL + EOL
-	console.log(output)
+	// console.log(output)
 	await fs.appendFile('logfile.log', output)
 }
