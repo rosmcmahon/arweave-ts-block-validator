@@ -10,7 +10,7 @@ import fs from 'fs/promises'
 import { logEntry } from './utils/logger'
 import { EOL } from 'os'
 
-const TRAIL_BEHIND = 15
+const TRAIL_BEHIND = 4
 
 const initArCacheData = async (height: number) => {
 	
@@ -103,8 +103,8 @@ const main = async () => {
 
 		if(result.value){
 			console.log('✔️ ', col.bgGreen.black('Block validation passed '), result.message, block.height)
-
 			await logEntry(block.height + ":" + result.message)
+
 		}else{
 			console.log('⛔', col.bgRed.bold('Block validation failed '), result.message, block.height)
 
@@ -117,6 +117,7 @@ const main = async () => {
 				+ 'blockDtos[0].previous_block:\t' + blockDtos[0].previous_block + EOL
 				+ 'blockDtos[1].indep_hash:\t' + blockDtos[1].indep_hash + EOL
 			await logEntry(logs)
+			console.log(logs)
 
 			// recover with new data for next block
 			console.log(col.bold('Gathering fresh data after a validation fail...'))
