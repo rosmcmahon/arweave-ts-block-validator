@@ -8,6 +8,12 @@ import { WalletsObject, createWalletsFromDTO } from '../src/classes/WalletsObjec
 import ArCache from 'arweave-cacher';
 import { randomxHash } from '../src/hashing/randomx';
 import col from 'ansi-colors'
+import level from 'level'
+import { BaseTrie } from 'merkle-patricia-tree'
+
+const db = level('./testdb')
+const trie = new BaseTrie(db)
+
 
 const arweave = Arweave.init({
 	host: 'arweave.net',
@@ -27,9 +33,6 @@ const main = async () => {
 	// let blockIndex: BlockIndexDTO 
 	// let prevBlockWallets: WalletsObject
 	// let blockTxsPairs: BlockTxsPairs
-
-	// let V1DATA_IDSTRING = 'eIcAGwqFCHek3EvpiRXdsESZAPKLXJMzco-7lWm4yO4'
-	// let BLOCKID_HEIGHT_510000 = "RqCpcr175Xa3glLP7p-NOOw3h8_NZNaJbgqi29myyotpwuT_q83uBdbI9QutIk_i"
 
 	// console.log("Preparing test data...")
 
@@ -87,7 +90,11 @@ const main = async () => {
 
 	// //////////////////////////////////////////////////////////////////////////////////////
 
-
+	await trie.put(Buffer.from('test'), Buffer.from('one'))
+  const value = await trie.get(Buffer.from('test'))
+	console.log(value.toString()) // 'one'
+	
+	//now create tests from ar_patricia_tree.erl tests ??
 
 
 }

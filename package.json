@@ -34,6 +34,8 @@
     "ar-node-randomx": "github:mcmonkeys1/node-randomx",
     "arweave": "github:mcmonkeys1/arweave-js#remove_salt_from_verify",
     "arweave-cacher": "github:mcmonkeys1/arweave-cacher",
-    "decimal.js": "^10.2.0"
+    "decimal.js": "^10.2.0",
+    "level": "^6.0.1",
+    "merkle-patricia-tree": "^4.0.0"
   }
 }
