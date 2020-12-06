@@ -71,7 +71,7 @@ const main = async () => {
 
 	let height = await ArCache.getCurrentHeight() - TRAIL_BEHIND // we will start back a bit
 
-	logEntry('poller begins using starting height ' + height)
+	logEntry('START POLLER, using height ' + height)
 
 	let {blockDtos, blockIndex, prevWallets, blockTxsPairs} = await initArCacheData(height)
 
@@ -110,7 +110,7 @@ const main = async () => {
 
 			// log the error
 			let logs =
-				'Block validation failed' + EOL
+				'Block validation FAILED' + EOL
 				+ 'result.message:\t' + result.message + EOL
 				+ 'blockDtos[0].height:\t' + blockDtos[0].height + EOL
 				+ 'blockDtos[0].indep_hash:\t' + blockDtos[0].indep_hash + EOL
