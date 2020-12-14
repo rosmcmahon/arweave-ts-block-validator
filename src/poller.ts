@@ -10,7 +10,7 @@ import fs from 'fs/promises'
 import { logEntry } from './utils/logger'
 import { EOL } from 'os'
 
-const TRAIL_BEHIND = 4
+const TRAIL_BEHIND = 15
 
 const initArCacheData = async (height: number) => {
 	
@@ -71,7 +71,7 @@ const main = async () => {
 
 	let height = await ArCache.getCurrentHeight() - TRAIL_BEHIND // we will start back a bit
 
-	logEntry('START POLLER, using height ' + height)
+	logEntry('START POLLER, using height ' + height + ', TRAIL_BEHIND ' + TRAIL_BEHIND)
 
 	let {blockDtos, blockIndex, prevWallets, blockTxsPairs} = await initArCacheData(height)
 
