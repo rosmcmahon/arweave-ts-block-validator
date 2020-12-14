@@ -12,6 +12,7 @@ import { STORE_BLOCKS_AROUND_CURRENT, MIN_DIFF_FORK_1_8 } from './constants'
 import { validateBlockTxs } from './blockTxsValidation'
 import col from 'ansi-colors'
 import { bufferToBigInt } from './utils/buffer-utilities'
+import { logEntry } from './utils/logger'
 
 
 export const validateBlock = async (
@@ -85,6 +86,7 @@ export const validateBlock = async (
 		}
 	}
 	if(newRewardPool !== block.reward_pool){
+		logEntry(`[${block.height}] reward_pool calc:${newRewardPool}, blockJson:${block.reward_pool}`)
 		return {value: false, message: "Invalid reward pool"}
 	}
 	
