@@ -1,5 +1,5 @@
 // This is the host used for retieving block data 
-export const HOST_SERVER = 'http://lon-1.arweave.net:1984' //'http://eu-west-1.arweave.net:1984'
+export const HOST_SERVER = 'http://195.201.58.235:1984'//'http://lon-1.arweave.net:1984' //'http://eu-west-1.arweave.net:1984'
 
 export const ADD_APPROXIMATION = true // need to add rounding approximation to match erlang
 
